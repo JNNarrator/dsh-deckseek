@@ -6,6 +6,20 @@
 
 dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display) 的 fork，由 [JNNarrator](https://github.com/JNNarrator) 独立维护的 DeepSeek Harness 展示与交互增强插件（MIT）。
 
+## 界面预览
+
+![DeckSeek 阅读视图](docs/screenshots/reading-view.png)
+
+**DeckSeek 阅读视图**：执行过程自动折叠、最终回答完整呈现；右缘消息导航气泡贴附；任务栏与输入框之上留白紧凑，不再被长任务列表撑出大片空白。
+
+| 消息导航导轨 | 页内查找 |
+|---|---|
+| ![消息导航导轨](docs/screenshots/message-rail.png) | ![页内查找](docs/screenshots/search.png) |
+| 悬停气泡显示「第 N 轮 · 标题」，点击平滑跳转并闪烁标记落点，当前阅读位置自动加宽高亮 | 实时匹配计数、上/下跳转，命中精确滚动定位并闪烁高亮 |
+| **执行过程与工具行** | **统一失败卡片** |
+| ![执行过程与工具行](docs/screenshots/process-and-tools.png) | ![统一失败卡片](docs/screenshots/failure-cards.png) |
+| Write/Edit 行显示 +N -M 变更统计与分类状态标签（已写入 / 已找到…），思考卡片可滚动、可展开 | 失败原因、退出码与可展开的原始记录，重试提示共用同一文案 |
+
 ## 功能特性
 
 - **阅读视图**：执行中实时呈现原生步骤、思考与进度；任务成功后自动收起过程，保留最终回答与交互卡片。独立的 **DeckSeek** 页签，原「对话 / 轨迹」、输入框、模型选择、工具与审批均完整保留。全部已知记录类型（系统提示词、执行过程、轮次统计等）均已适配，未知类型自动回退为可复制的原始记录卡片——DSH 尚未稳定，兜底始终保留。工具 / 命令失败以统一错误卡片呈现：失败原因、退出码与可展开的原始记录。

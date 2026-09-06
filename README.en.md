@@ -6,6 +6,20 @@
 
 dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display), independently maintained by [JNNarrator](https://github.com/JNNarrator) as a DeepSeek Harness display & interaction enhancement plugin (MIT).
 
+## Screenshots
+
+![DeckSeek reading view](docs/screenshots/reading-view.png)
+
+**The DeckSeek reading view**: the execution record folds away and the final answer renders in full; the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
+
+| Message navigation rail | In-view search |
+|---|---|
+| ![Message navigation rail](docs/screenshots/message-rail.png) | ![In-view search](docs/screenshots/search.png) |
+| Hovering a mark shows a "Turn N · title" info bubble; clicking scrolls the message into view with a landing flash | Live match counts with previous / next navigation; hits scroll precisely into view with a flash |
+| **Execution process & tool rows** | **Unified failure cards** |
+| ![Execution process & tool rows](docs/screenshots/process-and-tools.png) | ![Unified failure cards](docs/screenshots/failure-cards.png) |
+| Write/edit rows show +N -M change stats and per-family state labels (Written / Found…); thinking cards scroll and expand | Failure reason, exit code, and an expandable raw record |
+
 ## Features
 
 - **Reading view**: live native steps, thinking, and progress during execution; the process folds away on successful completion, leaving the final answer and interactive cards. An independent **DeckSeek** tab keeps the original Chat / Trajectory views, input box, model selector, tools, and approvals intact. Every known record kind (system prompts, turn processes, turn stats, …) is adapted; unknown kinds fall back to a copyable raw-record card — DSH is not stable yet, so the fallback stays. Failed tools / commands render as unified error cards: reason, exit code, and an expandable raw record.
