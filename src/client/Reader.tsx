@@ -98,8 +98,21 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
   return <UnknownRecord kind={node.kind === 'unknown' ? String((node.data as { type?: unknown }).type ?? 'unknown') : node.kind} data={node.data} />;
 });
 
+function elapsedClock(start: number | undefined, now: number): string {
+  if (start === undefined) return '';
+  const elapsed = Math.max(0, Math.round((now - start) / 1000));
+  return elapsed < 60 ? ui('status.clockSeconds', { seconds: elapsed }) : ui('status.clockMinutes', { minutes: Math.floor(elapsed / 60), seconds: elapsed % 60 });
+}
+
 function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, motion }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionPendingInteraction'> & { group: ReaderGroup; motion: boolean }) {
   const pending = useSessionPendingInteraction(snapshot => snapshot.get(sessionId));
+  const open = useChat(snapshot => group.turn !== null && snapshot.timeline.turns.get(group.turn)?.status === 'open');
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [open]);
   const text = useChat(snapshot => {
     const turn = group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn);
     if (turn?.status === 'closed') {
@@ -118,12 +131,13 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
       if (isNode(node, 'tool-call') && !('kind' in node.data.root)) return ui('status.usingTool');
       if (isNode(node, 'assistant-step') && node.data.status === 'running') {
         const last = node.data.blocks.at(-1);
-        return last?.kind === 'reasoning' ? ui('status.thinking') : last?.kind === 'text' ? ui('status.outputting') : ui('status.preparingReply');
+        if (last?.kind === 'reasoning') return ui('status.thinkingName', { time: elapsedClock(turn.start?.time, now) });
+        return last?.kind === 'text' ? ui('status.outputting') : ui('status.preparingReply');
       }
     }
     return ui('status.processing');
   });
-  const busy = useChat(snapshot => group.turn !== null && snapshot.timeline.turns.get(group.turn)?.status === 'open' && pending === undefined);
+  const busy = open && pending === undefined;
   return <StatusText text={text} motion={motion} shimmer={busy} />;
 }
 
@@ -192,7 +206,7 @@ export function Reader(props: ReaderProps) {
   const [historyError, setHistoryError] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchIndex = useMemo(() => buildSearchIndex(order, key => nodes.get(key)), [order, nodes]);
-  const railItems = useMemo(() => buildRailItems(groups, key => nodes.get(key)), [groups, nodes]);
+  const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
   const restoredPosition = useReadingPosition(root, props.sessionId, groups.length > 0);
   const [positionNotice, setPositionNotice] = useState(false);
   useEffect(() => {
@@ -201,7 +215,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.3.0" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.0" data-motion={motion ? 'on' : 'off'}>
     <div className={css.column}>
       <div className={css.toolbar} data-ud-check="reader-toolbar">
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
@@ -222,8 +236,12 @@ export function Reader(props: ReaderProps) {
         <strong>{pending.kind === 'question' ? ui('reader.needQuestion') : ui('reader.needConfirm')}</strong>
         <span>{ui('reader.pendingHint')}</span>
       </div>}
-      {scroll.detached && <div className={css.jumpDock}><button type="button" className={css.jump} onClick={scroll.jump}>{ui('reader.jumpLatest')}</button></div>}
+      {scroll.detached && <div className={css.jumpDock}>
+        <button type="button" className={css.jump} aria-label={ui('reader.jumpLatest')} title={ui('reader.jumpLatest')} onClick={scroll.jump}>
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10m-4-4 4 4 4-4" /></svg>
+        </button>
+      </div>}
     </div>
-    {railItems.length >= 2 && <TurnRail root={root} items={railItems} />}
+    <TurnRail root={root} items={railItems} />
   </div></StreamMotionContext.Provider>;
 }

@@ -13,33 +13,65 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
 }) {
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
+  const row = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const matches = useMemo(() => searchMatches(index, query), [index, query]);
   const active = matches.length === 0 ? null : matches[cursor % matches.length]!;
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
-  useEffect(() => { input.current?.focus(); }, []);
+  useEffect(() => {
+    input.current?.focus();
+    // Inserting the panel shifts the flow and the browser's scroll anchoring
+    // compensates after this commit; wait two frames, then nudge the
+    // conversation scroller only (never the host app's outer page scroll).
+    let frame2 = 0;
+    const frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => {
+        const container = root.current;
+        const rowEl = row.current;
+        if (!container || !rowEl) return;
+        const scroller = container.closest<HTMLElement>('[data-conversation-scroll]') ?? container;
+        const clipped = rowEl.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+        if (clipped < 0) scroller.scrollTop += clipped;
+      });
+    });
+    return () => { cancelAnimationFrame(frame1); cancelAnimationFrame(frame2); };
+  }, []);
   useEffect(() => {
     const container = root.current;
     if (!container || !active) return;
-    let target: HTMLElement | null = null;
-    for (const element of Array.from(container.querySelectorAll<HTMLElement>('[data-reader-key]'))) {
-      if (element.getAttribute('data-reader-key') === active.key) { target = element; break; }
+    const owner = Array.from(container.querySelectorAll<HTMLElement>('[data-reader-key]'))
+      .find(element => element.dataset.readerKey === active.key);
+    if (!owner) return;
+    // The owning message can be a huge article (process records included).
+    // Descend to the smallest element that still contains the hit so the jump
+    // and the flash always land on something the user can actually see.
+    const needle = query.trim().toLowerCase();
+    let target: HTMLElement = owner;
+    for (;;) {
+      const child = Array.from(target.children)
+        .filter((node): node is HTMLElement => node instanceof HTMLElement && !!node.textContent && node.textContent.toLowerCase().includes(needle))[0];
+      if (!child) break;
+      target = child;
     }
-    if (!target) return;
-    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    // Scroll the conversation port itself; scrollIntoView would also drag the
+    // host app's outer page scroller and displace the whole shell.
+    const scroller = container.closest<HTMLElement>('[data-conversation-scroll]') ?? container;
+    const port = scroller.getBoundingClientRect();
+    const box = target.getBoundingClientRect();
+    scroller.scrollTop += box.top - port.top - Math.max(24, (port.height - box.height) / 2);
     target.classList.add(css.searchHit);
     if (flashTimer.current) clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => target?.classList.remove(css.searchHit), 2000);
-  }, [active, root]);
+    flashTimer.current = setTimeout(() => target.classList.remove(css.searchHit), 2000);
+  }, [active, root, query]);
 
   const step = (delta: number) => {
     if (matches.length > 0) setCursor(value => (value + delta + matches.length) % matches.length);
   };
 
   return (
-    <div className={css.searchRow} data-reader-search role="search">
+    <div ref={row} className={css.searchRow} data-reader-search role="search">
       <input
         ref={input} className={css.searchInput} value={query}
         onChange={event => { setQuery(event.target.value); setCursor(0); }}

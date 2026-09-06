@@ -62,10 +62,16 @@ export function MotionPlainText({ text, enabled, revision }: { text: string; ena
   const current = timeline.current;
   const generation = current.generation;
   const scope = useMemo(() => ({ enabled, generation }), [enabled, generation]);
+  // Word spans flood the accessibility tree with one leaf per word; expose the
+  // plain transcript to assistive tech and hide the animated surface instead.
+  const live = current.hasLiveText;
   return <WordScope.Provider value={scope}><div className={css.reasonPlain}>
-    {current.hasLiveText ? current.words(text, 0).map(word => word.text.trim()
-      ? <Word key={word.key} born={word.born} generation={generation} offset={word.key} inline>{word.text}</Word>
-      : word.text) : text}
+    {live && <span className={css.srOnly}>{text}</span>}
+    <span aria-hidden={live || undefined}>{live
+      ? current.words(text, 0).map(word => word.text.trim()
+        ? <Word key={word.key} born={word.born} generation={generation} offset={word.key} inline>{word.text}</Word>
+        : word.text)
+      : text}</span>
   </div></WordScope.Provider>;
 }
 

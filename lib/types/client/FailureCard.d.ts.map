@@ -1,0 +1,1 @@
+{"version":3,"file":"FailureCard.d.ts","sourceRoot":"","sources":["../../../src/client/FailureCard.tsx"],"names":[],"mappings":"AAIA;;;;;GAKG;AACH,eAAO,MAAM,WAAW,qFAErB;IACD,KAAK,EAAE,MAAM,CAAA;IACb,OAAO,CAAC,EAAE,MAAM,CAAA;IAChB,MAAM,CAAC,EAAE,MAAM,CAAA;IACf,IAAI,CAAC,EAAE,MAAM,CAAA;IACb,IAAI,CAAC,EAAE,MAAM,CAAA;IACb,GAAG,CAAC,EAAE,OAAO,CAAA;CACd,iCAaC,CAAC"}

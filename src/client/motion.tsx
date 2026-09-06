@@ -2,6 +2,7 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react';
 import css from './Reader.module.css';
 import { StreamMotionContext } from './streaming.js';
+import { jumpLock } from './jump-lock.js';
 import { ui } from './locale.js';
 
 const EASING = 'cubic-bezier(.22,1,.36,1)';
@@ -197,6 +198,13 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
       const selection = document.getSelection();
       return selection && !selection.isCollapsed && selection.anchorNode && content.contains(selection.anchorNode);
     };
+    // A focused text input pauses auto-follow; ordinary button focus must not
+    // permanently detach the view from the newest content.
+    const focusBlocks = () => {
+      const active = document.activeElement;
+      if (!active || !content.contains(active)) return false;
+      return active instanceof HTMLElement && active.closest('textarea,input,[contenteditable=true],[role=textbox]') !== null;
+    };
     const capture = () => {
       const top = scroll.getBoundingClientRect().top;
       const candidate = Array.from(content.querySelectorAll<HTMLElement>('[data-reader-anchor]')).find(element => element.getBoundingClientRect().bottom > top + 8);
@@ -224,7 +232,7 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
     const writeTop = (top: number) => { scroll.scrollTop = top; lastWrittenTop = scroll.scrollTop; };
     const follow = (now: number) => {
       followFrame = 0;
-      if (!following.current || selected() || content.contains(document.activeElement)) return;
+      if (!following.current || selected() || focusBlocks()) return;
       const gap = scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop;
       const delta = Math.min(48, Math.max(1, now - lastFrameAt));
       lastFrameAt = now;
@@ -237,8 +245,11 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
       capture();
     });
     const observer = new ResizeObserver(() => {
+      // A programmatic jump is animating: anchor compensation would fight its
+      // smooth scroll and derail it. Yield until the jump releases the lock.
+      if (jumpLock.active) return;
       if (selected()) return;
-      if (following.current && !content.contains(document.activeElement)) {
+      if (following.current && !focusBlocks()) {
         if (!motion) writeTop(scroll.scrollHeight);
         else if (!followFrame) { lastFrameAt = performance.now(); followFrame = requestAnimationFrame(follow); }
       } else if (!following.current && anchor.current?.element.isConnected) {
@@ -260,7 +271,10 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
   }, [root, motion]);
   return { detached, jump: () => {
     following.current = true; setDetached(false);
-    port.current?.scrollTo({ top: port.current.scrollHeight, behavior: 'instant' });
+    // Same yield rule as rail jumps: nothing may fight this smooth scroll.
+    jumpLock.active = true;
+    setTimeout(() => { jumpLock.active = false; }, 1200);
+    port.current?.scrollTo({ top: port.current.scrollHeight, behavior: 'smooth' });
   } };
 }
 

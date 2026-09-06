@@ -20,7 +20,7 @@ Only a successful public turn-close boundary folds process and intermediate comm
 
 ## Long reasoning
 
-A neutral card bounds the transcript without replacing it. The viewport mask is 28px. Follow advances by two actual line heights every 840ms, with a 500ms transform using `cubic-bezier(.22,1,.36,1)`; clamp only at the current real end. Never accelerate through a burst, clone the transcript or loop old text.
+A neutral card bounds the transcript without replacing it. The viewport mask is 28px. Follow advances by two actual line heights every 360ms, with a 500ms transform using `cubic-bezier(.22,1,.36,1)`; clamp only at the current real end. When the reasoning finishes while following, the card settles at the very end so the last line stays visible. Never accelerate through a burst, clone the transcript or loop old text.
 
 Expanding changes viewport size and preserves position and follow state. Wheel, touch, viewport focus or selection pause following. The explicit follow control resumes only when no text is selected. Completed history stays static. The full source text remains available.
 

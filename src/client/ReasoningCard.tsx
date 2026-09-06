@@ -16,6 +16,9 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
   const controls = useId();
   const [expanded, setExpanded] = useState(false);
   const [following, setFollowing] = useState(true);
+  const followingRef = useRef(following);
+  followingRef.current = following;
+  const settledEnd = useRef(false);
   const [overflow, setOverflow] = useState(false);
   const [edges, setEdges] = useState('none');
   const lastHeight = useRef(0);
@@ -205,6 +208,22 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
       stopFollow.current = () => {};
     };
   }, [allowed, pause]);
+
+  // Reasoning finished while following: settle the card at the very end so the
+  // last line stays visible instead of drifting. Re-arms when a new step runs.
+  useLayoutEffect(() => {
+    const port = viewport.current;
+    const text = content.current;
+    const trackEl = track.current;
+    if (!port || !text) return;
+    if (active) { settledEnd.current = false; return; }
+    if (!followingRef.current || settledEnd.current) return;
+    settledEnd.current = true;
+    port.style.overflow = 'auto';
+    port.dataset.reasoningMode = 'manual';
+    if (trackEl) { trackEl.style.transition = 'none'; trackEl.style.transform = 'none'; }
+    port.scrollTop = Math.max(0, text.offsetHeight - port.clientHeight);
+  }, [active]);
 
   useLayoutEffect(() => {
     const port = viewport.current;

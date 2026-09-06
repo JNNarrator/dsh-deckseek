@@ -1,7 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 - 2026-09-06
 
+- **Message navigation rail redesigned**: a minimal right-edge rail of tiny pill marks (one per user message) in the editor-minimap style — the reading column stays truly centered, the active mark widens and highlights, hovering shows a styled info bubble ("第 N 轮 · title"), and clicking scrolls that message into view (hidden on narrow widths).
+- **Reliable message jumps**: a jump lock keeps the reading-scroll anchor compensation from fighting the smooth scroll, so rail / back-to-latest jumps no longer land short, get canceled, or freeze the highlight; the clicked mark keeps the highlight until you scroll on your own, a blue flash marks the landing message even for very short jumps, and at the document end the newest message owns the highlight.
+- **No duplicated tool output**: successful tool text results stay inside the folded execution record only — they used to render again in the answer flow, collapsing newlines into giant paragraph walls.
+- **Search polish**: the find panel always opens fully in view (scroll-anchoring no longer clips it under the app chrome), and matches scroll the conversation port to the exact hit element with a visible flash instead of doing nothing when the owning message was huge.
+- **Back-to-bottom button visible**: the centered ⬇ button now floats above the composer (it used to be pinned behind it by the sticky offset) — auto-follow still never detaches permanently on ordinary button focus.
+- **Accessible streaming text**: the reasoning transcript reaches assistive tech as one plain text node instead of hundreds of per-word animation spans.
+- **Copy answer chip**: the copy-answer action got a bordered chip style instead of a bare floating icon.
 - **All known chat record kinds adapted**: the reading view now renders `system-prompt` (collapsed disclosure with the model-facing text), `turn-process` (one-line process summary mirroring the native labels: tool calls / messages / subagents) and `turn-tail` (compact usage/time stats) natively.
 - **Improved unknown-record fallback**: unknown kinds render as a card with a friendly title, content preview or field summary, a copy action and the full raw record — kept because DSH is pre-stable and may add new record kinds.
 - **Unified failure cards**: failed tools, commands, compactions and turn errors render as consistent error cards with the reason, exit code / signal / error code, a "details kept in the execution record" hint and an expandable raw record; retry notices share the same wording.
@@ -9,7 +16,10 @@
 - **Reading position memory**: the reading view remembers the scroll position per session (sessionStorage) and restores it with a short notice.
 - **Copy enhancements**: code blocks copy in one click; settled tables reveal a "Copy as CSV" button (RFC 4180 with quoting of commas, quotes and newlines).
 - **Bilingual UI (i18n)**: every reading-view string follows the DSH app language via the `<html lang>` marker — the reading tab, toolbar, turn/process status, failure cards, unknown-record cards, tool activity, reasoning controls, MCP app chrome and copy/export labels (Chinese / English dictionaries kept in parity by unit tests).
-- **Turn rail restored**: a right-side turn navigation rail mirrors the native chat — one mark per turn, the active mark follows the reading position, and a click scrolls that turn into view (hidden on narrow widths).
+- **Thinking follow settled**: following cadence tightened to two lines every 360ms, and the card settles at the very end when the reasoning finishes; the bottom clearance above the composer is smaller while still clearing goals/plans.
+- **Busy label with elapsed time**: the open-turn status shows "大肥鱼正在思考中… {time}" / "BigFatFish is thinking… {time}" with a live clock, in both languages.
+- **No duplicated failure text**: failed tools no longer render the error text twice (failure card + raw text block); the result panel points to the failure card instead.
+- **Category tool states**: running/done labels per tool family — 正在阅读/已阅读 Reading…/Read, 正在搜索/已找到 Searching…/Found, 正在写入/已写入 Writing…/Written, etc., in both languages.
 - **Reading tab renamed "DeckSeek"**: the independent view tab now carries the plugin brand in both languages.
 - **Thinking follow pins above the composer**: the reading column reserves the native composer height at the bottom, so the followed card sits cleanly above the input region instead of leaving a blank band below it.
 - **Thinking card shows card chrome from the first line**: removed the borderless "plain text" phase that made early/short thinking look like a raw string before the card frame appeared.

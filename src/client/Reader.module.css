@@ -4,20 +4,35 @@
   font-size: 16px;
   line-height: 28px;
   display: flex;
+  justify-content: center;
   align-items: flex-start;
-  /* Bottom clearance matches the native composer reservation so the follow
-     pins the newest content above the input region instead of behind it. */
-  padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) calc(var(--dsh-composer-height, 152px) + 16px);
+  /* Bottom clearance follows the native composer reservation but stays
+     compact: cap the fixed slack while the composer variable (which grows
+     for goals / plans) still keeps the newest content visible above it. */
+  --reader-bottom-clearance: max(56px, calc(var(--dsh-composer-height, 152px) - 48px));
+  padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) var(--reader-bottom-clearance);
   min-width: 0;
   flex: 0 0 auto;
   overflow-anchor: auto;
   container-type: inline-size;
 }
-.column { max-width: var(--dsh-chat-content-width, 748px); width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
-.rail { position: sticky; top: 12px; align-self: flex-start; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-left: 12px; padding: 8px 6px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-module-platform); }
-.railMark { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--dsw-alias-border-l3); cursor: pointer; transition: background 120ms ease, transform 120ms ease; }
-.railMark:hover { background: var(--dsw-alias-label-secondary); transform: scale(1.3); }
-.railMark[data-active] { background: var(--dsw-alias-state-business-primary); transform: scale(1.4); }
+.column { max-width: var(--dsh-chat-content-width, 748px); width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+/* The rail hugs the reading column's right edge; a matching ::before spacer
+   on the left keeps the column at the true center of the conversation area. */
+.root::before { content: ''; flex: 0 0 auto; align-self: flex-start; width: 20px; margin: 0 8px 0 0; }
+.rail { position: sticky; top: 12px; align-self: flex-start; flex: 0 0 auto; width: 20px; margin: 0 0 0 8px; }
+.railList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; max-height: min(62vh, 460px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.railRow { display: flex; justify-content: center; }
+.railItem { display: flex; align-items: center; justify-content: center; width: 20px; height: 18px; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; }
+.railItem:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.railItem:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -2px; }
+.railDash { display: block; width: 12px; height: 6px; border-radius: 3px; background: var(--dsw-alias-label-tertiary); transition: background 120ms ease, width 120ms ease; }
+.railItem:hover .railDash { background: var(--dsw-alias-label-secondary); }
+.railItem[data-active] .railDash { width: 18px; background: var(--dsw-alias-state-business-primary); }
+/* Landing flash on the jumped-to message; also reused as the hover bubble. */
+.markFlash { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 12px; }
+.railTip { position: absolute; right: calc(100% + 12px); transform: translateY(-50%); width: max-content; max-width: 320px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font-size: 12px; line-height: 18px; text-align: left; overflow-wrap: anywhere; box-shadow: 0 4px 14px var(--dsw-alias-border-l1); pointer-events: none; z-index: 3; animation: railTipIn 140ms ease 350ms backwards; }
+@keyframes railTipIn { from { opacity: 0; } to { opacity: 1; } }
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 20px; }
 .textButton, .historyButton, .iconButton, .jump, .disclosureButton, .imageOpen, .dialogClose { font: inherit; cursor: pointer; }
 .textButton { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
@@ -137,7 +152,7 @@
    transcript; hand the painted offset to native scrolling for manual reading. */
 .reasonCard {
   --reason-preview-height: 224px;
-  --reason-hold: 840ms;
+  --reason-hold: 360ms;
   --reason-step: 500ms;
   --reason-lines: 2;
   --reason-fade: 28px;
@@ -148,7 +163,7 @@
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 12px;
   background: var(--dsw-alias-bg-module-platform);
-  scroll-margin-block: 16px calc(var(--dsh-composer-height, 152px) + 16px);
+  scroll-margin-block: 16px var(--reader-bottom-clearance);
 }
 .reasonHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 16px 0; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; }
 /* The card chrome stays from the first reasoning line: a borderless "plain
@@ -236,7 +251,8 @@
 .historyButton { align-self: center; background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .historyButton:disabled { opacity: .55; cursor: default; }
 .empty { padding: 40px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
-.answerActions { display: flex; align-items: center; gap: 8px; margin: 13px 0 0 -6px; min-height: 28px; }
+.answerActions { display: flex; align-items: center; gap: 8px; margin: 13px 0 0; min-height: 32px; }
+.answerActions .iconButton { border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary); }
 .iconButton { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; padding: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); }
 .iconButton svg { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 .imageFigure { margin: 0; width: min(100%, 460px); align-self: flex-start; }
@@ -251,10 +267,14 @@
 .imageDialog::backdrop { background: var(--dsw-alias-bg-mask-photo); }
 .imageDialog img { max-width: 82vw; max-height: 75vh; display: block; object-fit: contain; }
 .dialogClose { position: absolute; right: 8px; top: 4px; border: 0; background: transparent; color: inherit; width: 32px; height: 32px; border-radius: 8px; font-size: 24px; }
-.jumpDock { position: sticky; bottom: 12px; align-self: flex-end; height: 0; z-index: 2; }
-.jump { transform: translateY(-100%); border: 1px solid var(--dsw-alias-border-l2); border-radius: 20px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; padding: 7px 13px; box-shadow: 0 2px 8px var(--dsw-alias-border-l1); }
+/* The host scroller runs behind the floating composer, so the dock must
+   offset by the composer region height, not the raw scrollport edge. */
+.jumpDock { position: sticky; bottom: calc(var(--dsh-composer-height, 152px) + 4px); align-self: center; height: 0; z-index: 2; }
+.jump { transform: translateY(-100%); display: flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; padding: 0; box-shadow: 0 2px 10px var(--dsw-alias-border-l1); }
+.jump:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.jump svg { flex: none; }
 [data-motion=off] .chevron, [data-motion=off] .imageOpen img, [data-motion=off] .processMeta { transition: none; }
 @media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img, .processMeta { transition: none; } }
 @media (pointer: coarse) { .disclosureButton { min-height: 44px; } }
 @media (max-width: 600px) { .root { padding-inline: 20px; } .column { gap: 18px; } .toolbar { font-size: 11px; } .user { max-width: 90%; } }
-@media (max-width: 640px) { .rail { display: none; } }
+@media (max-width: 640px) { .root::before, .rail { display: none; } }

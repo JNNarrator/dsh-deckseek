@@ -169,3 +169,12 @@ export function toolFailureLine(block: ToolCallBlock, lang: UiLang = currentLoca
   if (facts.signal) parts.push(uiIn(lang, 'failure.signal', { signal: facts.signal }));
   return parts.join(' · ');
 }
+
+/** Category-aware tool state label: start (preparing/running) and end (succeeded/returned) per tool family. */
+export function toolStateLabel(category: ToolCategory, phase: ToolPhase, lang: UiLang = currentLocale()): string {
+  if (phase === 'preparing' || phase === 'running') return uiIn(lang, `tool.state.${category}Running`);
+  if (phase === 'succeeded' || phase === 'returned') return uiIn(lang, `tool.state.${category}Done`);
+  if (phase === 'failed') return uiIn(lang, 'tool.phaseFailed');
+  if (phase === 'interrupted') return uiIn(lang, 'tool.phaseInterrupted');
+  return uiIn(lang, 'tool.state.otherRunning');
+}

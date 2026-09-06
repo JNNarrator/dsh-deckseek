@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { toolFailureLine, toolFailureText } from '../src/client/tool-activity.ts';
+import { toolFailureLine, toolFailureText, toolStateLabel } from '../src/client/tool-activity.ts';
 
 function failed(text: string, meta?: Record<string, unknown>): ToolCallBlock {
   return {
@@ -22,4 +22,27 @@ test('toolFailureLine joins name, exit code and signal', () => {
   assert.equal(toolFailureLine(failed('', { exitCode: 1 })), 'edit · 退出码 1');
   assert.equal(toolFailureLine(failed('', { exitCode: 1, signal: 'SIGKILL' })), 'edit · 退出码 1 · 信号 SIGKILL');
   assert.equal(toolFailureLine(failed('')), 'edit');
+});
+
+test('toolStateLabel maps start and end phases per tool category', () => {
+  assert.equal(toolStateLabel('read', 'running'), '正在阅读');
+  assert.equal(toolStateLabel('read', 'succeeded'), '已阅读');
+  assert.equal(toolStateLabel('search', 'preparing'), '正在搜索');
+  assert.equal(toolStateLabel('search', 'returned'), '已找到');
+  assert.equal(toolStateLabel('write', 'running'), '正在写入');
+  assert.equal(toolStateLabel('write', 'succeeded'), '已写入');
+  assert.equal(toolStateLabel('terminal', 'running'), '正在执行');
+  assert.equal(toolStateLabel('terminal', 'succeeded'), '已执行');
+  assert.equal(toolStateLabel('web', 'running'), '正在获取');
+  assert.equal(toolStateLabel('web', 'succeeded'), '已获取');
+  assert.equal(toolStateLabel('other', 'running'), '正在执行');
+  assert.equal(toolStateLabel('other', 'succeeded'), '已完成');
+  assert.equal(toolStateLabel('read', 'failed'), '失败');
+  assert.equal(toolStateLabel('read', 'interrupted'), '已中断');
+});
+
+test('toolStateLabel speaks English with the en locale', () => {
+  assert.equal(toolStateLabel('read', 'running', 'en'), 'Reading…');
+  assert.equal(toolStateLabel('search', 'succeeded', 'en'), 'Found');
+  assert.equal(toolStateLabel('read', 'failed', 'en'), 'Failed');
 });

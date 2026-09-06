@@ -1,5 +1,5 @@
 /** Transitions.dev Reasoning stream, adapted to appended content, never a loop. */
-export const REASON_HOLD = 840;
+export const REASON_HOLD = 360;
 export const REASON_STEP = 500;
 export const REASON_LINES = 2;
 

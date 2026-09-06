@@ -27,7 +27,7 @@ function blocksText(blocks: readonly AssistantBlock[]): string {
 
 function turnOf(node: ChatConversationViewNode): number | undefined {
   const location = node.location;
-  if (location.kind === 'turn' || location.kind === 'step') return location.turn;
+  if (location.kind === 'turn' || location.kind === 'step') return location.turn.turn;
   return undefined;
 }
 

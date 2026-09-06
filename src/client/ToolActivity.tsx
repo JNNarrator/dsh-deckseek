@@ -5,7 +5,7 @@ import { DiffBlock, DisclosureRow, JsonTree, ReadBlock, SearchBlock, TerminalBlo
   IconApiOutline14, IconBrowseOutline16, IconEditOutline16, IconSearchOutline16, IconSkillOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives';
 import { Blocks, contentBlocks } from './Blocks.js';
 import { ProcessFragment } from './motion.js';
-import { activityPhase, activitySummary, executionFacts, objectValue, toolFailureLine, toolFailureText, toolIdentity } from './tool-activity.js';
+import { activityPhase, activitySummary, executionFacts, objectValue, toolFailureLine, toolFailureText, toolIdentity, toolStateLabel } from './tool-activity.js';
 import type { ToolActivityEntry, ToolCategory, ToolPhase } from './tool-activity.js';
 import type { BlockRenderProps } from './types.js';
 import { classifyTool, toolRowModel, VARIANT_TITLES } from './native/tool-call-model.js';
@@ -15,10 +15,6 @@ import { currentLocale, ui } from './locale.js';
 import { FailureCard } from './FailureCard.js';
 import css from './Reader.module.css';
 
-const LABEL: Record<ToolPhase, string> = {
-  preparing: ui('tool.phasePreparing'), running: ui('tool.phaseRunning'), returned: ui('tool.phaseReturned'),
-  succeeded: ui('tool.phaseSucceeded'), failed: ui('tool.phaseFailed'), interrupted: ui('tool.phaseInterrupted'),
-};
 const ICONS = { write: IconEditOutline16, read: IconBrowseOutline16, terminal: IconApiOutline14, search: IconSearchOutline16, web: IconSearchOutline16, other: IconSparkle16 } satisfies Record<ToolCategory, unknown>;
 const number = new Intl.NumberFormat(currentLocale() === 'zh' ? 'zh-CN' : 'en-US');
 const language = (path: string | undefined) => path?.split('.').at(-1);
@@ -86,6 +82,9 @@ function ResultView({ entry, model, phase, ...render }: BlockRenderProps & { ent
   if ((model.name === 'render_ui' || model.name === 'show_widget') && typeof model.args?.html === 'string') {
     return <McpAppFrame html={model.args.html as string} title={typeof model.args.title === 'string' ? (model.args.title as string) : undefined} />;
   }
+  // The failure card above already carries the message and raw record; do not
+  // render the same error text a second time inside the result panel.
+  if (phase === 'failed') return <p className={css.toolDetailNote}>{ui('tool.failureShown')}</p>;
   const block = entry.block;
   if (!block || !('kind' in block)) return <>
     <p className={css.toolDetailNote}>{phase === 'interrupted' ? ui('tool.interruptedNoResult') : phase === 'preparing' ? ui('tool.generatingInputNotStarted') : ui('tool.startedWaitingResult')}</p>
@@ -162,7 +161,8 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
   const rowTitle = model.name === 'skill' ? 'Skill' : native?.title ?? VARIANT_TITLES[classifyTool(model.name)];
   const rowSummary = model.name === 'skill' ? skillName : native?.errorSummary ?? native?.summary
     ?? (classifyTool(model.name) === 'others' ? `${model.name} · ${model.target ?? model.title}` : model.target ?? model.title);
-  const showState = phase === 'preparing' || phase === 'running' || phase === 'failed' || phase === 'interrupted';
+  // Both start and end states are shown per tool family (阅读中/已阅读, 搜索中/已找到…).
+  const showState = phase === 'preparing' || phase === 'running' || phase === 'succeeded' || phase === 'returned' || phase === 'failed' || phase === 'interrupted';
   const elapsed = block && 'kind' in block && block.callTime != null ? Math.max(0, block.time - block.callTime) : null;
   const rawResult = useMemo(() => {
     const value = preview.entry.block;
@@ -175,7 +175,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
     <DisclosureRow icon={<Icon size={14} />} title={rowTitle} open={open} expandable expandOnRowClick keepContentWhenOpen
       onToggle={() => { onRead(); setOpen(value => !value); }} rowClassName={css.nativeToolRow}
       collapsedContent={<><span className={css.rowSeparator} aria-hidden /><span className={css.nativeToolSummary} title={rowSummary} data-reader-tool-summary>{rowSummary}</span>
-        {showState && <span className={css.toolState} data-phase={phase}>{LABEL[phase]}</span>}</>} />
+        {showState && <span className={css.toolState} data-phase={phase}>{toolStateLabel(model.category, phase)}</span>}</>} />
     <ProcessFragment open={open} motion={motion} onRead={onRead} returnFocusTo={control} nodeKey={`${entry.key}:detail`} framed>
       <div id={detailId} className={css.toolDetails}>
         <div className={css.toolLedger} aria-live="off">
@@ -211,7 +211,10 @@ export function ToolMedia({ block, depth = 0, ...render }: BlockRenderProps & { 
   if (depth > 6) return null;
   const settled = 'kind' in block;
   const failed = activityPhase({ block }) === 'failed';
-  const visible = settled ? contentBlocks(block.content).filter(item => block.isError || item.kind === 'image' || item.kind === 'other') : [];
+  // Text results stay inside the folded record (terminal / document panel) and
+  // the failure card; rendering them here collapsed newlines into paragraph
+  // walls and duplicated the record. Only media repeats outside the fold.
+  const visible = settled ? contentBlocks(block.content).filter(item => item.kind === 'image' || item.kind === 'other') : [];
   return <>
     {failed && <FailureCard title={ui('failure.toolTitle')} message={toolFailureLine(block)} detail={toolFailureText(block) ?? undefined} raw={'kind' in block ? { content: block.content, isError: block.isError, meta: block.meta } : undefined} />}
     {visible.length > 0 && <Blocks {...render} blocks={visible} source="tool" />}

@@ -26,7 +26,7 @@ function ReaderEntry({ useStore, actions, policy }: EntryProps) {
 export function installReaderEntry(ctx: Context): void {
   ctx.slots.inject('conversation.input.dock', () => {
     const native = ctx.slots.entriesOfSlot('conversation.session')[0]?.store;
-    if (!isConversationStore(native)) return;
+    if (!isConversationStore(native)) return () => {};
     const policy = new ReaderEntryPolicy(readerEntryRequested(location.search), () => {
       const url = new URL(location.href);
       url.searchParams.delete('reader');
