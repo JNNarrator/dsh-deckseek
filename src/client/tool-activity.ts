@@ -148,3 +148,23 @@ export function activitySummary(entry: Pick<ToolActivityEntry, 'block' | 'draft'
 export function preparingLabel(name: string): string {
   return /^(write|edit|apply_patch)$/.test(name) ? '正在生成文件内容' : /^(bash|shell|exec_command|pwsh)$/.test(name) ? '正在准备命令' : '正在准备工具输入';
 }
+
+/** First non-empty text payload of a failed tool result, clamped for inline preview. */
+export function toolFailureText(block: ToolCallBlock): string | null {
+  if (!('kind' in block) || !Array.isArray(block.content)) return null;
+  for (const item of block.content) {
+    if (item.type !== 'text') continue;
+    const text = item.text.trim().replace(/\n\[(?:exit code|killed by signal)[^\n]*\]$/, '').trim();
+    if (text) return text.length > 240 ? `${text.slice(0, 239)}…` : text;
+  }
+  return null;
+}
+
+/** One-line failure summary for a failed tool row: name, exit code, signal. */
+export function toolFailureLine(block: ToolCallBlock): string {
+  const facts = executionFacts(block);
+  const parts = [toolIdentity({ block }).name];
+  if (facts.exitCode !== undefined) parts.push(`退出码 ${facts.exitCode}`);
+  if (facts.signal) parts.push(`信号 ${facts.signal}`);
+  return parts.join(' · ');
+}

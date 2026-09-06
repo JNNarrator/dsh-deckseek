@@ -5,12 +5,13 @@ import { DiffBlock, DisclosureRow, JsonTree, ReadBlock, SearchBlock, TerminalBlo
   IconApiOutline14, IconBrowseOutline16, IconEditOutline16, IconSearchOutline16, IconSkillOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives';
 import { Blocks, contentBlocks } from './Blocks.js';
 import { ProcessFragment } from './motion.js';
-import { activityPhase, activitySummary, executionFacts, objectValue, toolIdentity } from './tool-activity.js';
+import { activityPhase, activitySummary, executionFacts, objectValue, toolFailureLine, toolFailureText, toolIdentity } from './tool-activity.js';
 import type { ToolActivityEntry, ToolCategory, ToolPhase } from './tool-activity.js';
 import type { BlockRenderProps } from './types.js';
 import { classifyTool, toolRowModel, VARIANT_TITLES } from './native/tool-call-model.js';
 import { McpAppFrame, StreamingMcpAppPlaceholder } from './McpAppFrame.js';
 import { diffBlockLabels, jsonTreeLabels, readBlockLabels, searchBlockLabels, terminalBlockLabels, webBlockLabels } from './primitive-labels.js';
+import { FailureCard } from './FailureCard.js';
 import css from './Reader.module.css';
 
 const LABEL: Record<ToolPhase, string> = { preparing: '输入生成中', running: '执行中', returned: '已返回', succeeded: '已完成', failed: '失败', interrupted: '已中断' };
@@ -208,7 +209,7 @@ export function ToolMedia({ block, depth = 0, ...render }: BlockRenderProps & { 
   const failed = activityPhase({ block }) === 'failed';
   const visible = settled ? contentBlocks(block.content).filter(item => block.isError || item.kind === 'image' || item.kind === 'other') : [];
   return <>
-    {failed && <div className={css.error} role="alert">{toolIdentity({ block }).name} 执行未成功{executionFacts(block).exitCode !== undefined ? ` · 退出码 ${executionFacts(block).exitCode}` : ''}，详情保留在执行记录中。</div>}
+    {failed && <FailureCard title="工具执行失败" message={toolFailureLine(block)} detail={toolFailureText(block) ?? undefined} raw={'kind' in block ? { content: block.content, isError: block.isError, meta: block.meta } : undefined} />}
     {visible.length > 0 && <Blocks {...render} blocks={visible} source="tool" />}
     {block.subCalls.map(child => <ToolMedia key={child.callId} {...render} block={child} depth={depth + 1} />)}
   </>;
