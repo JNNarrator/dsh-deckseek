@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { ui } from './locale.js';
 import css from './Reader.module.css';
 
 /**
@@ -8,7 +9,7 @@ import css from './Reader.module.css';
  * where the full details live, and an expandable raw record.
  */
 export const FailureCard = memo(function FailureCard({
-  title, message, detail, code, note = '详情保留在执行记录中。', raw,
+  title, message, detail, code, note = ui('failure.note'), raw,
 }: {
   title: string
   message?: string
@@ -24,7 +25,7 @@ export const FailureCard = memo(function FailureCard({
       {detail !== undefined && <p className={css.failureDetail}>{detail}</p>}
       {code !== undefined && <code>{code}</code>}
       <p className={css.failureNote}>{note}</p>
-      {raw !== undefined && <details className={css.detail}><summary>查看原始记录</summary>
+      {raw !== undefined && <details className={css.detail}><summary>{ui('viewRawRecord')}</summary>
         <pre className={css.rawJson}>{JSON.stringify(raw, null, 2)}</pre>
       </details>}
     </div>

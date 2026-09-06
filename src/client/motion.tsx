@@ -2,6 +2,7 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react';
 import css from './Reader.module.css';
 import { StreamMotionContext } from './streaming.js';
+import { ui } from './locale.js';
 
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
@@ -92,13 +93,13 @@ export function Disclosure({ open, onChange, label, status, controls, buttonRef 
   status?: string; controls: string; buttonRef: RefObject<HTMLButtonElement>;
 }) {
   return <div className={css.disclosure} data-reader-disclosure data-expanded={open}>
-    <button ref={buttonRef} type="button" className={css.disclosureButton} aria-label={`${open ? '收起' : '展开'}思考与过程`} aria-expanded={open} aria-controls={controls} onClick={() => onChange(!open)}>
+    <button ref={buttonRef} type="button" className={css.disclosureButton} aria-label={open ? ui('turn.foldAriaCollapse') : ui('turn.foldAriaExpand')} aria-expanded={open} aria-controls={controls} onClick={() => onChange(!open)}>
       {label}
       <svg className={css.chevron} data-open={open} viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="m6 4 4 4-4 4" /></svg>
     </button>
     <div className={css.processMeta} data-reader-process-meta data-open={open} aria-hidden={!open}>
       <div className={css.processMetaInner}><div className={css.processMetaLine}>
-        <span>思考与过程</span>{status && <span className={css.meta}>{status}</span>}
+        <span>{ui('turn.process')}</span>{status && <span className={css.meta}>{status}</span>}
       </div></div>
     </div>
   </div>;
@@ -261,4 +262,36 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
     following.current = true; setDetached(false);
     port.current?.scrollTo({ top: port.current.scrollHeight, behavior: 'instant' });
   } };
+}
+
+/** Remember the reading position per session and restore it on return. */
+export function useReadingPosition(root: RefObject<HTMLElement>, sessionId: string, ready: boolean): boolean {
+  const key = `dsh-deckseek:reader:pos:${sessionId}`;
+  const [restored, setRestored] = useState(false);
+  const done = useRef(false);
+  useLayoutEffect(() => {
+    const content = root.current;
+    if (!ready || !content || done.current) return;
+    const scroll = content.closest<HTMLElement>('[data-conversation-scroll]') ?? content;
+    if (typeof sessionStorage === 'undefined') return;
+    let saved = 0;
+    try { saved = Number(sessionStorage.getItem(key) ?? '0'); } catch { /* storage unavailable */ }
+    if (Number.isFinite(saved) && saved > 480 && saved <= scroll.scrollHeight - scroll.clientHeight + 200) {
+      // Restore after the initial follow frame so the reading-scroll follower
+      // observes the jump as a user scroll and stops auto-following.
+      requestAnimationFrame(() => { scroll.scrollTop = saved; });
+      setRestored(true);
+    }
+    done.current = true;
+  }, [ready, key, root]);
+  useEffect(() => {
+    const content = root.current;
+    if (!content || typeof sessionStorage === 'undefined') return;
+    const scroll = content.closest<HTMLElement>('[data-conversation-scroll]') ?? content;
+    const save = () => { try { sessionStorage.setItem(key, String(scroll.scrollTop)); } catch { /* storage unavailable */ } };
+    const timer = window.setInterval(save, 2000);
+    window.addEventListener('beforeunload', save);
+    return () => { window.clearInterval(timer); window.removeEventListener('beforeunload', save); };
+  }, [key, root]);
+  return restored;
 }

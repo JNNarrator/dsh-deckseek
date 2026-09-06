@@ -3,6 +3,8 @@
  * Free of CSS module imports so it can be cleanly tested in Node test environments.
  */
 
+import { currentLocale, uiIn } from './locale.js';
+
 export function getHostTheme(): 'dark' | 'light' {
   if (typeof document === 'undefined') return 'light';
   if (document.body?.hasAttribute('data-ds-dark-theme')) return 'dark';
@@ -216,26 +218,27 @@ export function extractMcpAppHeight(meta: string | null | undefined): number | u
  * Avoids raw multiline JSON and excessive whitespace.
  */
 export function formatReceiptPrompt(params: Record<string, unknown>, title?: string): string {
+  const lang = currentLocale();
   // If user selected a choice/variant (e.g. quiz or blind test)
   if (typeof params.choice === 'string') {
-    const desc = typeof params.desc === 'string' ? `（${params.desc}）` : '';
-    const componentName = title ? `「${title}」` : '组件';
-    return `我在${componentName}中选择了：${params.choice}${desc}。请根据我的选择继续。`;
+    const desc = typeof params.desc === 'string' ? uiIn(lang, 'mcp.descSuffix', { desc: params.desc }) : '';
+    const name = title ? uiIn(lang, 'mcp.quoteTitle', { title }) : uiIn(lang, 'mcp.component');
+    return uiIn(lang, 'mcp.choicePrompt', { name, choice: params.choice, desc });
   }
   if (typeof params.selectedVariant === 'string') {
-    const score = typeof params.score === 'number' ? `，得分：${params.score}` : '';
-    return `我在方案评测中选择了：${params.selectedVariant}${score}。请根据该方案继续分析。`;
+    const score = typeof params.score === 'number' ? uiIn(lang, 'mcp.scoreSuffix', { score: params.score }) : '';
+    return uiIn(lang, 'mcp.choicePromptScore', { variant: params.selectedVariant, score });
   }
   if (typeof params.action === 'string') {
     const payloadStr = params.payload ? (typeof params.payload === 'string' ? params.payload : JSON.stringify(params.payload)) : '';
-    return `[${title ?? '组件操作'}] 已完成 ${params.action}${payloadStr ? `: ${payloadStr}` : ''}`;
+    return uiIn(lang, 'mcp.actionPrompt', { name: title ?? uiIn(lang, 'mcp.actionFallback'), action: params.action, payload: payloadStr ? `: ${payloadStr}` : '' });
   }
   // Generic single field
   const keys = Object.keys(params);
   if (keys.length === 1 && typeof params[keys[0]] === 'string') {
-    return `[${title ?? '组件回执'}] ${keys[0]}: ${params[keys[0]]}`;
+    return uiIn(lang, 'mcp.receiptPrompt', { name: title ?? uiIn(lang, 'mcp.receiptFallback'), key: keys[0], value: params[keys[0]] as string });
   }
-  return `[${title ?? '组件回执'}] ${JSON.stringify(params)}`;
+  return `[${title ?? uiIn(lang, 'mcp.receiptFallback')}] ${JSON.stringify(params)}`;
 }
 
 /**

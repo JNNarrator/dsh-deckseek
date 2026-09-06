@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import { Reader } from './Reader.js';
 import { createReaderStore } from './store.js';
 import { installReaderEntry } from './entry.js';
+import { ui } from './locale.js';
 import type { ReaderInjected } from './types.js';
 
 export type { ReaderBlockOwner } from './types.js';
@@ -21,7 +22,7 @@ export function apply(ctx: Context): void {
     name: 'conversation.view',
     id: 'reader',
     order: -5,
-    label: () => '阅读',
+    label: () => ui('reader.tab'),
     locale: 'chat',
     children: { 'dsh-deckseek.block': { kind: 'chain', scope: 'session' } },
     store,
@@ -30,7 +31,7 @@ export function apply(ctx: Context): void {
       if (existing) return existing;
       const session = () => {
         const current = ctx.sessions.binding(sessionId)?.session;
-        if (!current) throw new Error('阅读页对应的会话已关闭。');
+        if (!current) throw new Error(ui('reader.sessionClosed'));
         return current;
       };
       const face: ReaderInjected = {

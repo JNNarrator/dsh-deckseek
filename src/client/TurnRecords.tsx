@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { turnProcessLabel, turnTailStats, type TurnProcessData, type TurnTailData } from './turn-records.js';
+import { turnProcessLabel, turnTailStats, ui, type TurnProcessData, type TurnTailData } from './locale.js';
 import css from './Reader.module.css';
 
 /**
@@ -13,7 +13,7 @@ import css from './Reader.module.css';
 export const SystemPromptRow = memo(function SystemPromptRow({ text }: { text: string }) {
   return (
     <details className={css.systemPrompt} data-reader-anchor>
-      <summary>系统提示词</summary>
+      <summary>{ui('systemPrompt')}</summary>
       <pre className={css.systemPromptBody}>{text}</pre>
     </details>
   );
@@ -23,7 +23,7 @@ export const SystemPromptRow = memo(function SystemPromptRow({ text }: { text: s
 export const TurnProcessMeta = memo(function TurnProcessMeta({ data }: { data: TurnProcessData }) {
   const label = turnProcessLabel(data);
   const hasCounts = data.messageCount > 0 || data.toolCallCount > 0 || data.subagentCount > 0;
-  return <p className={css.turnProcess} data-reader-anchor>{hasCounts ? `执行过程 · ${label}` : label}</p>;
+  return <p className={css.turnProcess} data-reader-anchor>{hasCounts ? `${ui('turnProcess.prefix')}${label}` : label}</p>;
 });
 
 /** Turn-tail record: compact usage/time stats footer; null when nothing to show. */

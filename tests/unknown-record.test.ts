@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { unknownKindLabel, pickPreviewText, summarizeFields } from '../src/client/unknown-record.ts';
+import { pickPreviewText, summarizeFields } from '../src/client/unknown-record.ts';
+import { unknownKindLabel } from '../src/client/locale.ts';
 
-test('unknownKindLabel maps known unrendered kinds to friendly Chinese labels', () => {
+test('unknownKindLabel maps known unrendered kinds to friendly labels', () => {
   assert.equal(unknownKindLabel('system-prompt'), '系统提示词');
   assert.equal(unknownKindLabel('turn-process'), '执行过程记录');
   assert.equal(unknownKindLabel('anything-else'), 'anything-else');

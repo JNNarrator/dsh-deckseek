@@ -2,6 +2,7 @@ import type { AssistantBlock, ToolCallBlock, TurnLocation } from '@deepseek-ai/d
 import type { ChatConversationViewNode } from '@deepseek-ai/dsh-client-ui-chat/client';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { ReaderGroup } from './projection.js';
+import { currentLocale, uiIn, type UiLang } from './locale.js';
 
 export type ToolDraft = Extract<AssistantBlock, { kind: 'tool-call' }>;
 export type ToolPhase = 'preparing' | 'running' | 'returned' | 'succeeded' | 'failed' | 'interrupted';
@@ -123,7 +124,7 @@ export function activityPhase(entry: Pick<ToolActivityEntry, 'block' | 'draft'>,
   return 'returned';
 }
 
-export function activitySummary(entry: Pick<ToolActivityEntry, 'block' | 'draft'>) {
+export function activitySummary(entry: Pick<ToolActivityEntry, 'block' | 'draft'>, lang: UiLang = currentLocale()) {
   const { name, raw } = toolIdentity(entry);
   const args = inputFields(raw);
   const target = stringValue(args, 'file_path', 'path', 'filename', 'filePath');
@@ -135,18 +136,18 @@ export function activitySummary(entry: Pick<ToolActivityEntry, 'block' | 'draft'
     : /^(bash|shell|terminal|terminal_send|exec_command|pwsh)$/.test(name) ? 'terminal'
     : /^(grep|glob|find|search)$/.test(name) ? 'search'
     : /^(web_search|web_fetch|web_open)$/.test(name) ? 'web' : 'other';
-  const title = category === 'write' ? `${name === 'write' ? '写入' : '修改'}${file ? ` ${file}` : name === 'apply_patch' ? '代码补丁' : '文件'}`
-    : category === 'read' ? `读取${file ? ` ${file}` : '文件'}`
-    : category === 'terminal' ? description || '运行命令'
-    : category === 'search' ? name === 'glob' ? '查找文件' : '搜索内容'
-    : category === 'web' ? name === 'web_search' ? '搜索网页' : '读取网页'
+  const title = category === 'write' ? `${name === 'write' ? uiIn(lang, 'tool.write') : uiIn(lang, 'tool.edit')}${file ? ` ${file}` : name === 'apply_patch' ? uiIn(lang, 'tool.patch') : uiIn(lang, 'tool.file')}`
+    : category === 'read' ? `${uiIn(lang, 'tool.read')}${file ? ` ${file}` : uiIn(lang, 'tool.file')}`
+    : category === 'terminal' ? description || uiIn(lang, 'tool.runCommand')
+    : category === 'search' ? name === 'glob' ? uiIn(lang, 'tool.findFiles') : uiIn(lang, 'tool.searchContent')
+    : category === 'web' ? name === 'web_search' ? uiIn(lang, 'tool.searchWeb') : uiIn(lang, 'tool.readWeb')
     : name;
   return { name, raw, args, category, title, target: target ?? command ?? stringValue(args, 'query', 'pattern', 'url'), command,
     cwd: stringValue(args, 'workdir', 'cwd'), content: stringValue(args, 'content', 'new_string', 'newText', 'file_text') };
 }
 
-export function preparingLabel(name: string): string {
-  return /^(write|edit|apply_patch)$/.test(name) ? '正在生成文件内容' : /^(bash|shell|exec_command|pwsh)$/.test(name) ? '正在准备命令' : '正在准备工具输入';
+export function preparingLabel(name: string, lang: UiLang = currentLocale()): string {
+  return /^(write|edit|apply_patch)$/.test(name) ? uiIn(lang, 'tool.prepareWrite') : /^(bash|shell|exec_command|pwsh)$/.test(name) ? uiIn(lang, 'tool.prepareTerminal') : uiIn(lang, 'tool.prepareInput');
 }
 
 /** First non-empty text payload of a failed tool result, clamped for inline preview. */
@@ -161,10 +162,10 @@ export function toolFailureText(block: ToolCallBlock): string | null {
 }
 
 /** One-line failure summary for a failed tool row: name, exit code, signal. */
-export function toolFailureLine(block: ToolCallBlock): string {
+export function toolFailureLine(block: ToolCallBlock, lang: UiLang = currentLocale()): string {
   const facts = executionFacts(block);
   const parts = [toolIdentity({ block }).name];
-  if (facts.exitCode !== undefined) parts.push(`退出码 ${facts.exitCode}`);
-  if (facts.signal) parts.push(`信号 ${facts.signal}`);
+  if (facts.exitCode !== undefined) parts.push(uiIn(lang, 'failure.exitCode', { code: facts.exitCode }));
+  if (facts.signal) parts.push(uiIn(lang, 'failure.signal', { signal: facts.signal }));
   return parts.join(' · ');
 }

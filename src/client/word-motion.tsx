@@ -1,11 +1,16 @@
 import { createContext, useContext, useLayoutEffect, useMemo, useRef } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import { MarkdownText } from './markdown/MarkdownText.js';
+import type { MarkdownCodeLabels } from './markdown/MarkdownText.js';
+import { ui } from './locale.js';
 import { WORD_MOTION, WordTimeline } from './word-timeline.js';
 import css from './Reader.module.css';
 
 const WordScope = createContext({ enabled: false, generation: 0 });
-const CODE_LABELS = { copyLabel: '复制代码', copiedLabel: '已复制' };
+const CODE_LABELS: MarkdownCodeLabels = {
+  copyLabel: ui('code.copyCode'), copiedLabel: ui('code.copied'),
+  tableCopyLabel: ui('table.copyCsv'), tableCopiedLabel: ui('code.copied'),
+};
 
 function useSourceReveal(element: RefObject<HTMLElement>, born: number | null, generation: number) {
   const scope = useContext(WordScope);

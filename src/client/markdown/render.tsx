@@ -17,16 +17,18 @@
  * may add node types this renderer has no mapping for.
  */
 
-import { Fragment, createElement } from 'react'
+import { Fragment, createElement, memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { Key, ReactNode } from 'react'
 import clsx from 'clsx'
 import type * as Md from 'mdast'
 import type {} from 'mdast-util-math'
 import { normalizeUri } from 'micromark-util-sanitize-uri'
-import { CodeBlock } from '@deepseek-ai/dsh-client-ui-primitives'
+import { CodeBlock, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
 import { renderTexToReact } from './katex.js'
 import { McpAppFrame, StreamingMcpAppPlaceholder } from '../McpAppFrame.js'
 import { isMcpAppCodeBlock, extractMcpAppTitle, extractMcpAppHeight } from '../mcp-app.js'
+import { tableToCsv } from '../table-csv.js'
+import { ui } from '../locale.js'
 import type { PositionedBlock } from './incremental.js'
 import css from './MarkdownText.module.css'
 
@@ -36,6 +38,10 @@ export interface MarkdownCodeLabels {
   copyLabel?: string | undefined
   /** Copy-button label during the post-copy confirmation window. */
   copiedLabel?: string | undefined
+  /** Table copy-as-CSV idle label. */
+  tableCopyLabel?: string | undefined
+  /** Table copy-as-CSV label during the post-copy confirmation window. */
+  tableCopiedLabel?: string | undefined
 }
 
 function sanitizeUrl(url: string): string {
@@ -422,6 +428,50 @@ function renderListItem(
   )
 }
 
+/** One settled table with a hover-revealed copy-as-CSV action. */
+const TableBlock = memo(function TableBlock({ node, wide, streaming, context, labels }: {
+  node: Md.Table; wide: boolean; streaming: boolean; context: MarkdownRenderContext;
+  labels: { copyCsvLabel: string; copiedCsvLabel: string };
+}) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const align = node.align ?? null;
+  const [headRow, ...bodyRows] = node.children;
+  const csv = useMemo(() => tableToCsv(node), [node]);
+  return (
+    // Wide tables rest with overflow-x hidden (the hover-revealed bar in
+    // MarkdownText.module.css), which drops Chromium's implicit scroller
+    // focusability — the explicit tabindex keeps them keyboard-reachable,
+    // and :focus-visible restores scrolling.
+    <div className={css.tableWrap}>
+      <div
+        className={clsx(css.tableScroll, wide ? 'md-table-wide' : css.tableFill)}
+        tabIndex={wide ? 0 : undefined}
+      >
+        <table>
+          {headRow !== undefined && <thead>{renderTableRow(headRow, 'th', align, 0, context)}</thead>}
+          {bodyRows.length > 0 && (
+            <tbody>
+              {bodyRows.map((row, index) => renderTableRow(row, 'td', align, index + 1, context))}
+            </tbody>
+          )}
+        </table>
+      </div>
+      {!streaming && csv !== '' && (
+        <button type="button" className={css.tableCopy} title={labels.copyCsvLabel} aria-label={labels.copyCsvLabel} onClick={async () => {
+          const accepted = await writeClipboard(csv);
+          setCopied(accepted);
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => setCopied(false), 2000);
+        }}>
+          {copied ? labels.copiedCsvLabel : labels.copyCsvLabel}
+        </button>
+      )}
+    </div>
+  );
+});
+
 function renderTable(node: Md.Table, key: Key, context: MarkdownRenderContext): ReactNode {
   const align = node.align ?? null
   const [headRow, ...bodyRows] = node.children
@@ -433,24 +483,17 @@ function renderTable(node: Md.Table, key: Key, context: MarkdownRenderContext): 
   // column and wrap instead (deepsuite chat TableWrapper parity).
   const wide = columns >= 4 && context.inBlockquote !== true
   return (
-    // Wide tables rest with overflow-x hidden (the hover-revealed bar in
-    // MarkdownText.module.css), which drops Chromium's implicit scroller
-    // focusability — the explicit tabindex keeps them keyboard-reachable,
-    // and :focus-visible restores scrolling.
-    <div
+    <TableBlock
       key={key}
-      className={clsx(css.tableScroll, wide ? 'md-table-wide' : css.tableFill)}
-      tabIndex={wide ? 0 : undefined}
-    >
-      <table>
-        {headRow !== undefined && <thead>{renderTableRow(headRow, 'th', align, 0, context)}</thead>}
-        {bodyRows.length > 0 && (
-          <tbody>
-            {bodyRows.map((row, index) => renderTableRow(row, 'td', align, index + 1, context))}
-          </tbody>
-        )}
-      </table>
-    </div>
+      node={node}
+      wide={wide}
+      streaming={context.streaming}
+      context={context}
+      labels={{
+        copyCsvLabel: context.codeLabels?.tableCopyLabel ?? ui('table.copyCsv'),
+        copiedCsvLabel: context.codeLabels?.tableCopiedLabel ?? ui('code.copied'),
+      }}
+    />
   )
 }
 

@@ -7,6 +7,7 @@ import {
   formatReceiptPrompt,
   setReactInputValue,
 } from './mcp-app.js';
+import { currentLocale, ui, uiIn } from './locale.js';
 import css from './McpAppFrame.module.css';
 
 export interface McpAppFrameProps {
@@ -29,7 +30,7 @@ export const McpAppFrame = memo(function McpAppFrame({
   const frameId = useId();
 
   const title = useMemo(() => {
-    return initialTitle || extractHtmlTitle(html) || '交互式 MCP App';
+    return initialTitle || extractHtmlTitle(html) || ui('mcp.title');
   }, [initialTitle, html]);
 
   const [currentTheme, setCurrentTheme] = useState(getHostTheme);
@@ -50,11 +51,11 @@ export const McpAppFrame = memo(function McpAppFrame({
     let summary = '';
     if (typeof params.choice === 'string') {
       const desc = typeof params.desc === 'string' ? ` (${params.desc})` : '';
-      summary = `选择: ${params.choice}${desc}`;
+      summary = `${ui('mcp.summaryChoice', { choice: params.choice })}${desc}`;
     } else if (typeof params.action === 'string') {
-      summary = `操作: ${params.action}${params.payload ? ` (${JSON.stringify(params.payload)})` : ''}`;
+      summary = `${ui('mcp.summaryAction', { action: params.action })}${params.payload ? ` (${JSON.stringify(params.payload)})` : ''}`;
     } else if (typeof params.selectedVariant === 'string') {
-      summary = `方案: ${params.selectedVariant}`;
+      summary = ui('mcp.summaryVariant', { variant: params.selectedVariant });
     } else {
       summary = JSON.stringify(params);
     }
@@ -211,8 +212,8 @@ export const McpAppFrame = memo(function McpAppFrame({
             type="button"
             className={css.iconBtn}
             onClick={handleReload}
-            title="重置组件状态"
-            aria-label="重置组件状态"
+            title={ui('mcp.reset')}
+            aria-label={ui('mcp.reset')}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -243,13 +244,13 @@ export const McpAppFrame = memo(function McpAppFrame({
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span>已就绪：{receipt}</span>
+            <span>{ui('mcp.ready', { receipt })}</span>
           </span>
           <div className={css.receiptHint}>
             <button
               type="button"
               className={css.sendKbd}
-              title="聚焦输入框并回车发送"
+              title={ui('mcp.focusSend')}
               onClick={() => {
                 const textarea = document.querySelector<HTMLTextAreaElement>('textarea');
                 if (textarea) {
@@ -258,7 +259,7 @@ export const McpAppFrame = memo(function McpAppFrame({
                 }
               }}
             >
-              <span>回车直接发送</span>
+              <span>{ui('mcp.sendDirectly')}</span>
               <kbd>↵</kbd>
             </button>
           </div>
@@ -272,7 +273,7 @@ export function StreamingMcpAppPlaceholder({ title }: { title?: string }) {
   return (
     <div className={css.streamingPlaceholder}>
       <span className={css.pulseDot} aria-hidden="true" />
-      <span>正在生成交互组件{title ? `（${title}）` : ''}...</span>
+      <span>{ui('mcp.streaming', { title: title ? uiIn(currentLocale(), currentLocale() === 'zh' ? 'mcp.titleSuffixZh' : 'mcp.titleSuffixEn', { title }) : '' })}...</span>
     </div>
   );
 }

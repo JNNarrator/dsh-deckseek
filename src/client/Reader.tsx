@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import type { ChatConversationViewNode, ChatNode, ChatNodeKind } from '@deepseek-ai/dsh-client-ui-chat/client';
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
@@ -8,9 +8,12 @@ import { ToolActivity, ToolMedia } from './ToolActivity.js';
 import { UnknownRecord } from './UnknownRecord.js';
 import { SystemPromptRow, TurnProcessMeta, TurnTailStats } from './TurnRecords.js';
 import { FailureCard } from './FailureCard.js';
-import type { TurnProcessData, TurnTailData } from './turn-records.js';
+import type { TurnProcessData, TurnTailData } from './locale.js';
+import { ui } from './locale.js';
 import { preparingLabel, readerFlow } from './tool-activity.js';
-import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingScroll } from './motion.js';
+import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingPosition, useReadingScroll } from './motion.js';
+import { buildSearchIndex } from './search-index.js';
+import { SearchPanel } from './SearchPanel.js';
 import { StreamMotionContext } from './streaming.js';
 import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
@@ -34,8 +37,8 @@ const ProcessNode = memo(function ProcessNode({ useChat, t, nodeKey, open, motio
   if (!node || node.visibility === 'hidden') return null;
   let content: ReactNode = null;
   if (isNode(node, 'context')) content = <ContextInjectionRow {...node.data} t={t} />;
-  else if (isNode(node, 'model-retry')) content = <JsonBlock label="模型重试记录" payload={node.data.attempts} truncatedLabel={truncatedJsonLabel} />;
-  else if (isNode(node, 'command') || isNode(node, 'manual-compaction')) content = <JsonBlock label="命令记录" payload={node.data} truncatedLabel={truncatedJsonLabel} />;
+  else if (isNode(node, 'model-retry')) content = <JsonBlock label={ui('tool.retryRecord')} payload={node.data.attempts} truncatedLabel={truncatedJsonLabel} />;
+  else if (isNode(node, 'command') || isNode(node, 'manual-compaction')) content = <JsonBlock label={ui('tool.commandRecord')} payload={node.data} truncatedLabel={truncatedJsonLabel} />;
   return content && <ProcessFragment open={open} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>{content}</ProcessFragment>;
 });
 
@@ -58,7 +61,7 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
     : hasVisibleBody(part.blocks) && <RetiringContent key={part.start} visible={pinned || processOpen || !earlier}>
       <article className={css.answer} data-reader-answer data-reader-anchor data-reader-key={nodeKey} data-reader-source-start={part.start} data-answer-status={data.status} data-answer-phase={earlier ? 'process' : 'body'}>
         <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running'} holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
-        {index === parts.length - 1 && data.status === 'interrupted' && <span className={css.stopped}>已停止</span>}
+        {index === parts.length - 1 && data.status === 'interrupted' && <span className={css.stopped}>{ui('turn.stopped')}</span>}
         {index === parts.length - 1 && !earlier && data.status !== 'running' && boundary.status === 'closed' && <CopyAnswer blocks={body} />}
       </article>
     </RetiringContent>)}</>;
@@ -68,24 +71,24 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
   const node = useChat(snapshot => snapshot.nodes.get(nodeKey));
   if (!node || node.visibility === 'hidden') return null;
   if (isNode(node, 'user') || isNode(node, 'steering')) return <div className={css.user} data-reader-anchor data-reader-key={nodeKey}>
-    {node.kind === 'steering' && <p className={css.meta}>补充消息</p>}
+    {node.kind === 'steering' && <p className={css.meta}>{ui('turn.steering')}</p>}
     <Blocks {...render} blocks={contentBlocks(node.data.content)} source="user" />
   </div>;
   if (isNode(node, 'assistant-step')) return null;
   if (isNode(node, 'tool-call')) return <ToolMedia {...render} block={node.data.root} />;
-  if (isNode(node, 'turn-error')) return <FailureCard title="本轮出现错误" message={node.data.message} code={node.data.code} />;
-  if (isNode(node, 'turn-max-tokens')) return <div className={css.notice}>已到达输出长度限制，回答尚未完整。</div>;
+  if (isNode(node, 'turn-error')) return <FailureCard title={ui('turn.errorTitle')} message={node.data.message} code={node.data.code} />;
+  if (isNode(node, 'turn-max-tokens')) return <div className={css.notice}>{ui('turn.maxTokens')}</div>;
   if (isNode(node, 'model-retry')) return node.data.current.retryState === 'scheduled'
-    ? <div className={css.notice} role="status">模型请求未成功，正在等待重试。详情保留在执行记录中。</div> : null;
+    ? <div className={css.notice} role="status">{ui('turn.retryWaiting')}</div> : null;
   if (isNode(node, 'command')) {
-    if (node.data.outcome?.kind === 'error') return <FailureCard title="命令执行失败" message={node.data.outcome.text ?? node.data.name ?? '查看原对话中的命令记录'} />;
+    if (node.data.outcome?.kind === 'error') return <FailureCard title={ui('command.failedTitle')} message={node.data.outcome.text ?? node.data.name ?? ui('command.fallback')} />;
     return node.data.outcome?.text ? <MarkdownText text={node.data.outcome.text} labels={markdownLabels} /> : null;
   }
   if (isNode(node, 'manual-compaction')) {
-    if (node.data.command.outcome?.kind === 'error') return <FailureCard title="上下文压缩失败" message={node.data.command.outcome.text} />;
-    return node.data.compaction ? <p className={css.meta}>上下文已整理，原始记录仍保留。</p> : <p className={css.meta}>正在整理上下文…</p>;
+    if (node.data.command.outcome?.kind === 'error') return <FailureCard title={ui('compaction.failedTitle')} message={node.data.command.outcome.text} />;
+    return node.data.compaction ? <p className={css.meta}>{ui('compaction.done')}</p> : <p className={css.meta}>{ui('compaction.running')}</p>;
   }
-  if (node.kind === 'compaction') return <details className={css.detail}><summary>上下文已整理，查看记录</summary><pre className={css.rawJson}>{JSON.stringify(node.data, null, 2)}</pre></details>;
+  if (node.kind === 'compaction') return <details className={css.detail}><summary>{ui('compaction.summary')}</summary><pre className={css.rawJson}>{JSON.stringify(node.data, null, 2)}</pre></details>;
   if (node.kind === 'context') return null;
   if (node.kind === 'system-prompt') return <SystemPromptRow text={String((node.data as { text?: unknown }).text ?? '')} />;
   if (node.kind === 'turn-process') return <TurnProcessMeta data={node.data as TurnProcessData} />;
@@ -98,25 +101,25 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
   const text = useChat(snapshot => {
     const turn = group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn);
     if (turn?.status === 'closed') {
-      if (turn.end?.data.reason.kind !== 'completed') return '执行过程';
+      if (turn.end?.data.reason.kind !== 'completed') return ui('status.process');
       const elapsed = turn.start && turn.end ? Math.max(0, Math.round((turn.end.time - turn.start.time) / 1000)) : null;
-      return elapsed === null ? '执行过程' : elapsed < 60 ? `用时 ${elapsed} 秒` : `用时 ${Math.floor(elapsed / 60)} 分 ${elapsed % 60} 秒`;
+      return elapsed === null ? ui('status.process') : elapsed < 60 ? ui('status.timeSeconds', { seconds: elapsed }) : ui('status.timeMinutes', { minutes: Math.floor(elapsed / 60), seconds: elapsed % 60 });
     }
-    if (turn?.status !== 'open') return '执行过程';
-    if (pending !== undefined) return '等待你的操作';
+    if (turn?.status !== 'open') return ui('status.process');
+    if (pending !== undefined) return ui('status.waiting');
     const current = turn.steps.at(-1)?.data.get('assistant-step');
     const last = current?.blocks.at(-1);
     if (current?.status === 'running' && last?.kind === 'tool-call') return preparingLabel(last.name);
     for (let index = group.keys.length - 1; index >= 0; index--) {
       const node = snapshot.nodes.get(group.keys[index]);
       if (!node) continue;
-      if (isNode(node, 'tool-call') && !('kind' in node.data.root)) return '正在使用工具';
+      if (isNode(node, 'tool-call') && !('kind' in node.data.root)) return ui('status.usingTool');
       if (isNode(node, 'assistant-step') && node.data.status === 'running') {
         const last = node.data.blocks.at(-1);
-        return last?.kind === 'reasoning' ? '正在思考' : last?.kind === 'text' ? '正在输出' : '正在准备回复';
+        return last?.kind === 'reasoning' ? ui('status.thinking') : last?.kind === 'text' ? ui('status.outputting') : ui('status.preparingReply');
       }
     }
-    return '正在处理';
+    return ui('status.processing');
   });
   const busy = useChat(snapshot => group.turn !== null && snapshot.timeline.turns.get(group.turn)?.status === 'open' && pending === undefined);
   return <StatusText text={text} motion={motion} shimmer={busy} />;
@@ -146,7 +149,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton}
-      label={<GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} />} status={turn?.steps.length ? `${turn.steps.length} 个步骤` : undefined} />}
+      label={<GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} />} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
     {!hasProcess && boundary.status === 'open' && <div className={css.disclosure} data-reader-status-only>
       <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} />
     </div>}
@@ -185,25 +188,38 @@ export function Reader(props: ReaderProps) {
   const pinnedKeys = usePinnedSelection(root);
   const selectedProcessKeys = usePinnedSelection(root, '[data-reader-process]');
   const [historyError, setHistoryError] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchIndex = useMemo(() => buildSearchIndex(order, key => nodes.get(key)), [order, nodes]);
+  const restoredPosition = useReadingPosition(root, props.sessionId, groups.length > 0);
+  const [positionNotice, setPositionNotice] = useState(false);
+  useEffect(() => {
+    if (!restoredPosition) return;
+    setPositionNotice(true);
+    const timer = setTimeout(() => setPositionNotice(false), 3200);
+    return () => clearTimeout(timer);
+  }, [restoredPosition]);
   return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.3.0" data-motion={motion ? 'on' : 'off'}>
     <div className={css.column}>
       <div className={css.toolbar} data-ud-check="reader-toolbar">
-        <span title="基于真实消息类型和轮次边界整理。当前协议没有独立的正文阶段标记，无法确认的内容会继续保留。">阅读 · 原始记录完整保留</span>
-        <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title="新到文字柔和显现，过程平滑展开；关闭后立即完整显示，自动遵循系统减少动态效果设置。">{motionPreference && !motion ? '动效 · 跟随系统关闭' : `动效${motionPreference ? '开' : '关'}`}</button>
+        <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
+        <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
+        <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
       </div>
+      {searchOpen && <SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} />}
+      {positionNotice && <div className={css.notice} data-reader-position-restored>{ui('reader.positionRestored')}</div>}
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
         setHistoryError(false);
         try { await props.loadOlder(); } catch { setHistoryError(true); }
-      }}>{loadingOlder ? '正在加载更早记录' : '加载更早记录'}</button>}
-      {historyError && <div className={css.notice}>历史记录加载失败，可再次尝试；现有内容未改变。</div>}
-      {openError && <div className={css.error} role="alert">会话暂时无法读取：{openError.message}</div>}
-      {loading && groups.length === 0 && <p className={css.empty} role="status">正在读取会话…</p>}
+      }}>{loadingOlder ? ui('reader.loadingEarlier') : ui('reader.loadEarlier')}</button>}
+      {historyError && <div className={css.notice}>{ui('reader.historyFailed')}</div>}
+      {openError && <div className={css.error} role="alert">{ui('reader.openFailed')}{openError.message}</div>}
+      {loading && groups.length === 0 && <p className={css.empty} role="status">{ui('reader.loading')}</p>}
       {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} />)}
       {pending !== undefined && <div className={css.attention} role="alert" data-reader-attention>
-        <strong>{pending.kind === 'question' ? '需要你回答一个问题' : '需要你的确认'}</strong>
-        <span>请在下方原生操作区处理。此提示不会收进执行过程。</span>
+        <strong>{pending.kind === 'question' ? ui('reader.needQuestion') : ui('reader.needConfirm')}</strong>
+        <span>{ui('reader.pendingHint')}</span>
       </div>}
-      {scroll.detached && <div className={css.jumpDock}><button type="button" className={css.jump} onClick={scroll.jump}>↓ 回到最新</button></div>}
+      {scroll.detached && <div className={css.jumpDock}><button type="button" className={css.jump} onClick={scroll.jump}>{ui('reader.jumpLatest')}</button></div>}
     </div>
   </div></StreamMotionContext.Provider>;
 }

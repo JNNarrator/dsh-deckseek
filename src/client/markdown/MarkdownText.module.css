@@ -302,3 +302,29 @@
   text-decoration: underline var(--dsw-alias-state-business-primary);
   text-underline-offset: 3px;
 }
+
+.tableWrap {
+  position: relative;
+  margin: 16px 0;
+}
+
+.tableCopy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.tableWrap:hover .tableCopy,
+.tableCopy:focus-visible {
+  opacity: 1;
+}

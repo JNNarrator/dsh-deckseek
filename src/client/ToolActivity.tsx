@@ -11,20 +11,24 @@ import type { BlockRenderProps } from './types.js';
 import { classifyTool, toolRowModel, VARIANT_TITLES } from './native/tool-call-model.js';
 import { McpAppFrame, StreamingMcpAppPlaceholder } from './McpAppFrame.js';
 import { diffBlockLabels, jsonTreeLabels, readBlockLabels, searchBlockLabels, terminalBlockLabels, webBlockLabels } from './primitive-labels.js';
+import { currentLocale, ui } from './locale.js';
 import { FailureCard } from './FailureCard.js';
 import css from './Reader.module.css';
 
-const LABEL: Record<ToolPhase, string> = { preparing: '输入生成中', running: '执行中', returned: '已返回', succeeded: '已完成', failed: '失败', interrupted: '已中断' };
+const LABEL: Record<ToolPhase, string> = {
+  preparing: ui('tool.phasePreparing'), running: ui('tool.phaseRunning'), returned: ui('tool.phaseReturned'),
+  succeeded: ui('tool.phaseSucceeded'), failed: ui('tool.phaseFailed'), interrupted: ui('tool.phaseInterrupted'),
+};
 const ICONS = { write: IconEditOutline16, read: IconBrowseOutline16, terminal: IconApiOutline14, search: IconSearchOutline16, web: IconSearchOutline16, other: IconSparkle16 } satisfies Record<ToolCategory, unknown>;
-const number = new Intl.NumberFormat('zh-CN');
+const number = new Intl.NumberFormat(currentLocale() === 'zh' ? 'zh-CN' : 'en-US');
 const language = (path: string | undefined) => path?.split('.').at(-1);
-const duration = (ms: number) => ms < 1000 ? `${Math.round(ms)} 毫秒` : `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} 秒`;
+const duration = (ms: number) => ms < 1000 ? ui('tool.durationMs', { count: Math.round(ms) }) : ui('tool.durationSeconds', { count: (ms / 1000).toFixed(ms < 10000 ? 1 : 0) });
 
 function generatedInput(content: string, target: string | undefined, preparing: boolean) {
   const lines = content.split('\n').map((text, index) => ({ number: index + 1, text }));
   const visible = preparing ? lines.slice(-12) : lines.slice(0, 1600);
-  return <div data-reader-tool-file><p className={css.toolDetailNote}>{preparing ? '正在生成的输入 · 尚未执行 · 末尾 12 行' : '工具输入中的文件内容'}{!preparing && lines.length > visible.length ? ' · 预览前 1,600 行，完整内容在原始数据中' : ''}</p>
-    <ReadBlock label={target ?? '文件内容'} lang={language(target)} lines={visible} totalLines={lines.length} maxLines={16} labels={readBlockLabels} />
+  return <div data-reader-tool-file><p className={css.toolDetailNote}>{preparing ? ui('tool.inputGenerating') : ui('tool.fileContent')}{!preparing && lines.length > visible.length ? ui('tool.previewSuffix') : ''}</p>
+    <ReadBlock label={target ?? ui('tool.fileContentLabel')} lang={language(target)} lines={visible} totalLines={lines.length} maxLines={16} labels={readBlockLabels} />
   </div>;
 }
 
@@ -35,8 +39,8 @@ function InputView({ model, preparing }: { model: ReturnType<typeof activitySumm
       : <McpAppFrame html={model.args.html as string} title={typeof model.args.title === 'string' ? (model.args.title as string) : undefined} />;
   }
   if (model.content) return generatedInput(model.content, model.target, preparing);
-  if (model.command) return <div data-reader-tool-terminal><p className={css.toolDetailNote}>{preparing ? '正在生成命令 · 尚未执行' : '提交的命令'}</p><TerminalBlock command={model.command} cwd={model.cwd} labels={terminalBlockLabels} /></div>;
-  return <JsonTree data={model.args} label={preparing ? '已收到的输入字段' : '工具输入'} labels={jsonTreeLabels} />;
+  if (model.command) return <div data-reader-tool-terminal><p className={css.toolDetailNote}>{preparing ? ui('tool.commandGenerating') : ui('tool.commandSubmitted')}</p><TerminalBlock command={model.command} cwd={model.cwd} labels={terminalBlockLabels} /></div>;
+  return <JsonTree data={model.args} label={preparing ? ui('tool.inputFieldsReceived') : ui('tool.rawInput')} labels={jsonTreeLabels} />;
 }
 
 function readLines(value: unknown): ReadBlockLine[] | null {
@@ -84,7 +88,7 @@ function ResultView({ entry, model, phase, ...render }: BlockRenderProps & { ent
   }
   const block = entry.block;
   if (!block || !('kind' in block)) return <>
-    <p className={css.toolDetailNote}>{phase === 'interrupted' ? '已中断，没有工具结果。已生成的输入仍可查看。' : phase === 'preparing' ? '模型正在生成工具输入，工具还未开始执行。' : '工具已开始执行，正在等待结果。'}</p>
+    <p className={css.toolDetailNote}>{phase === 'interrupted' ? ui('tool.interruptedNoResult') : phase === 'preparing' ? ui('tool.generatingInputNotStarted') : ui('tool.startedWaitingResult')}</p>
     <InputView model={model} preparing={phase === 'preparing'} />
   </>;
   const meta = objectValue(block.meta);
@@ -164,9 +168,9 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
     const value = preview.entry.block;
     return value && 'kind' in value ? JSON.stringify({ content: value.content, isError: value.isError, meta: value.meta }, null, 2) : '';
   }, [preview.entry.block]);
-  const tabs = [['result', phase === 'preparing' ? '生成预览' : '结果'], ['input', '输入'], ['raw', '原始数据']] as const;
+  const tabs = [['result', phase === 'preparing' ? ui('tool.tabPreview') : ui('tool.tabResult')], ['input', ui('tool.tabInput')], ['raw', ui('tool.tabRaw')]] as const;
   const activate = (index: number) => { const item = tabs[(index + tabs.length) % tabs.length]!; setTab(item[0]); tabRefs.current[(index + tabs.length) % tabs.length]?.focus(); };
-  if (depth > 6) return <p className={css.meta}>更深的嵌套调用可在原对话查看。</p>;
+  if (depth > 6) return <p className={css.meta}>{ui('tool.nestedHint')}</p>;
   return <div ref={element => { control.current = element?.querySelector<HTMLElement>('[data-disclosure-row]') ?? null; }} className={css.toolActivity} data-reader-tool-call={entry.callId} data-tool-phase={phase} data-tool-args-length={model.raw.length} data-tool-category={model.category} data-expanded={open} data-ud-check="reader-tool-activity">
     <DisclosureRow icon={<Icon size={14} />} title={rowTitle} open={open} expandable expandOnRowClick keepContentWhenOpen
       onToggle={() => { onRead(); setOpen(value => !value); }} rowClassName={css.nativeToolRow}
@@ -175,25 +179,25 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
     <ProcessFragment open={open} motion={motion} onRead={onRead} returnFocusTo={control} nodeKey={`${entry.key}:detail`} framed>
       <div id={detailId} className={css.toolDetails}>
         <div className={css.toolLedger} aria-live="off">
-          <span>工具 · <span className={css.toolEngine}>{model.name}</span></span>
-          <span data-reader-tool-progress>{phase === 'preparing' ? `已接收 ${number.format(model.raw.length)} 字符输入` : phase === 'running' ? '已提交 · 等待工具返回' : phase === 'interrupted' ? '已停止 · 输入记录保留' : elapsed !== null ? `执行 ${duration(elapsed)}` : '结果已记录'}</span>
-          {facts.exitCode !== undefined && <span>退出码 {facts.exitCode}</span>}
-          {facts.signal && <span>信号 {facts.signal}</span>}
+          <span>{ui('tool.ledgerTitle')}<span className={css.toolEngine}>{model.name}</span></span>
+          <span data-reader-tool-progress>{phase === 'preparing' ? ui('tool.receivedChars', { count: number.format(model.raw.length) }) : phase === 'running' ? ui('tool.submittedWaiting') : phase === 'interrupted' ? ui('tool.stoppedInputKept') : elapsed !== null ? ui('tool.ranFor', { duration: duration(elapsed) }) : ui('tool.resultRecorded')}</span>
+          {facts.exitCode !== undefined && <span>{ui('failure.exitCode', { code: facts.exitCode })}</span>}
+          {facts.signal && <span>{ui('failure.signal', { signal: facts.signal })}</span>}
         </div>
-        <div className={css.toolTabs} role="tablist" aria-label={`${model.title}的执行数据`} onKeyDown={event => {
+        <div className={css.toolTabs} role="tablist" aria-label={ui('tool.tabsAria', { title: model.title })} onKeyDown={event => {
           const index = tabs.findIndex(item => item[0] === tab);
           if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); activate(index + (event.key === 'ArrowRight' ? 1 : -1)); }
           else if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); activate(event.key === 'Home' ? 0 : tabs.length - 1); }
         }}>{tabs.map(([id, title], index) => <button key={id} ref={element => { tabRefs.current[index] = element; }} type="button" role="tab" id={`${detailId}-${id}`} aria-selected={tab === id} aria-controls={`${detailId}-panel`} tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)}>{title}</button>)}</div>
         <div ref={panel} id={`${detailId}-panel`} className={css.toolPanel} role="tabpanel" aria-labelledby={`${detailId}-${tab}`} tabIndex={0}>
-          {selected && <p className={css.toolDetailNote}>为保留选区，预览暂停更新；当前状态见卡片标题。</p>}
+          {selected && <p className={css.toolDetailNote}>{ui('tool.selectionPaused')}</p>}
           {tab === 'result' && <ResultView {...render} {...preview} />}
-          {tab === 'input' && <><InputView model={preview.model} preparing={preview.phase === 'preparing'} /><details className={css.detail}><summary>全部输入字段</summary><JsonTree data={preview.model.args} label="输入字段" labels={jsonTreeLabels} /></details></>}
-          {tab === 'raw' && <><p className={css.toolDetailNote}>完整记录 · 只读 · 不执行其中的代码</p><h4 className={css.toolRawLabel}>工具输入</h4><pre className={css.toolRaw}>{preview.model.raw || '输入尚未到达'}</pre>{rawResult && <><h4 className={css.toolRawLabel}>工具结果</h4><pre className={css.toolRaw}>{rawResult}</pre></>}</>}
+          {tab === 'input' && <><InputView model={preview.model} preparing={preview.phase === 'preparing'} /><details className={css.detail}><summary>{ui('tool.allInputFields')}</summary><JsonTree data={preview.model.args} label={ui('tool.inputFieldsLabel')} labels={jsonTreeLabels} /></details></>}
+          {tab === 'raw' && <><p className={css.toolDetailNote}>{ui('tool.rawNotice')}</p><h4 className={css.toolRawLabel}>{ui('tool.rawInput')}</h4><pre className={css.toolRaw}>{preview.model.raw || ui('tool.inputPending')}</pre>{rawResult && <><h4 className={css.toolRawLabel}>{ui('tool.rawResult')}</h4><pre className={css.toolRaw}>{rawResult}</pre></>}</>}
         </div>
       </div>
     </ProcessFragment>
-    {!!block?.subCalls.length && <div className={css.toolChildren} aria-label="子调用">{block.subCalls.map((child, index) => <ToolActivity key={child.callId} {...render}
+    {!!block?.subCalls.length && <div className={css.toolChildren} aria-label={ui('tool.subcalls')}>{block.subCalls.map((child, index) => <ToolActivity key={child.callId} {...render}
       entry={{ kind: 'tool', key: `reader-tool:${child.callId}`, callId: child.callId, step: entry.step, order: index, block: child }}
       motion={motion} turnClosed={turnClosed} onRead={onRead} depth={depth + 1} />)}</div>}
   </div>;
@@ -209,7 +213,7 @@ export function ToolMedia({ block, depth = 0, ...render }: BlockRenderProps & { 
   const failed = activityPhase({ block }) === 'failed';
   const visible = settled ? contentBlocks(block.content).filter(item => block.isError || item.kind === 'image' || item.kind === 'other') : [];
   return <>
-    {failed && <FailureCard title="工具执行失败" message={toolFailureLine(block)} detail={toolFailureText(block) ?? undefined} raw={'kind' in block ? { content: block.content, isError: block.isError, meta: block.meta } : undefined} />}
+    {failed && <FailureCard title={ui('failure.toolTitle')} message={toolFailureLine(block)} detail={toolFailureText(block) ?? undefined} raw={'kind' in block ? { content: block.content, isError: block.isError, meta: block.meta } : undefined} />}
     {visible.length > 0 && <Blocks {...render} blocks={visible} source="tool" />}
     {block.subCalls.map(child => <ToolMedia key={child.callId} {...render} block={child} depth={depth + 1} />)}
   </>;

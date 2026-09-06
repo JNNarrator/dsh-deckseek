@@ -1,0 +1,564 @@
+/**
+ * Plugin UI language support. The DSH app marks its current language on
+ * <html lang="…">; dictionaries live in this package (the app's own locale
+ * packs are build-time static and cannot be extended by plugins). Strings use
+ * the same copy as the native chat where the feature exists, so switching the
+ * app language switches the reading view too. `currentLocale()` falls back to
+ * zh when no browser context exists (unit tests, SSR), matching the plugin's
+ * default authoring language.
+ */
+
+export type UiLang = 'zh' | 'en'
+
+export const zh = {
+  // Reading tab / chrome
+  'reader.tab': '阅读',
+  'reader.sessionClosed': '阅读页对应的会话已关闭。',
+  'reader.toolbarTitle': '阅读 · 原始记录完整保留',
+  'reader.toolbarHint': '基于真实消息类型和轮次边界整理。当前协议没有独立的正文阶段标记，无法确认的内容会继续保留。',
+  'reader.motionFollowOff': '动效 · 跟随系统关闭',
+  'reader.motionOn': '动效开',
+  'reader.motionOff': '动效关',
+  'reader.search': '查找',
+  'reader.searchClose': '关闭查找',
+  'reader.searchPlaceholder': '在阅读页中查找…',
+  'reader.searchNoMatches': '无匹配',
+  'reader.searchPrevTitle': '上一个（Shift+Enter）',
+  'reader.searchNextTitle': '下一个（Enter）',
+  'reader.loadEarlier': '加载更早记录',
+  'reader.loadingEarlier': '正在加载更早记录',
+  'reader.historyFailed': '历史记录加载失败，可再次尝试；现有内容未改变。',
+  'reader.openFailed': '会话暂时无法读取：',
+  'reader.loading': '正在读取会话…',
+  'reader.needQuestion': '需要你回答一个问题',
+  'reader.needConfirm': '需要你的确认',
+  'reader.pendingHint': '请在下方原生操作区处理。此提示不会收进执行过程。',
+  'reader.positionRestored': '已回到上次阅读位置。',
+  'reader.jumpLatest': '↓ 回到最新',
+  // Turn / process status
+  'turn.stopped': '已停止',
+  'turn.errorTitle': '本轮出现错误',
+  'turn.maxTokens': '已到达输出长度限制，回答尚未完整。',
+  'turn.retryWaiting': '模型请求未成功，正在等待重试。详情保留在执行记录中。',
+  'turn.steering': '补充消息',
+  'turn.process': '思考与过程',
+  'turn.foldAriaCollapse': '收起思考与过程',
+  'turn.foldAriaExpand': '展开思考与过程',
+  'status.process': '执行过程',
+  'status.timeSeconds': '用时 {seconds} 秒',
+  'status.timeMinutes': '用时 {minutes} 分 {seconds} 秒',
+  'status.waiting': '等待你的操作',
+  'status.usingTool': '正在使用工具',
+  'status.thinking': '正在思考',
+  'status.outputting': '正在输出',
+  'status.preparingReply': '正在准备回复',
+  'status.processing': '正在处理',
+  'status.steps': '{count} 个步骤',
+  'terminal.stopped': '本轮已停止，已生成的内容仍保留。',
+  'terminal.blocked': '本轮需要处理阻塞事项；请查看原对话与下方操作区。',
+  'terminal.maxTokens': '输出达到本轮长度限制，内容可能尚未完整。',
+  'terminal.error': '本轮未完成；错误信息保留在下方。',
+  'terminal.unknown': '本轮结束状态：{reason}。请在原对话中核对完整记录。',
+  // Command / compaction
+  'command.failedTitle': '命令执行失败',
+  'command.fallback': '查看原对话中的命令记录',
+  'compaction.failedTitle': '上下文压缩失败',
+  'compaction.summary': '上下文已整理，查看记录',
+  'compaction.done': '上下文已整理，原始记录仍保留。',
+  'compaction.running': '正在整理上下文…',
+  // System prompt / turn process / turn tail
+  'systemPrompt': '系统提示词',
+  'turnProcess.prefix': '执行过程 · ',
+  'turnProcess.thought': '已思考',
+  'turnProcess.toolCalls.one': '{count} 次工具调用',
+  'turnProcess.toolCalls.other': '{count} 次工具调用',
+  'turnProcess.messages.one': '{count} 条消息',
+  'turnProcess.messages.other': '{count} 条消息',
+  'turnProcess.subagents.one': '{count} 个 subagent',
+  'turnProcess.subagents.other': '{count} 个 subagent',
+  'turnProcess.separator': ' · ',
+  'turnTail.tokens': '约 {tokens} tokens',
+  'turnTail.tokPerSec': '{value} tok/s',
+  'turnTail.ttft': '首字 {seconds}s',
+  // Failure card
+  'failure.note': '详情保留在执行记录中。',
+  'failure.toolTitle': '工具执行失败',
+  'failure.exitCode': '退出码 {code}',
+  'failure.signal': '信号 {signal}',
+  // Unknown record
+  'viewRawRecord': '查看原始记录',
+  'unknown.copy': '复制记录',
+  'unknown.copied': '已复制',
+  'unknown.arrayItems': '数组 · {count} 项',
+  'unknown.emptyObject': '空对象',
+  'unknown.kind.turnProcess': '执行过程记录',
+  // Blocks / images / copy
+  'block.unavailable': '此内容暂时无法在阅读页显示；原对话中的记录未受影响。',
+  'image.zoom': '放大图片',
+  'image.zoomWithName': '放大图片：{name}',
+  'image.alt': '会话图片',
+  'image.loading': '正在加载图片',
+  'image.failed': '图片未能加载',
+  'image.retry': '重试',
+  'image.preview': '图片预览',
+  'image.closePreview': '关闭图片预览',
+  'copy.answer': '复制回答',
+  'copy.done': '已复制',
+  'copy.failed': '未能复制，请手动选择文字',
+  'tool.argsLabel': '工具参数 · {name}',
+  'block.unsupported': '此内容类型尚未接入阅读页，原始内容已保留。',
+  'viewRawContent': '查看原始内容',
+  // Code / table
+  'code.copy': '复制',
+  'code.copied': '已复制',
+  'code.copyCode': '复制代码',
+  'table.copyCsv': '复制为 CSV',
+  'footnotes': '脚注',
+  // Tool activity
+  'tool.prepareWrite': '正在生成文件内容',
+  'tool.prepareTerminal': '正在准备命令',
+  'tool.prepareInput': '正在准备工具输入',
+  'tool.detailReturned': '文件工具已返回。以下为提交的内容；完整返回记录可在「原始数据」查看。',
+  'tool.detailMedia': '图片或扩展内容已在对话中单独展示。',
+  'tool.detailEmpty': '工具没有返回可展示的内容。',
+  'tool.rawNotice': '完整记录 · 只读 · 不执行其中的代码',
+  'tool.rawInput': '工具输入',
+  'tool.rawResult': '工具结果',
+  'tool.inputPending': '输入尚未到达',
+  'tool.subcalls': '子调用',
+  'tool.others': '工具调用',
+  // Primitive block labels
+  'read.window': '显示 {shown} / {total} 行',
+  'read.collapseAria': '收起文件内容',
+  'read.expandAria': '展开其余 {hidden} 行',
+  'read.collapse': '收起',
+  'read.expand': '展开其余 {hidden} 行',
+  'terminal.signal': '信号 {signal}',
+  'terminal.exitCode': '退出码 {code}',
+  'terminal.running': '执行中',
+  'terminal.failed': '失败',
+  'terminal.done': '已完成',
+  'terminal.noOutput': '没有输出',
+  'terminal.collapseAria': '收起命令输出',
+  'diff.collapseAria': '收起差异',
+  'diff.files': '{count} 个文件',
+  'search.pathsSummary': '{shown} / {total} 个路径{truncated}',
+  'search.matchesSummary': '{shown} / {total} 处匹配 · {files} 个文件{truncated}',
+  'search.truncated': '（结果已截断）',
+  'search.noResults': '没有结果',
+  'search.collapseAria': '收起搜索结果',
+  'web.noResults': '没有结果',
+  'web.sourcesTruncated': '来源已截断',
+  'web.http': 'HTTP',
+  'web.contentTruncated': '内容已截断',
+  'json.copyValue': '复制值',
+  'json.copyJson': '复制 JSON',
+  'json.copyPath': '复制路径',
+  'json.copyPrettyJson': '复制格式化 JSON',
+  'json.copyCompactJson': '复制紧凑 JSON',
+  'json.copyFailed': '复制失败',
+  'json.collapseNode': '收起节点',
+  'json.expandNode': '展开节点',
+  'truncate.label': '内容过长，已截断（共 {count} 个字符）',
+  // Reasoning card
+  'reasoning.label': '思考',
+  'reasoning.step': '步骤 {step}',
+  'reasoning.regionAria': '步骤 {step} 的思考',
+  'reasoning.scrollAria': '步骤 {step} 的思考，可滚动阅读',
+  'reasoning.pauseFollowAria': '暂停自动跟随思考',
+  'reasoning.resumeFollowAria': '继续跟随最新思考',
+  'reasoning.pauseFollow': '暂停跟随',
+  'reasoning.resumeFollow': '跟随最新',
+  'reasoning.manual': '手动阅读',
+  'reasoning.scrollable': '可滚动阅读',
+  'reasoning.followHint': '取消文字选择后可继续跟随',
+  // MCP app
+  'mcp.title': '交互式 MCP App',
+  'mcp.summaryChoice': '选择: {choice}',
+  'mcp.summaryAction': '操作: {action}',
+  'mcp.summaryVariant': '方案: {variant}',
+  'mcp.reset': '重置组件状态',
+  'mcp.ready': '已就绪：{receipt}',
+  'mcp.focusSend': '聚焦输入框并回车发送',
+  'mcp.sendDirectly': '回车直接发送',
+  'mcp.streaming': '正在生成交互组件{title}',
+  'mcp.titleSuffixZh': '（{title}）',
+  'mcp.titleSuffixEn': ' ({title})',
+  'mcp.component': '组件',
+  'mcp.choicePrompt': '我在{name}中选择了：{choice}{desc}。请根据我的选择继续。',
+  'mcp.choicePromptScore': '我在方案评测中选择了：{variant}{score}。请根据该方案继续分析。',
+  'mcp.actionPrompt': '[{name}] 已完成 {action}{payload}',
+  'mcp.receiptPrompt': '[{name}] {key}: {value}',
+  'mcp.descSuffix': '（{desc}）',
+  'mcp.quoteTitle': '「{title}」',
+  'mcp.actionFallback': '组件操作',
+  'mcp.receiptFallback': '组件回执',
+  'mcp.scoreSuffix': '，得分：{score}',
+  // Reasoning card controls
+  'reasoning.collapseFullAria': '收起完整思考',
+  'reasoning.expandFullAria': '展开阅读完整思考',
+  'reasoning.collapse': '收起',
+  'reasoning.expandRead': '展开阅读',
+  // Tool activity
+  'tool.tabPreview': '生成预览',
+  'tool.tabResult': '结果',
+  'tool.tabInput': '输入',
+  'tool.tabRaw': '原始数据',
+  'tool.nestedHint': '更深的嵌套调用可在原对话查看。',
+  'tool.ledgerTitle': '工具 · ',
+  'tool.receivedChars': '已接收 {count} 字符输入',
+  'tool.submittedWaiting': '已提交 · 等待工具返回',
+  'tool.stoppedInputKept': '已停止 · 输入记录保留',
+  'tool.ranFor': '执行 {duration}',
+  'tool.resultRecorded': '结果已记录',
+  'tool.tabsAria': '{title}的执行数据',
+  'tool.selectionPaused': '为保留选区，预览暂停更新；当前状态见卡片标题。',
+  'tool.allInputFields': '全部输入字段',
+  'tool.inputFieldsLabel': '输入字段',
+  'tool.phasePreparing': '输入生成中',
+  'tool.phaseRunning': '执行中',
+  'tool.phaseReturned': '已返回',
+  'tool.phaseSucceeded': '已完成',
+  'tool.phaseFailed': '失败',
+  'tool.phaseInterrupted': '已中断',
+  'tool.durationMs': '{count} 毫秒',
+  'tool.durationSeconds': '{count} 秒',
+  'tool.inputGenerating': '正在生成的输入 · 尚未执行 · 末尾 12 行',
+  'tool.fileContent': '工具输入中的文件内容',
+  'tool.previewSuffix': ' · 预览前 1,600 行，完整内容在原始数据中',
+  'tool.fileContentLabel': '文件内容',
+  'tool.commandGenerating': '正在生成命令 · 尚未执行',
+  'tool.commandSubmitted': '提交的命令',
+  'tool.inputFieldsReceived': '已收到的输入字段',
+  'tool.interruptedNoResult': '已中断，没有工具结果。已生成的输入仍可查看。',
+  'tool.generatingInputNotStarted': '模型正在生成工具输入，工具还未开始执行。',
+  'tool.startedWaitingResult': '工具已开始执行，正在等待结果。',
+  'tool.retryRecord': '模型重试记录',
+  'tool.commandRecord': '命令记录',
+  // Tool row titles
+  'tool.write': '写入',
+  'tool.edit': '修改',
+  'tool.patch': '代码补丁',
+  'tool.file': '文件',
+  'tool.read': '读取',
+  'tool.runCommand': '运行命令',
+  'tool.findFiles': '查找文件',
+  'tool.searchContent': '搜索内容',
+  'tool.searchWeb': '搜索网页',
+  'tool.readWeb': '读取网页',
+} as const
+
+export type UiKey = keyof typeof zh
+
+export const en: Record<UiKey, string> = {
+  'reader.tab': 'Reading',
+  'reader.sessionClosed': 'The reading page\'s session is closed.',
+  'reader.toolbarTitle': 'Reading · original record fully preserved',
+  'reader.toolbarHint': 'Reconstructed from real message types and turn boundaries. The current protocol has no separate body-phase marker; unverifiable content stays as-is.',
+  'reader.motionFollowOff': 'Motion · follows system (off)',
+  'reader.motionOn': 'Motion on',
+  'reader.motionOff': 'Motion off',
+  'reader.search': 'Search',
+  'reader.searchClose': 'Close search',
+  'reader.searchPlaceholder': 'Search in the reading view…',
+  'reader.searchNoMatches': 'No matches',
+  'reader.searchPrevTitle': 'Previous (Shift+Enter)',
+  'reader.searchNextTitle': 'Next (Enter)',
+  'reader.loadEarlier': 'Load earlier records',
+  'reader.loadingEarlier': 'Loading earlier records',
+  'reader.historyFailed': 'Failed to load history; try again — the current content is unchanged.',
+  'reader.openFailed': 'Could not read this session: ',
+  'reader.loading': 'Reading session…',
+  'reader.needQuestion': 'A question needs your answer',
+  'reader.needConfirm': 'Confirmation needed',
+  'reader.pendingHint': 'Handle it in the native actions below. This notice is not part of the execution record.',
+  'reader.positionRestored': 'Back to your previous reading position.',
+  'reader.jumpLatest': '↓ Back to latest',
+  'turn.stopped': 'Stopped',
+  'turn.errorTitle': 'Error in this turn',
+  'turn.maxTokens': 'Output length limit reached; the answer may be incomplete.',
+  'turn.retryWaiting': 'Model request failed; waiting to retry. Details are kept in the execution record.',
+  'turn.steering': 'Supplementary message',
+  'turn.process': 'Thinking & process',
+  'turn.foldAriaCollapse': 'Collapse thinking & process',
+  'turn.foldAriaExpand': 'Expand thinking & process',
+  'status.process': 'In progress',
+  'status.timeSeconds': 'Took {seconds}s',
+  'status.timeMinutes': 'Took {minutes}m {seconds}s',
+  'status.waiting': 'Waiting for your input',
+  'status.usingTool': 'Using a tool',
+  'status.thinking': 'Thinking',
+  'status.outputting': 'Outputting',
+  'status.preparingReply': 'Preparing reply',
+  'status.processing': 'Processing',
+  'status.steps': '{count} steps',
+  'terminal.stopped': 'This turn stopped; the generated content is preserved.',
+  'terminal.blocked': 'This turn has blocked items; see the original chat and the actions below.',
+  'terminal.maxTokens': 'Output reached this turn\'s length limit; content may be incomplete.',
+  'terminal.error': 'This turn is incomplete; the error is kept below.',
+  'terminal.unknown': 'This turn ended with state: {reason}. Verify the full record in the original chat.',
+  'command.failedTitle': 'Command failed',
+  'command.fallback': 'see the command record in the original chat',
+  'compaction.failedTitle': 'Context compaction failed',
+  'compaction.summary': 'Context compacted — view the record',
+  'compaction.done': 'Context compacted; the original record is preserved.',
+  'compaction.running': 'Compacting context…',
+  'systemPrompt': 'System prompt',
+  'turnProcess.prefix': 'Process · ',
+  'turnProcess.thought': 'Thought for a while',
+  'turnProcess.toolCalls.one': '{count} tool call',
+  'turnProcess.toolCalls.other': '{count} tool calls',
+  'turnProcess.messages.one': '{count} message',
+  'turnProcess.messages.other': '{count} messages',
+  'turnProcess.subagents.one': '{count} subagent',
+  'turnProcess.subagents.other': '{count} subagents',
+  'turnProcess.separator': ' · ',
+  'turnTail.tokens': '~{tokens} tokens',
+  'turnTail.tokPerSec': '{value} tok/s',
+  'turnTail.ttft': 'first token {seconds}s',
+  'failure.note': 'Details are kept in the execution record.',
+  'failure.toolTitle': 'Tool failed',
+  'failure.exitCode': 'exit code {code}',
+  'failure.signal': 'signal {signal}',
+  'viewRawRecord': 'View raw record',
+  'unknown.copy': 'Copy record',
+  'unknown.copied': 'Copied',
+  'unknown.arrayItems': 'Array · {count} items',
+  'unknown.emptyObject': 'empty object',
+  'unknown.kind.turnProcess': 'Turn process record',
+  'block.unavailable': 'This content can\'t be shown in the reading view yet; the original record is unaffected.',
+  'image.zoom': 'Enlarge image',
+  'image.zoomWithName': 'Enlarge image: {name}',
+  'image.alt': 'Session image',
+  'image.loading': 'Loading image',
+  'image.failed': 'Failed to load image',
+  'image.retry': 'Retry',
+  'image.preview': 'Image preview',
+  'image.closePreview': 'Close image preview',
+  'copy.answer': 'Copy answer',
+  'copy.done': 'Copied',
+  'copy.failed': 'Copy failed — select the text manually',
+  'tool.argsLabel': 'Tool arguments · {name}',
+  'block.unsupported': 'This content kind is not wired into the reading view yet; the original content is preserved.',
+  'viewRawContent': 'View raw content',
+  'code.copy': 'Copy',
+  'code.copied': 'Copied',
+  'code.copyCode': 'Copy code',
+  'table.copyCsv': 'Copy as CSV',
+  'footnotes': 'Footnotes',
+  'tool.prepareWrite': 'Generating file content',
+  'tool.prepareTerminal': 'Preparing command',
+  'tool.prepareInput': 'Preparing tool input',
+  'tool.detailReturned': 'The file tool returned. Below is the submitted content; the full response is in "Raw data".',
+  'tool.detailMedia': 'Images and extended content are shown separately in the chat.',
+  'tool.detailEmpty': 'The tool returned no displayable content.',
+  'tool.rawNotice': 'Full record · read-only · code inside is not executed',
+  'tool.rawInput': 'Tool input',
+  'tool.rawResult': 'Tool result',
+  'tool.inputPending': 'Input not yet available',
+  'tool.subcalls': 'Sub-calls',
+  'tool.others': 'Tool call',
+  'read.window': 'Showing {shown} / {total} lines',
+  'read.collapseAria': 'Collapse file content',
+  'read.expandAria': 'Expand remaining {hidden} lines',
+  'read.collapse': 'Collapse',
+  'read.expand': 'Expand remaining {hidden} lines',
+  'terminal.signal': 'signal {signal}',
+  'terminal.exitCode': 'exit code {code}',
+  'terminal.running': 'Running',
+  'terminal.failed': 'Failed',
+  'terminal.done': 'Done',
+  'terminal.noOutput': 'No output',
+  'terminal.collapseAria': 'Collapse command output',
+  'diff.collapseAria': 'Collapse diff',
+  'diff.files': '{count} files',
+  'search.pathsSummary': '{shown} / {total} paths{truncated}',
+  'search.matchesSummary': '{shown} / {total} matches · {files} files{truncated}',
+  'search.truncated': ' (truncated)',
+  'search.noResults': 'No results',
+  'search.collapseAria': 'Collapse search results',
+  'web.noResults': 'No results',
+  'web.sourcesTruncated': 'Sources truncated',
+  'web.http': 'HTTP',
+  'web.contentTruncated': 'Content truncated',
+  'json.copyValue': 'Copy value',
+  'json.copyJson': 'Copy JSON',
+  'json.copyPath': 'Copy path',
+  'json.copyPrettyJson': 'Copy pretty JSON',
+  'json.copyCompactJson': 'Copy compact JSON',
+  'json.copyFailed': 'Copy failed',
+  'json.collapseNode': 'Collapse node',
+  'json.expandNode': 'Expand node',
+  'truncate.label': 'Content too long — truncated ({count} characters)',
+  'reasoning.label': 'Thinking',
+  'reasoning.step': 'Step {step}',
+  'reasoning.regionAria': 'Thinking for step {step}',
+  'reasoning.scrollAria': 'Step {step} thinking — scrollable',
+  'reasoning.pauseFollowAria': 'Pause auto-follow of thinking',
+  'reasoning.resumeFollowAria': 'Resume following the latest thinking',
+  'reasoning.pauseFollow': 'Pause follow',
+  'reasoning.resumeFollow': 'Follow latest',
+  'reasoning.manual': 'Reading manually',
+  'reasoning.scrollable': 'Scrollable',
+  'reasoning.followHint': 'Deselect text to resume following',
+  'mcp.title': 'Interactive MCP App',
+  'mcp.summaryChoice': 'Choice: {choice}',
+  'mcp.summaryAction': 'Action: {action}',
+  'mcp.summaryVariant': 'Option: {variant}',
+  'mcp.reset': 'Reset component state',
+  'mcp.ready': 'Ready: {receipt}',
+  'mcp.focusSend': 'Focus the input and press Enter to send',
+  'mcp.sendDirectly': 'Press Enter to send',
+  'mcp.streaming': 'Generating interactive component{title}',
+  'mcp.titleSuffixZh': '（{title}）',
+  'mcp.titleSuffixEn': ' ({title})',
+  'mcp.component': 'component',
+  'mcp.choicePrompt': 'In {name} I chose: {choice}{desc}. Please continue accordingly.',
+  'mcp.choicePromptScore': 'In the evaluation I chose option {variant}{score}. Please continue analyzing that option.',
+  'mcp.actionPrompt': '[{name}] completed {action}{payload}',
+  'mcp.receiptPrompt': '[{name}] {key}: {value}',
+  'mcp.descSuffix': ' ({desc})',
+  'mcp.quoteTitle': '"{title}"',
+  'mcp.actionFallback': 'component action',
+  'mcp.receiptFallback': 'component receipt',
+  'mcp.scoreSuffix': ', score: {score}',
+  'reasoning.collapseFullAria': 'Collapse full thinking',
+  'reasoning.expandFullAria': 'Expand and read full thinking',
+  'reasoning.collapse': 'Collapse',
+  'reasoning.expandRead': 'Expand',
+  'tool.tabPreview': 'Preview',
+  'tool.tabResult': 'Result',
+  'tool.tabInput': 'Input',
+  'tool.tabRaw': 'Raw data',
+  'tool.nestedHint': 'Deeper nested calls can be viewed in the original chat.',
+  'tool.ledgerTitle': 'Tool · ',
+  'tool.receivedChars': 'Received {count} chars of input',
+  'tool.submittedWaiting': 'Submitted · waiting for the tool',
+  'tool.stoppedInputKept': 'Stopped · input record kept',
+  'tool.ranFor': 'Ran {duration}',
+  'tool.resultRecorded': 'Result recorded',
+  'tool.tabsAria': 'Execution data for {title}',
+  'tool.selectionPaused': 'Selection held — preview paused; the current state is in the card title.',
+  'tool.allInputFields': 'All input fields',
+  'tool.inputFieldsLabel': 'Input fields',
+  'tool.phasePreparing': 'Generating input',
+  'tool.phaseRunning': 'Running',
+  'tool.phaseReturned': 'Returned',
+  'tool.phaseSucceeded': 'Done',
+  'tool.phaseFailed': 'Failed',
+  'tool.phaseInterrupted': 'Interrupted',
+  'tool.durationMs': '{count} ms',
+  'tool.durationSeconds': '{count} s',
+  'tool.inputGenerating': 'Generating input · not yet executed · last 12 lines',
+  'tool.fileContent': 'File content from tool input',
+  'tool.previewSuffix': ' · previewing first 1,600 lines; full content in raw data',
+  'tool.fileContentLabel': 'File content',
+  'tool.commandGenerating': 'Generating command · not yet executed',
+  'tool.commandSubmitted': 'Submitted command',
+  'tool.inputFieldsReceived': 'Received input fields',
+  'tool.interruptedNoResult': 'Interrupted — no tool result. The generated input is still viewable.',
+  'tool.generatingInputNotStarted': 'The model is generating tool input; the tool has not started yet.',
+  'tool.startedWaitingResult': 'The tool started and is waiting for its result.',
+  'tool.retryRecord': 'Model retry record',
+  'tool.commandRecord': 'Command record',
+  'tool.write': 'Write',
+  'tool.edit': 'Edit',
+  'tool.patch': 'Patch',
+  'tool.file': 'file',
+  'tool.read': 'Read',
+  'tool.runCommand': 'Run command',
+  'tool.findFiles': 'Find files',
+  'tool.searchContent': 'Search content',
+  'tool.searchWeb': 'Search the web',
+  'tool.readWeb': 'Read web page',
+}
+
+/** The DSH app marks its language on <html lang="…">; browser fallback otherwise. */
+export function currentLocale(): UiLang {
+  if (typeof document !== 'undefined') {
+    const lang = (document.documentElement.getAttribute('lang') || (typeof navigator !== 'undefined' ? navigator.language : '') || '').toLowerCase();
+    if (lang.startsWith('zh')) return 'zh';
+    if (lang) return 'en';
+  }
+  return 'zh';
+}
+
+/** Translate one key for an explicit language, substituting {placeholders}. */
+export function uiIn(lang: UiLang, key: UiKey, params?: Record<string, string | number>): string {
+  const template = lang === 'zh' ? zh[key] : en[key];
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match));
+}
+
+/** Translate one key for the current app language. */
+export function ui(key: UiKey, params?: Record<string, string | number>): string {
+  return uiIn(currentLocale(), key, params);
+}
+
+/** Structural subset of the native turn-process node payload. */
+export interface TurnProcessData {
+  readonly messageCount: number
+  readonly toolCallCount: number
+  readonly subagentCount: number
+}
+
+/** One-line turn-process summary mirroring the native labels, for one language. */
+export function turnProcessLabelIn(lang: UiLang, data: TurnProcessData): string {
+  const labels: string[] = [];
+  const one = (count: number) => count === 1;
+  if (data.toolCallCount > 0) labels.push(uiIn(lang, one(data.toolCallCount) ? 'turnProcess.toolCalls.one' : 'turnProcess.toolCalls.other', { count: data.toolCallCount }));
+  if (data.messageCount > 0) labels.push(uiIn(lang, one(data.messageCount) ? 'turnProcess.messages.one' : 'turnProcess.messages.other', { count: data.messageCount }));
+  if (data.subagentCount > 0) labels.push(uiIn(lang, one(data.subagentCount) ? 'turnProcess.subagents.one' : 'turnProcess.subagents.other', { count: data.subagentCount }));
+  return labels.length === 0 ? uiIn(lang, 'turnProcess.thought') : labels.join(uiIn(lang, 'turnProcess.separator'));
+}
+
+/** One-line turn-process summary for the current app language. */
+export function turnProcessLabel(data: TurnProcessData): string {
+  return turnProcessLabelIn(currentLocale(), data);
+}
+
+/** Structural subset of the native turn-tail node payload. */
+export interface TurnTailData {
+  readonly tokenUsage?: { readonly totalTokens: number } | null
+  readonly tokensPerSecond?: number
+  readonly ttftMs?: number
+}
+
+/** Compact token count, e.g. 1234 -> "1.2k". */
+export function formatTokens(value: number): string {
+  if (value >= 1000) {
+    const k = value / 1000;
+    return `${k >= 100 ? Math.round(k) : Math.round(k * 10) / 10}k`;
+  }
+  return String(value);
+}
+
+/** Compact one-line turn stats for one language; null when nothing measurable. */
+export function turnTailStatsIn(lang: UiLang, data: TurnTailData): string | null {
+  const parts: string[] = [];
+  if (data.tokenUsage) parts.push(uiIn(lang, 'turnTail.tokens', { tokens: formatTokens(data.tokenUsage.totalTokens) }));
+  if (data.tokensPerSecond !== undefined && data.tokensPerSecond > 0) {
+    parts.push(uiIn(lang, 'turnTail.tokPerSec', { value: Math.round(data.tokensPerSecond * 10) / 10 }));
+  }
+  if (data.ttftMs !== undefined && data.ttftMs > 0) {
+    parts.push(uiIn(lang, 'turnTail.ttft', { seconds: Math.round(data.ttftMs / 10) / 100 }));
+  }
+  return parts.length === 0 ? null : parts.join(uiIn(lang, 'turnProcess.separator'));
+}
+
+/** Compact one-line turn stats for the current app language. */
+export function turnTailStats(data: TurnTailData): string | null {
+  return turnTailStatsIn(currentLocale(), data);
+}
+
+/** Friendly label for a record kind, for one language. */
+export function unknownKindLabelIn(lang: UiLang, kind: string): string {
+  if (kind === 'system-prompt') return uiIn(lang, 'systemPrompt');
+  if (kind === 'turn-process') return uiIn(lang, 'unknown.kind.turnProcess');
+  return kind;
+}
+
+/** Friendly label for a record kind, for the current app language. */
+export function unknownKindLabel(kind: string): string {
+  return unknownKindLabelIn(currentLocale(), kind);
+}
