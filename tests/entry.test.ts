@@ -16,6 +16,19 @@ test('an explicit native or third-party tab selection is not overwritten', () =>
   assert.equal(policy.select('chat'), null);
 });
 
+test('sessions without an explicit tab choice default to reading, even off the Chat fallback', () => {
+  const policy = new ReaderEntryPolicy(false, undefined, true);
+  assert.equal(policy.select('chat'), 'reader');
+  assert.equal(policy.select('reader'), null);
+  assert.equal(policy.select('chat'), null);
+});
+
+test('a per-session policy keeps respecting a stored explicit choice', () => {
+  const policy = new ReaderEntryPolicy(false, undefined, false);
+  assert.equal(policy.select('chat'), null);
+  assert.equal(policy.select('trajectory'), null);
+});
+
 test('the trial URL enters reading once and releases later tab choices', () => {
   let consumed = 0;
   const policy = new ReaderEntryPolicy(true, () => { consumed++; });

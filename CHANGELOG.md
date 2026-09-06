@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 - 2026-09-06
+
+- **New sessions open on DeckSeek by default**: the reading view is the default tab for any session whose user never made an explicit tab choice — previously only the very first session observed after app start got the entry decision. The policy re-arms per session, explicit tab choices are persisted per session (`dsh.conversation.{sessionId}`) and always respected, and the `?reader=1` entry links keep working.
+
 ## 0.4.0 - 2026-09-06
 
 - **Message navigation rail redesigned**: a minimal right-edge rail of tiny pill marks (one per user message) in the editor-minimap style — the reading column stays truly centered, the active mark widens and highlights, hovering shows a styled info bubble ("第 N 轮 · title"), and clicking scrolls that message into view (hidden on narrow widths).
