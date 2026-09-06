@@ -5,6 +5,9 @@ import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
 import { BlockBoundary, Blocks, contentBlocks, CopyAnswer } from './Blocks.js';
 import { ReasoningCard } from './ReasoningCard.js';
 import { ToolActivity, ToolMedia } from './ToolActivity.js';
+import { UnknownRecord } from './UnknownRecord.js';
+import { SystemPromptRow, TurnProcessMeta, TurnTailStats } from './TurnRecords.js';
+import type { TurnProcessData, TurnTailData } from './turn-records.js';
 import { preparingLabel, readerFlow } from './tool-activity.js';
 import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingScroll } from './motion.js';
 import { StreamMotionContext } from './streaming.js';
@@ -84,11 +87,11 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
     return node.data.compaction ? <p className={css.meta}>上下文已整理，原始记录仍保留。</p> : <p className={css.meta}>正在整理上下文…</p>;
   }
   if (node.kind === 'compaction') return <details className={css.detail}><summary>上下文已整理，查看记录</summary><JsonBlock label="压缩记录" payload={node.data} truncatedLabel={truncatedJsonLabel} /></details>;
-  if (node.kind === 'context' || node.kind === 'turn-tail') return null;
-  return <div className={css.unknown} data-reader-anchor>
-    <p>此记录类型暂未接入阅读页：{node.kind}</p>
-    <JsonBlock label="查看原始记录" payload={node.data} truncatedLabel={truncatedJsonLabel} />
-  </div>;
+  if (node.kind === 'context') return null;
+  if (node.kind === 'system-prompt') return <SystemPromptRow text={String((node.data as { text?: unknown }).text ?? '')} />;
+  if (node.kind === 'turn-process') return <TurnProcessMeta data={node.data as TurnProcessData} />;
+  if (node.kind === 'turn-tail') return <TurnTailStats data={node.data as TurnTailData} />;
+  return <UnknownRecord kind={node.kind === 'unknown' ? String((node.data as { type?: unknown }).type ?? 'unknown') : node.kind} data={node.data} />;
 });
 
 function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, motion }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionPendingInteraction'> & { group: ReaderGroup; motion: boolean }) {

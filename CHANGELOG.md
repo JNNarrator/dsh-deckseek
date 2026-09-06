@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **All known chat record kinds adapted**: the reading view now renders `system-prompt` (collapsed disclosure with the model-facing text), `turn-process` (one-line process summary mirroring the native labels: tool calls / messages / subagents) and `turn-tail` (compact usage/time stats) natively.
+- **Improved unknown-record fallback**: unknown kinds render as a card with a friendly title, content preview or field summary, a copy action and the full raw record — kept because DSH is pre-stable and may add new record kinds.
+
 ## 0.3.0
 
 Renamed fork release (formerly `dsh-better-display`, now **`dsh-deckseek`**).

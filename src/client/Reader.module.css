@@ -203,6 +203,17 @@
 .attention span { color: var(--dsw-alias-label-secondary); }
 .unknown { background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 22px; }
 .unknown p { margin: 0 0 6px; }
+.unknownKind { margin-left: 6px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.unknownPreview { margin: 0 0 8px; padding: 8px 10px; max-height: 180px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-size: 12px; line-height: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dsw-alias-label-secondary); }
+.unknownSummary { margin: 0 0 8px; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
+.unknownActions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 2px; }
+.unknownActions > * { margin: 0; }
+.systemPrompt { font-size: 13px; line-height: 22px; color: var(--dsw-alias-label-secondary); }
+.systemPrompt > summary { cursor: pointer; padding: 3px 0; user-select: none; }
+.systemPrompt[open] > summary { margin-bottom: 8px; }
+.systemPromptBody { margin: 0; padding: 8px 10px; max-height: 141px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
+.turnProcess { margin: 0; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
+.turnTail { margin: 14px 0 0; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
 .historyButton { align-self: center; background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .historyButton:disabled { opacity: .55; cursor: default; }
 .empty { padding: 40px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
