@@ -1,12 +1,14 @@
-# dsh-better-display
+# dsh-deckseek
 
 [English](./README.en.md) | [中文](./README.md)
+
+> 🙏 感谢原仓库 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)（MIT）及其作者与贡献者。本插件 fork 自该项目，在保留原生阅读体验的基础上独立维护与演进；上游许可证与第三方声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，后续改动与维护责任由 [JNNarrator](https://github.com/JNNarrator) 承担。
 
 让 DeepSeek Harness 的长任务更好读，同时赋予 AI 模型动态呈现交互式 Web 应用的能力。
 
 执行时看得到原生步骤、思考和进度；完成后把过程收起来，留下最终回答与活体交互卡片。独立的 **「阅读」** 页签，保留原版「对话 / 轨迹」、输入框、模型选择、工具和审批。
 
-**v0.2.0 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**
+**v0.3.0 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**
 
 ---
 
@@ -101,16 +103,16 @@ export DSHX_HARNESS=/absolute/path/to/deepseek-harness
 export DSH_HOME=/absolute/path/to/your/dsh-home
 export DSH_WEB_PORT=3080
 
-git clone https://github.com/aa2246740/dsh-better-display.git "$DSHX_HARNESS/my-plugins/dsh-better-display"
-cd "$DSHX_HARNESS/my-plugins/dsh-better-display"
+git clone https://github.com/JNNarrator/dsh-deckseek.git "$DSHX_HARNESS/my-plugins/dsh-deckseek"
+cd "$DSHX_HARNESS/my-plugins/dsh-deckseek"
 
 node scripts/link-harness-dependencies.mjs "$DSHX_HARNESS"
 npm test
 DSHX_HARNESS="$DSHX_HARNESS" npm run build
 
-dshx check dsh-better-display --harness "$DSHX_HARNESS"
-dshx activation-plan dsh-better-display --change new-client --harness "$DSHX_HARNESS"
-dshx activate-new-client dsh-better-display --profile web --port "$DSH_WEB_PORT" --harness "$DSHX_HARNESS"
+dshx check dsh-deckseek --harness "$DSHX_HARNESS"
+dshx activation-plan dsh-deckseek --change new-client --harness "$DSHX_HARNESS"
+dshx activate-new-client dsh-deckseek --profile web --port "$DSH_WEB_PORT" --harness "$DSHX_HARNESS"
 ```
 
 首次安装不需要重启 DSH；**刷新或重新打开 Web 页面**后选择「阅读」即可。新会话默认进入阅读。

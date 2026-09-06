@@ -1,12 +1,14 @@
-# dsh-better-display
+# dsh-deckseek
 
 [English](./README.en.md) | [中文](./README.md)
+
+> 🙏 Thanks to the original repository [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display) (MIT) and its authors and contributors. This plugin is a fork of that project, independently maintained and evolved on top of the native reading experience; upstream license and third-party terms are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), and all downstream changes and maintenance responsibility rest with [JNNarrator](https://github.com/JNNarrator).
 
 Make DeepSeek Harness long tasks easier to read, and give the model the ability to dynamically render interactive web applications in its replies.
 
 Watch native steps, thinking, and progress during execution; after completion the process folds away, leaving the final answer and live interactive cards. An independent **「Reading」** tab that keeps the original Chat / Trajectory views, input box, model selector, tools, and approvals intact.
 
-**v0.2.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
+**v0.3.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
 
 ---
 
@@ -101,16 +103,16 @@ export DSHX_HARNESS=/absolute/path/to/deepseek-harness
 export DSH_HOME=/absolute/path/to/your/dsh-home
 export DSH_WEB_PORT=3080
 
-git clone https://github.com/aa2246740/dsh-better-display.git "$DSHX_HARNESS/my-plugins/dsh-better-display"
-cd "$DSHX_HARNESS/my-plugins/dsh-better-display"
+git clone https://github.com/JNNarrator/dsh-deckseek.git "$DSHX_HARNESS/my-plugins/dsh-deckseek"
+cd "$DSHX_HARNESS/my-plugins/dsh-deckseek"
 
 node scripts/link-harness-dependencies.mjs "$DSHX_HARNESS"
 npm test
 DSHX_HARNESS="$DSHX_HARNESS" npm run build
 
-dshx check dsh-better-display --harness "$DSHX_HARNESS"
-dshx activation-plan dsh-better-display --change new-client --harness "$DSHX_HARNESS"
-dshx activate-new-client dsh-better-display --profile web --port "$DSH_WEB_PORT" --harness "$DSHX_HARNESS"
+dshx check dsh-deckseek --harness "$DSHX_HARNESS"
+dshx activation-plan dsh-deckseek --change new-client --harness "$DSHX_HARNESS"
+dshx activate-new-client dsh-deckseek --profile web --port "$DSH_WEB_PORT" --harness "$DSHX_HARNESS"
 ```
 
 First-time install needs no DSH restart; **refresh or reopen the Web page** and select the Reading tab. New sessions default to Reading.
