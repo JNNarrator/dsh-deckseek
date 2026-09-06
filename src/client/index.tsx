@@ -17,8 +17,7 @@ export function apply(ctx: Context): void {
   const store = createReaderStore();
   const faces = new Map<SessionId, ReaderInjected>();
   ctx.effect(() => () => { faces.clear(); });
-  ctx.slots.inject('conversation.view', function* () {
-    yield ctx.slots.register({
+  ctx.slots.inject('conversation.view', () => ctx.slots.register({
     name: 'conversation.view',
     id: 'reader',
     order: -5,
@@ -45,7 +44,6 @@ export function apply(ctx: Context): void {
       faces.set(sessionId, face);
       return face;
     },
-    }, Reader);
-    yield installReaderEntry(ctx);
-  });
+  }, Reader));
+  installReaderEntry(ctx);
 }
