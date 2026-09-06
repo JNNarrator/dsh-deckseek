@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3 - 2026-09-06
+
+- **Tighter end-of-turn spacing**: the bottom clearance deduction is now 120px (was 48px) with the same 56px floor and 45vh ceiling — after a turn finishes, the gap between the last content and the composer / collapsed task bar shrinks by roughly a third without hiding content behind them.
+
 ## 0.4.2 - 2026-09-06
 
 - **Tall overlays no longer hollow out the page**: the bottom clearance is capped at 45vh, so pending questions, plan task lists and other states that grow the native composer keep their extra height without leaving a huge empty gap under the reading content.

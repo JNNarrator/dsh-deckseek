@@ -10,8 +10,10 @@
      compact: cap the fixed slack while the composer variable (which grows
      for goals / plans) still keeps the newest content visible above it.
      The 45vh ceiling keeps tall overlays (pending questions, plan task
-     lists) from hollowing out the page with empty reserved space. */
-  --reader-bottom-clearance: max(56px, min(calc(var(--dsh-composer-height, 152px) - 48px), 45vh));
+     lists) from hollowing out the page with empty reserved space, and the
+     120px deduction trusts the composer card's own margins so a collapsed
+     task bar does not add a second void after a finished turn. */
+  --reader-bottom-clearance: max(56px, min(calc(var(--dsh-composer-height, 152px) - 120px), 45vh));
   padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) var(--reader-bottom-clearance);
   min-width: 0;
   flex: 0 0 auto;
