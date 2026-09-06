@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4 - 2026-09-06
+
+- **Fixed: new sessions now actually open on DeckSeek** — the entry registration ran once at plugin load, before the host declared its session body, found no conversation store and silently gave up for every future session. The dock entry now registers reactively when the host's `conversation.session` slot materializes (`slots.subscribe`), so any session without an explicit tab choice — new sessions included — lands on the reading view.
+
 ## 0.4.3 - 2026-09-06
 
 - **Tighter end-of-turn spacing**: the bottom clearance deduction is now 120px (was 48px) with the same 56px floor and 45vh ceiling — after a turn finishes, the gap between the last content and the composer / collapsed task bar shrinks by roughly a third without hiding content behind them.

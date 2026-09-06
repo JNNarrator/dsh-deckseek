@@ -208,7 +208,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.3" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.4" data-motion={motion ? 'on' : 'off'}>
     <div className={css.column}>
       <div className={css.toolbar} data-ud-check="reader-toolbar">
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
