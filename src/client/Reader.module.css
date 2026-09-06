@@ -126,6 +126,14 @@
 .rowSeparator { flex: none; width: 2px; height: 2px; margin: 0 8px; border-radius: 1px; background: var(--dsw-alias-label-caption); }
 .nativeToolSummary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-tertiary); font-size: 14px; line-height: 24px; }
 .toolDelta { flex: none; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 24px; font-variant-numeric: tabular-nums; }
+/* In-progress tool states pulse like the native rows; done states stay still. */
+.toolState[data-phase="preparing"], .toolState[data-phase="running"] { animation: toolStatePulse 1.5s ease-in-out infinite; }
+@keyframes toolStatePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+[data-motion=off] .toolState[data-phase="preparing"], [data-motion=off] .toolState[data-phase="running"] { animation: none; }
+@media (prefers-reduced-motion: reduce) { .toolState[data-phase="preparing"], .toolState[data-phase="running"] { animation: none; } }
+/* The umbrella busy status mirrors the native chat: pinned at the bottom-left
+   of the reading area, above the composer/task bar, shimmering. */
+.statusDock { position: sticky; bottom: calc(var(--dsh-composer-height, 152px) + 12px); align-self: flex-start; z-index: 2; pointer-events: none; }
 .nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 4px; }
 .toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 10px 14px 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 11px; }
 .toolHeading:hover { background: var(--dsw-alias-interactive-bg-hover); }

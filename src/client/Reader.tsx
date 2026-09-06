@@ -104,7 +104,7 @@ function elapsedClock(start: number | undefined, now: number): string {
   return elapsed < 60 ? ui('status.clockSeconds', { seconds: elapsed }) : ui('status.clockMinutes', { minutes: Math.floor(elapsed / 60), seconds: elapsed % 60 });
 }
 
-function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, motion }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionPendingInteraction'> & { group: ReaderGroup; motion: boolean }) {
+function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, motion, variant }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionPendingInteraction'> & { group: ReaderGroup; motion: boolean; variant: 'header' | 'dock' }) {
   const pending = useSessionPendingInteraction(snapshot => snapshot.get(sessionId));
   const open = useChat(snapshot => group.turn !== null && snapshot.timeline.turns.get(group.turn)?.status === 'open');
   const [now, setNow] = useState(() => Date.now());
@@ -113,6 +113,17 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [open]);
+  // Mirror the native chat: the umbrella busy label lives pinned at the
+  // bottom-left of the reading area (the dock variant), not in the turn
+  // header; thinking keeps its own brand label in the header.
+  const kind = useChat(snapshot => {
+    const turn = group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn);
+    if (turn === undefined) return 'none';
+    if (turn.status === 'closed') return 'done';
+    if (pending !== undefined) return 'waiting';
+    const step = turn.steps.at(-1)?.data.get('assistant-step');
+    return step?.blocks.at(-1)?.kind === 'reasoning' ? 'thinking' : 'delving';
+  });
   const text = useChat(snapshot => {
     const turn = group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn);
     if (turn?.status === 'closed') {
@@ -122,15 +133,16 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
     }
     if (turn?.status !== 'open') return ui('status.process');
     if (pending !== undefined) return ui('status.waiting');
-    // Every busy state mirrors the native umbrella label with a live clock;
-    // the thinking brand label keeps its own wording.
     const time = elapsedClock(turn.start?.time, now);
-    if (turn.steps.at(-1)?.data.get('assistant-step')?.blocks.at(-1)?.kind === 'reasoning') {
-      return ui('status.thinkingName', { time });
-    }
+    if (turn.steps.at(-1)?.data.get('assistant-step')?.blocks.at(-1)?.kind === 'reasoning') return ui('status.thinkingName', { time });
     return ui('status.delving', { time });
   });
   const busy = open && pending === undefined;
+  if (variant === 'dock') {
+    if (kind !== 'delving') return null;
+    return <div className={css.statusDock} data-reader-status-dock><StatusText text={text} motion={motion} shimmer /></div>;
+  }
+  if (kind === 'delving') return null;
   return <StatusText text={text} motion={motion} shimmer={busy} />;
 }
 
@@ -158,9 +170,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton}
-      label={<GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} />} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
+      label={<GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
     {!hasProcess && boundary.status === 'open' && <div className={css.disclosure} data-reader-status-only>
-      <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} />
+      <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />
     </div>}
     <div id={flowId} className={css.mainFlow} data-reader-flow>
       {flow.map(item => item.kind === 'node' ? <Fragment key={item.key}>
@@ -174,7 +186,8 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
         {item.block && <BlockBoundary><ToolMedia {...shared} block={item.block} /></BlockBoundary>}
       </Fragment>)}
     </div>
-    {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
+    {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="dock" />}
+{terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section>;
 });
 
@@ -208,7 +221,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.4" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.5" data-motion={motion ? 'on' : 'off'}>
     <div className={css.column}>
       <div className={css.toolbar} data-ud-check="reader-toolbar">
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
