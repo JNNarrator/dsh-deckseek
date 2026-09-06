@@ -1,6 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client';
+import type {} from '@deepseek-ai/dsh-api-session-controller/client';
+import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import { Reader } from './Reader.js';
 import { createReaderStore } from './store.js';
 import { installReaderEntry } from './entry.js';
@@ -15,13 +17,12 @@ export function apply(ctx: Context): void {
   const store = createReaderStore();
   const faces = new Map<SessionId, ReaderInjected>();
   ctx.effect(() => () => { faces.clear(); });
-  ctx.slots.inject('conversation.view', function* () {
-    yield ctx.slots.register({
+  ctx.slots.inject('conversation.view', () => ctx.slots.register({
     name: 'conversation.view',
     id: 'reader',
     order: -5,
     label: () => '阅读',
-    locale: 'conversation',
+    locale: 'chat',
     children: { 'dsh-better-display.block': { kind: 'chain', scope: 'session' } },
     store,
     inject: (sessionId: SessionId): ReaderInjected => {
@@ -43,7 +44,6 @@ export function apply(ctx: Context): void {
       faces.set(sessionId, face);
       return face;
     },
-    }, Reader);
-    yield installReaderEntry(ctx);
-  });
+  }, Reader));
+  installReaderEntry(ctx);
 }
