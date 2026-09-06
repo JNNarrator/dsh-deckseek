@@ -21,7 +21,9 @@ export const SystemPromptRow = memo(function SystemPromptRow({ text }: { text: s
 
 /** Turn-process record: one-line summary of the folded process evidence. */
 export const TurnProcessMeta = memo(function TurnProcessMeta({ data }: { data: TurnProcessData }) {
-  return <p className={css.turnProcess} data-reader-anchor>执行过程 · {turnProcessLabel(data)}</p>;
+  const label = turnProcessLabel(data);
+  const hasCounts = data.messageCount > 0 || data.toolCallCount > 0 || data.subagentCount > 0;
+  return <p className={css.turnProcess} data-reader-anchor>{hasCounts ? `执行过程 · ${label}` : label}</p>;
 });
 
 /** Turn-tail record: compact usage/time stats footer; null when nothing to show. */

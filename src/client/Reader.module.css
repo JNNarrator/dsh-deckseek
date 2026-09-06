@@ -220,6 +220,7 @@
 .failureDetail { color: var(--dsw-alias-label-primary); white-space: pre-wrap; }
 .failureNote { color: var(--dsw-alias-label-secondary); font-size: 12px; }
 .failure > details { margin-top: 8px; }
+.rawJson { margin: 8px 0 0; padding: 8px 10px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
 .historyButton { align-self: center; background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .historyButton:disabled { opacity: .55; cursor: default; }
 .empty { padding: 40px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }

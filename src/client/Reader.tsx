@@ -85,7 +85,7 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
     if (node.data.command.outcome?.kind === 'error') return <FailureCard title="上下文压缩失败" message={node.data.command.outcome.text} />;
     return node.data.compaction ? <p className={css.meta}>上下文已整理，原始记录仍保留。</p> : <p className={css.meta}>正在整理上下文…</p>;
   }
-  if (node.kind === 'compaction') return <details className={css.detail}><summary>上下文已整理，查看记录</summary><JsonBlock label="压缩记录" payload={node.data} truncatedLabel={truncatedJsonLabel} /></details>;
+  if (node.kind === 'compaction') return <details className={css.detail}><summary>上下文已整理，查看记录</summary><pre className={css.rawJson}>{JSON.stringify(node.data, null, 2)}</pre></details>;
   if (node.kind === 'context') return null;
   if (node.kind === 'system-prompt') return <SystemPromptRow text={String((node.data as { text?: unknown }).text ?? '')} />;
   if (node.kind === 'turn-process') return <TurnProcessMeta data={node.data as TurnProcessData} />;

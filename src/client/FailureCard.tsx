@@ -1,6 +1,4 @@
 import { memo } from 'react';
-import { JsonBlock } from '@deepseek-ai/dsh-client-ui-primitives';
-import { truncatedJsonLabel } from './primitive-labels.js';
 import css from './Reader.module.css';
 
 /**
@@ -27,7 +25,7 @@ export const FailureCard = memo(function FailureCard({
       {code !== undefined && <code>{code}</code>}
       <p className={css.failureNote}>{note}</p>
       {raw !== undefined && <details className={css.detail}><summary>查看原始记录</summary>
-        <JsonBlock label="原始记录" payload={raw as Record<string, unknown>} truncatedLabel={truncatedJsonLabel} />
+        <pre className={css.rawJson}>{JSON.stringify(raw, null, 2)}</pre>
       </details>}
     </div>
   );
