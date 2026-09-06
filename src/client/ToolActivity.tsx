@@ -5,7 +5,7 @@ import { DiffBlock, DisclosureRow, JsonTree, ReadBlock, SearchBlock, TerminalBlo
   IconApiOutline14, IconBrowseOutline16, IconEditOutline16, IconSearchOutline16, IconSkillOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives';
 import { Blocks, contentBlocks } from './Blocks.js';
 import { ProcessFragment } from './motion.js';
-import { activityPhase, activitySummary, executionFacts, objectValue, toolFailureLine, toolFailureText, toolIdentity, toolStateLabel } from './tool-activity.js';
+import { activityPhase, activitySummary, diffStat, executionFacts, objectValue, toolFailureLine, toolFailureText, toolIdentity, toolStateLabel } from './tool-activity.js';
 import type { ToolActivityEntry, ToolCategory, ToolPhase } from './tool-activity.js';
 import type { BlockRenderProps } from './types.js';
 import { classifyTool, toolRowModel, VARIANT_TITLES } from './native/tool-call-model.js';
@@ -157,6 +157,13 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
   const Icon = model.name === 'skill' ? IconSkillOutline16 : ICONS[model.category];
   const block = entry.block;
   const native = block ? toolRowModel(model.name, block) : null;
+  // "+N -M" line changes for write/edit rows, from the settled diff record.
+  const delta = useMemo(() => {
+    const settled = entry.block;
+    if (!settled || !('kind' in settled)) return null;
+    const hunks = diffHunks(objectValue(settled.meta)?.diffs);
+    return hunks ? diffStat(hunks) : null;
+  }, [entry.block]);
   const skillName = typeof model.args?.name === 'string' ? model.args.name.split('\n')[0] : model.raw.split('\n')[0];
   const rowTitle = model.name === 'skill' ? 'Skill' : native?.title ?? VARIANT_TITLES[classifyTool(model.name)];
   const rowSummary = model.name === 'skill' ? skillName : native?.errorSummary ?? native?.summary
@@ -175,6 +182,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
     <DisclosureRow icon={<Icon size={14} />} title={rowTitle} open={open} expandable expandOnRowClick keepContentWhenOpen
       onToggle={() => { onRead(); setOpen(value => !value); }} rowClassName={css.nativeToolRow}
       collapsedContent={<><span className={css.rowSeparator} aria-hidden /><span className={css.nativeToolSummary} title={rowSummary} data-reader-tool-summary>{rowSummary}</span>
+        {delta && <span className={css.toolDelta} data-reader-tool-delta>+{delta.added} -{delta.removed}</span>}
         {showState && <span className={css.toolState} data-phase={phase}>{toolStateLabel(model.category, phase)}</span>}</>} />
     <ProcessFragment open={open} motion={motion} onRead={onRead} returnFocusTo={control} nodeKey={`${entry.key}:detail`} framed>
       <div id={detailId} className={css.toolDetails}>

@@ -178,3 +178,34 @@ export function toolStateLabel(category: ToolCategory, phase: ToolPhase, lang: U
   if (phase === 'interrupted') return uiIn(lang, 'tool.phaseInterrupted');
   return uiIn(lang, 'tool.state.otherRunning');
 }
+
+/** Line counts per distinct line, for multiset line differences. */
+function lineCounts(text: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  if (text === '') return counts;
+  for (const line of text.split('\n')) counts.set(line, (counts.get(line) ?? 0) + 1);
+  return counts;
+}
+
+/**
+ * Line-level +added/-removed counts over diff hunks (per-hunk multiset line
+ * difference) — the numbers the native write/edit rows show as "+N -M".
+ * @returns null when the hunks carry no line changes.
+ */
+export function diffStat(hunks: readonly { oldText: string | null; newText: string }[]): { added: number; removed: number } | null {
+  let added = 0;
+  let removed = 0;
+  for (const hunk of hunks) {
+    const before = lineCounts(hunk.oldText ?? '');
+    const after = lineCounts(hunk.newText);
+    for (const [line, count] of after) {
+      const extra = count - (before.get(line) ?? 0);
+      if (extra > 0) added += extra;
+    }
+    for (const [line, count] of before) {
+      const extra = count - (after.get(line) ?? 0);
+      if (extra > 0) removed += extra;
+    }
+  }
+  return added > 0 || removed > 0 ? { added, removed } : null;
+}

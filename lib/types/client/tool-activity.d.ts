@@ -56,4 +56,16 @@ export declare function toolFailureText(block: ToolCallBlock): string | null;
 export declare function toolFailureLine(block: ToolCallBlock, lang?: UiLang): string;
 /** Category-aware tool state label: start (preparing/running) and end (succeeded/returned) per tool family. */
 export declare function toolStateLabel(category: ToolCategory, phase: ToolPhase, lang?: UiLang): string;
+/**
+ * Line-level +added/-removed counts over diff hunks (per-hunk multiset line
+ * difference) — the numbers the native write/edit rows show as "+N -M".
+ * @returns null when the hunks carry no line changes.
+ */
+export declare function diffStat(hunks: readonly {
+    oldText: string | null;
+    newText: string;
+}[]): {
+    added: number;
+    removed: number;
+} | null;
 //# sourceMappingURL=tool-activity.d.ts.map

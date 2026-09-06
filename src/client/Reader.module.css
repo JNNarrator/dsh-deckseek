@@ -8,8 +8,10 @@
   align-items: flex-start;
   /* Bottom clearance follows the native composer reservation but stays
      compact: cap the fixed slack while the composer variable (which grows
-     for goals / plans) still keeps the newest content visible above it. */
-  --reader-bottom-clearance: max(56px, calc(var(--dsh-composer-height, 152px) - 48px));
+     for goals / plans) still keeps the newest content visible above it.
+     The 45vh ceiling keeps tall overlays (pending questions, plan task
+     lists) from hollowing out the page with empty reserved space. */
+  --reader-bottom-clearance: max(56px, min(calc(var(--dsh-composer-height, 152px) - 48px), 45vh));
   padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) var(--reader-bottom-clearance);
   min-width: 0;
   flex: 0 0 auto;
@@ -121,6 +123,7 @@
 .nativeToolRow { min-width: 0; }
 .rowSeparator { flex: none; width: 2px; height: 2px; margin: 0 8px; border-radius: 1px; background: var(--dsw-alias-label-caption); }
 .nativeToolSummary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-tertiary); font-size: 14px; line-height: 24px; }
+.toolDelta { flex: none; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 24px; font-variant-numeric: tabular-nums; }
 .nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 4px; }
 .toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 10px 14px 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 11px; }
 .toolHeading:hover { background: var(--dsw-alias-interactive-bg-hover); }

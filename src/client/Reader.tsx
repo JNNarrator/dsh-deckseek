@@ -10,7 +10,7 @@ import { SystemPromptRow, TurnProcessMeta, TurnTailStats } from './TurnRecords.j
 import { FailureCard } from './FailureCard.js';
 import type { TurnProcessData, TurnTailData } from './locale.js';
 import { ui } from './locale.js';
-import { preparingLabel, readerFlow } from './tool-activity.js';
+import { readerFlow } from './tool-activity.js';
 import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingPosition, useReadingScroll } from './motion.js';
 import { buildSearchIndex } from './search-index.js';
 import { SearchPanel } from './SearchPanel.js';
@@ -122,20 +122,13 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
     }
     if (turn?.status !== 'open') return ui('status.process');
     if (pending !== undefined) return ui('status.waiting');
-    const current = turn.steps.at(-1)?.data.get('assistant-step');
-    const last = current?.blocks.at(-1);
-    if (current?.status === 'running' && last?.kind === 'tool-call') return preparingLabel(last.name);
-    for (let index = group.keys.length - 1; index >= 0; index--) {
-      const node = snapshot.nodes.get(group.keys[index]);
-      if (!node) continue;
-      if (isNode(node, 'tool-call') && !('kind' in node.data.root)) return ui('status.usingTool');
-      if (isNode(node, 'assistant-step') && node.data.status === 'running') {
-        const last = node.data.blocks.at(-1);
-        if (last?.kind === 'reasoning') return ui('status.thinkingName', { time: elapsedClock(turn.start?.time, now) });
-        return last?.kind === 'text' ? ui('status.outputting') : ui('status.preparingReply');
-      }
+    // Every busy state mirrors the native umbrella label with a live clock;
+    // the thinking brand label keeps its own wording.
+    const time = elapsedClock(turn.start?.time, now);
+    if (turn.steps.at(-1)?.data.get('assistant-step')?.blocks.at(-1)?.kind === 'reasoning') {
+      return ui('status.thinkingName', { time });
     }
-    return ui('status.processing');
+    return ui('status.delving', { time });
   });
   const busy = open && pending === undefined;
   return <StatusText text={text} motion={motion} shimmer={busy} />;
@@ -215,7 +208,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.1" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.2" data-motion={motion ? 'on' : 'off'}>
     <div className={css.column}>
       <div className={css.toolbar} data-ud-check="reader-toolbar">
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2 - 2026-09-06
+
+- **Tall overlays no longer hollow out the page**: the bottom clearance is capped at 45vh, so pending questions, plan task lists and other states that grow the native composer keep their extra height without leaving a huge empty gap under the reading content.
+- **"深度求索中… {time}" running status**: every busy state of an open turn (tools running, preparing, streaming output) mirrors the native umbrella label with a live elapsed clock in both languages — 深度求索中… {time} / DeepSeeking… {time}; the thinking brand label keeps its own wording.
+- **"+N -M" diff stats on write/edit rows**: write and edit tool rows now show the line change counts from the settled diff record, matching the native rows.
+
 ## 0.4.1 - 2026-09-06
 
 - **New sessions open on DeckSeek by default**: the reading view is the default tab for any session whose user never made an explicit tab choice — previously only the very first session observed after app start got the entry decision. The policy re-arms per session, explicit tab choices are persisted per session (`dsh.conversation.{sessionId}`) and always respected, and the `?reader=1` entry links keep working.

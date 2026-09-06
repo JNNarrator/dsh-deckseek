@@ -50,6 +50,7 @@ export declare const zh: {
     readonly 'status.waiting': "等待你的操作";
     readonly 'status.usingTool': "正在使用工具";
     readonly 'status.thinkingName': "大肥鱼正在思考中… {time}";
+    readonly 'status.delving': "深度求索中… {time}";
     readonly 'status.clockSeconds': "{seconds} 秒";
     readonly 'status.clockMinutes': "{minutes} 分 {seconds} 秒";
     readonly 'status.outputting': "正在输出";

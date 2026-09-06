@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { toolFailureLine, toolFailureText, toolStateLabel } from '../src/client/tool-activity.ts';
+import { diffStat, toolFailureLine, toolFailureText, toolStateLabel } from '../src/client/tool-activity.ts';
 
 function failed(text: string, meta?: Record<string, unknown>): ToolCallBlock {
   return {
@@ -45,4 +45,17 @@ test('toolStateLabel speaks English with the en locale', () => {
   assert.equal(toolStateLabel('read', 'running', 'en'), 'Reading…');
   assert.equal(toolStateLabel('search', 'succeeded', 'en'), 'Found');
   assert.equal(toolStateLabel('read', 'failed', 'en'), 'Failed');
+});
+
+test('diffStat counts per-hunk line additions and removals', () => {
+  const stat = diffStat([
+    { path: 'a.ts', oldText: 'const a = 1;\nconst b = 2;', newText: 'const a = 2;\nconst b = 2;\nconst c = 3;' },
+    { path: 'b.ts', oldText: null, newText: 'fresh file\n' },
+  ]);
+  assert.deepEqual(stat, { added: 4, removed: 1 });
+});
+
+test('diffStat returns null when hunks carry no line changes', () => {
+  assert.equal(diffStat([{ path: 'a.ts', oldText: 'same', newText: 'same' }]), null);
+  assert.equal(diffStat([{ path: 'a.ts', oldText: '', newText: '' }]), null);
 });
