@@ -12,7 +12,7 @@ export type UiLang = 'zh' | 'en'
 
 export const zh = {
   // Reading tab / chrome
-  'reader.tab': '阅读',
+  'reader.tab': 'DeckSeek',
   'reader.sessionClosed': '阅读页对应的会话已关闭。',
   'reader.toolbarTitle': '阅读 · 原始记录完整保留',
   'reader.toolbarHint': '基于真实消息类型和轮次边界整理。当前协议没有独立的正文阶段标记，无法确认的内容会继续保留。',
@@ -35,6 +35,8 @@ export const zh = {
   'reader.pendingHint': '请在下方原生操作区处理。此提示不会收进执行过程。',
   'reader.positionRestored': '已回到上次阅读位置。',
   'reader.jumpLatest': '↓ 回到最新',
+  'rail.label': '轮次导航',
+  'rail.jump': '跳到第 {turn} 轮',
   // Turn / process status
   'turn.stopped': '已停止',
   'turn.errorTitle': '本轮出现错误',
@@ -251,7 +253,7 @@ export const zh = {
 export type UiKey = keyof typeof zh
 
 export const en: Record<UiKey, string> = {
-  'reader.tab': 'Reading',
+  'reader.tab': 'DeckSeek',
   'reader.sessionClosed': 'The reading page\'s session is closed.',
   'reader.toolbarTitle': 'Reading · original record fully preserved',
   'reader.toolbarHint': 'Reconstructed from real message types and turn boundaries. The current protocol has no separate body-phase marker; unverifiable content stays as-is.',
@@ -274,6 +276,8 @@ export const en: Record<UiKey, string> = {
   'reader.pendingHint': 'Handle it in the native actions below. This notice is not part of the execution record.',
   'reader.positionRestored': 'Back to your previous reading position.',
   'reader.jumpLatest': '↓ Back to latest',
+  'rail.label': 'Turn navigation',
+  'rail.jump': 'Jump to turn {turn}',
   'turn.stopped': 'Stopped',
   'turn.errorTitle': 'Error in this turn',
   'turn.maxTokens': 'Output length limit reached; the answer may be incomplete.',

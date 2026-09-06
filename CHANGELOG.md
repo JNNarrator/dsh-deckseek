@@ -9,6 +9,10 @@
 - **Reading position memory**: the reading view remembers the scroll position per session (sessionStorage) and restores it with a short notice.
 - **Copy enhancements**: code blocks copy in one click; settled tables reveal a "Copy as CSV" button (RFC 4180 with quoting of commas, quotes and newlines).
 - **Bilingual UI (i18n)**: every reading-view string follows the DSH app language via the `<html lang>` marker — the reading tab, toolbar, turn/process status, failure cards, unknown-record cards, tool activity, reasoning controls, MCP app chrome and copy/export labels (Chinese / English dictionaries kept in parity by unit tests).
+- **Turn rail restored**: a right-side turn navigation rail mirrors the native chat — one mark per turn, the active mark follows the reading position, and a click scrolls that turn into view (hidden on narrow widths).
+- **Reading tab renamed "DeckSeek"**: the independent view tab now carries the plugin brand in both languages.
+- **Thinking follow pins above the composer**: the reading column reserves the native composer height at the bottom, so the followed card sits cleanly above the input region instead of leaving a blank band below it.
+- **Thinking card shows card chrome from the first line**: removed the borderless "plain text" phase that made early/short thinking look like a raw string before the card frame appeared.
 
 ## 0.3.0
 

@@ -3,13 +3,21 @@
   font-family: inherit;
   font-size: 16px;
   line-height: 28px;
-  padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) 24px;
+  display: flex;
+  align-items: flex-start;
+  /* Bottom clearance matches the native composer reservation so the follow
+     pins the newest content above the input region instead of behind it. */
+  padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) calc(var(--dsh-composer-height, 152px) + 16px);
   min-width: 0;
   flex: 0 0 auto;
   overflow-anchor: auto;
   container-type: inline-size;
 }
 .column { max-width: var(--dsh-chat-content-width, 748px); width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.rail { position: sticky; top: 12px; align-self: flex-start; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-left: 12px; padding: 8px 6px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-module-platform); }
+.railMark { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--dsw-alias-border-l3); cursor: pointer; transition: background 120ms ease, transform 120ms ease; }
+.railMark:hover { background: var(--dsw-alias-label-secondary); transform: scale(1.3); }
+.railMark[data-active] { background: var(--dsw-alias-state-business-primary); transform: scale(1.4); }
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 20px; }
 .textButton, .historyButton, .iconButton, .jump, .disclosureButton, .imageOpen, .dialogClose { font: inherit; cursor: pointer; }
 .textButton { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
@@ -143,9 +151,8 @@
   scroll-margin-block: 16px calc(var(--dsh-composer-height, 152px) + 16px);
 }
 .reasonHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 16px 0; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; }
-.reasonCard[data-overflow=false][data-expanded=false] { border-color: transparent; border-radius: 0; background: transparent; }
-.reasonCard[data-overflow=false][data-expanded=false] .reasonHeading { padding: 0; }
-.reasonCard[data-overflow=false][data-expanded=false] .reasonText { padding: 4px 0 0 22px; }
+/* The card chrome stays from the first reasoning line: a borderless "plain
+   text" phase read as a loading glitch (string first, card afterwards). */
 .reasonLabel { font-weight: 500; }
 .reasonViewport {
   position: relative;
@@ -250,3 +257,4 @@
 @media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img, .processMeta { transition: none; } }
 @media (pointer: coarse) { .disclosureButton { min-height: 44px; } }
 @media (max-width: 600px) { .root { padding-inline: 20px; } .column { gap: 18px; } .toolbar { font-size: 11px; } .user { max-width: 90%; } }
+@media (max-width: 640px) { .rail { display: none; } }

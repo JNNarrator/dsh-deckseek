@@ -14,6 +14,8 @@ import { preparingLabel, readerFlow } from './tool-activity.js';
 import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingPosition, useReadingScroll } from './motion.js';
 import { buildSearchIndex } from './search-index.js';
 import { SearchPanel } from './SearchPanel.js';
+import { buildRailItems } from './turn-rail.js';
+import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
 import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
@@ -190,6 +192,7 @@ export function Reader(props: ReaderProps) {
   const [historyError, setHistoryError] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchIndex = useMemo(() => buildSearchIndex(order, key => nodes.get(key)), [order, nodes]);
+  const railItems = useMemo(() => buildRailItems(groups, key => nodes.get(key)), [groups, nodes]);
   const restoredPosition = useReadingPosition(root, props.sessionId, groups.length > 0);
   const [positionNotice, setPositionNotice] = useState(false);
   useEffect(() => {
@@ -221,5 +224,6 @@ export function Reader(props: ReaderProps) {
       </div>}
       {scroll.detached && <div className={css.jumpDock}><button type="button" className={css.jump} onClick={scroll.jump}>{ui('reader.jumpLatest')}</button></div>}
     </div>
+    {railItems.length >= 2 && <TurnRail root={root} items={railItems} />}
   </div></StreamMotionContext.Provider>;
 }
