@@ -95,7 +95,7 @@ export function inputFields(raw: string): Record<string, unknown> {
 export function toolIdentity(entry: Pick<ToolActivityEntry, 'block' | 'draft'>) {
   const block = entry.block;
   return {
-    name: block ? 'kind' in block ? block.call?.name ?? entry.draft?.name ?? '工具调用' : block.name : entry.draft?.name ?? '工具调用',
+    name: block ? 'kind' in block ? block.call?.name ?? entry.draft?.name ?? uiIn(currentLocale(), 'tool.others') : block.name : entry.draft?.name ?? uiIn(currentLocale(), 'tool.others'),
     raw: block ? 'kind' in block ? block.call?.argsRaw ?? entry.draft?.argsRaw ?? '' : block.argsRaw : entry.draft?.argsRaw ?? '',
   };
 }

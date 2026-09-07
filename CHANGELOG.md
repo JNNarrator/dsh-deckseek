@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.6 (unreleased)
+
+- **i18n completion** — five hard-coded Chinese strings now route through the locale dictionary: the tool detail notes (returned / media / empty), the unknown-tool fallback label, and the unknown-record array prefix and empty-object summary (which previously duplicated the prefix in English UIs, e.g. "数组 · Array · N items"). The message-rail label reads "Message navigation" in English, and MCP Apps now hand their language (`zh-CN` / `en`) to sandboxed frames instead of always initializing in Chinese.
+- **Screen-reader polish** — the thinking / delving status no longer re-announces the ticking clock every second (the live region announces the static phase label instead); streamed answers are announced through a sentence-aware `role="log"` region with the reading area marked `aria-busy` while streaming; the MCP receipt and transient notices are announced via `role="status"`; the reasoning region uses the pre-built localized scrollable label.
+- **Keyboard & roles** — the message-rail list is keyboard-scrollable (`tabIndex` + region), the toolbar carries `role="toolbar"` with an accessible label, the search navigation buttons have accessible names, and coarse-pointer devices get a larger rail hit target.
+- **Copy feedback unified** — answer / record copy actions share one receipt pattern with timer cleanup on unmount; the bottom-left status dock text is selectable again.
+
 ## 0.4.4 - 2026-09-06
 
 - **Fixed: new sessions now actually open on DeckSeek** — the entry registration ran once at plugin load, before the host declared its session body, found no conversation store and silently gave up for every future session. The dock entry now registers reactively when the host's `conversation.session` slot materializes (`slots.subscribe`), so any session without an explicit tab choice — new sessions included — lands on the reading view.

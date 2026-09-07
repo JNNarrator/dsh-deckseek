@@ -28,6 +28,7 @@ export const McpAppFrame = memo(function McpAppFrame({
   const [receipt, setReceipt] = useState<string | null>(null);
   const [reloadNonce, setReloadNonce] = useState(0);
   const frameId = useId();
+  const uiLang = currentLocale() === 'zh' ? 'zh-CN' : 'en';
 
   const title = useMemo(() => {
     return initialTitle || extractHtmlTitle(html) || ui('mcp.title');
@@ -44,7 +45,7 @@ export const McpAppFrame = memo(function McpAppFrame({
     return () => obs?.disconnect();
   }, []);
 
-  const preparedHtml = useMemo(() => ensureHtmlDocument(html, currentTheme), [html, currentTheme]);
+  const preparedHtml = useMemo(() => ensureHtmlDocument(html, currentTheme, uiLang), [html, currentTheme, uiLang]);
 
   const handleUserSubmit = useCallback((params: Record<string, unknown>) => {
     lastParamsRef.current = params;
@@ -94,7 +95,7 @@ export const McpAppFrame = memo(function McpAppFrame({
             protocolVersion: '2026-01-26',
             hostContext: {
               theme: currentTheme,
-              locale: 'zh-CN',
+              locale: uiLang,
               styles: {
                 variables: cssTokens,
               },
@@ -178,7 +179,7 @@ export const McpAppFrame = memo(function McpAppFrame({
       method: 'ui/initialize',
       params: {
         theme: currentTheme,
-        locale: 'zh-CN',
+        locale: uiLang,
         styles: {
           variables: cssTokens,
         },
@@ -239,7 +240,7 @@ export const McpAppFrame = memo(function McpAppFrame({
       </div>
 
       {receipt && (
-        <div className={css.receipt} data-testid="mcp-app-receipt">
+        <div className={css.receipt} data-testid="mcp-app-receipt" role="status">
           <span className={css.receiptSummary}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="20 6 9 17 4 12" />

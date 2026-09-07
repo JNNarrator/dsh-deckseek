@@ -1,8 +1,9 @@
-import { memo, useCallback, useState } from 'react';
-import { JsonBlock, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives';
+import { memo } from 'react';
+import { JsonBlock } from '@deepseek-ai/dsh-client-ui-primitives';
 import { pickPreviewText, summarizeFields } from './unknown-record.js';
 import { ui, unknownKindLabel } from './locale.js';
 import { truncatedJsonLabel } from './primitive-labels.js';
+import { useCopyReceipt } from './copy-receipt.js';
 import css from './Reader.module.css';
 
 /**
@@ -12,19 +13,10 @@ import css from './Reader.module.css';
  * a copy action, and the full raw record on demand.
  */
 export const UnknownRecord = memo(function UnknownRecord({ kind, data }: { kind: string; data: unknown }) {
-  const [copied, setCopied] = useState(false);
+  const { receipt, copy } = useCopyReceipt();
   const preview = pickPreviewText(data);
-  const summary = summarizeFields(data, count => ui('unknown.arrayItems', { count }));
+  const summary = summarizeFields(data, count => ui('unknown.itemsCount', { count }));
   const raw = JSON.stringify(data, null, 2);
-  const copy = useCallback(async () => {
-    try {
-      await writeClipboard(raw);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      // Clipboard unavailable — the record stays reachable via JsonBlock.
-    }
-  }, [raw]);
   return (
     <div className={css.unknown} data-reader-anchor data-unknown-kind={kind}>
       <p>
@@ -35,7 +27,7 @@ export const UnknownRecord = memo(function UnknownRecord({ kind, data }: { kind:
       {preview === null && summary !== '' && <p className={css.unknownSummary}>{summary}</p>}
       <div className={css.unknownActions}>
         <JsonBlock label={ui('viewRawRecord')} payload={data as Record<string, unknown>} truncatedLabel={truncatedJsonLabel} />
-        <button type="button" className={css.textButton} onClick={copy}>{copied ? ui('unknown.copied') : ui('unknown.copy')}</button>
+        <button type="button" className={css.textButton} onClick={() => void copy(raw)}>{receipt || ui('unknown.copy')}</button>
       </div>
     </div>
   );

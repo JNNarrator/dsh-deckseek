@@ -84,9 +84,9 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
       <span className={css.searchMeta} role="status">
         {query.trim() ? (matches.length === 0 ? ui('reader.searchNoMatches') : `${(cursor % matches.length) + 1} / ${matches.length}`) : ''}
       </span>
-      <button type="button" className={css.textButton} disabled={matches.length === 0} title={ui('reader.searchPrevTitle')} onClick={() => step(-1)}>↑</button>
-      <button type="button" className={css.textButton} disabled={matches.length === 0} title={ui('reader.searchNextTitle')} onClick={() => step(1)}>↓</button>
-      <button type="button" className={css.textButton} onClick={onClose}>×</button>
+      <button type="button" className={css.textButton} disabled={matches.length === 0} aria-label={ui('reader.searchPrevTitle')} title={ui('reader.searchPrevTitle')} onClick={() => step(-1)}>↑</button>
+      <button type="button" className={css.textButton} disabled={matches.length === 0} aria-label={ui('reader.searchNextTitle')} title={ui('reader.searchNextTitle')} onClick={() => step(1)}>↓</button>
+      <button type="button" className={css.textButton} aria-label={ui('reader.searchClose')} title={ui('reader.searchClose')} onClick={onClose}>×</button>
     </div>
   );
 });

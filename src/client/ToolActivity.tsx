@@ -120,13 +120,13 @@ function ResultView({ entry, model, phase, ...render }: BlockRenderProps & { ent
   // A trace/export may omit wire presentation. Keep the generated input clearly
   // labelled; it is not proof of an applied diff or a successful file mutation.
   if (model.category === 'write' && model.content && !block.isError) return <>
-    <p className={css.toolDetailNote}>文件工具已返回。以下为提交的内容；完整返回记录可在「原始数据」查看。</p>
+      <p className={css.toolDetailNote}>{ui('tool.detailReturned')}</p>
     {generatedInput(model.content, model.target, false)}
   </>;
   const content: ToolResultNode['content'] = block.content;
   if (content.some(item => item.type === 'text')) return <div className={css.toolDocument}><Blocks {...render} blocks={contentBlocks(content).filter(item => item.kind === 'text')} source="tool" /></div>;
-  if (content.length) return <p className={css.toolDetailNote}>图片或扩展内容已在对话中单独展示。</p>;
-  return <p className={css.toolDetailNote}>工具没有返回可展示的内容。</p>;
+  if (content.length) return <p className={css.toolDetailNote}>{ui('tool.detailMedia')}</p>;
+  return <p className={css.toolDetailNote}>{ui('tool.detailEmpty')}</p>;
 }
 
 /** One occurrence, keyed by call id all the way from generation to result. */

@@ -138,12 +138,18 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
     return ui('status.delving', { time });
   });
   const busy = open && pending === undefined;
+  // The visible label ticks with a live clock every second; keep the
+  // announcement on the static phase label so screen readers are not
+  // re-reading the elapsed timer on every tick.
+  const ariaText = busy && (kind === 'thinking' || kind === 'delving')
+    ? (kind === 'thinking' ? ui('status.thinkingName', { time: '' }) : ui('status.delving', { time: '' }))
+    : text;
   if (variant === 'dock') {
     if (kind !== 'delving') return null;
-    return <div className={css.statusDock} data-reader-status-dock><StatusText text={text} motion={motion} shimmer /></div>;
+    return <div className={css.statusDock} data-reader-status-dock><StatusText text={text} ariaText={ariaText} motion={motion} shimmer /></div>;
   }
   if (kind === 'delving') return null;
-  return <StatusText text={text} motion={motion} shimmer={busy} />;
+  return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} />;
 }
 
 const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedProcessKeys, ...props }: ReaderProps & { group: ReaderGroup; motion: boolean; pinnedKeys: readonly string[]; selectedProcessKeys: readonly string[] }) {
@@ -223,18 +229,18 @@ export function Reader(props: ReaderProps) {
   }, [restoredPosition]);
   return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.5" data-motion={motion ? 'on' : 'off'}>
     <div className={css.column}>
-      <div className={css.toolbar} data-ud-check="reader-toolbar">
+      <div className={css.toolbar} role="toolbar" aria-label={ui('reader.toolbarAria')} data-ud-check="reader-toolbar">
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
         <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
         <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
       </div>
       {searchOpen && <SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} />}
-      {positionNotice && <div className={css.notice} data-reader-position-restored>{ui('reader.positionRestored')}</div>}
+      {positionNotice && <div className={css.notice} role="status" data-reader-position-restored>{ui('reader.positionRestored')}</div>}
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
         setHistoryError(false);
         try { await props.loadOlder(); } catch { setHistoryError(true); }
       }}>{loadingOlder ? ui('reader.loadingEarlier') : ui('reader.loadEarlier')}</button>}
-      {historyError && <div className={css.notice}>{ui('reader.historyFailed')}</div>}
+      {historyError && <div className={css.notice} role="status">{ui('reader.historyFailed')}</div>}
       {openError && <div className={css.error} role="alert">{ui('reader.openFailed')}{openError.message}</div>}
       {loading && groups.length === 0 && <p className={css.empty} role="status">{ui('reader.loading')}</p>}
       {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} />)}

@@ -288,7 +288,7 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
       <span>{ui('reasoning.step', { step })}</span>
     </div>
     <div ref={viewport} id={controls} className={css.reasonViewport} data-reader-reasoning-scroll data-edges={edges}
-      data-ud-motion="reader-reasoning-scroll" role="region" aria-label={`${ui('reasoning.regionAria', { step })}${overflow ? `，${ui('reasoning.scrollable')}` : ''}`}
+      data-ud-motion="reader-reasoning-scroll" role="region" aria-label={overflow ? ui('reasoning.scrollAria', { step }) : ui('reasoning.regionAria', { step })}
       tabIndex={overflow ? 0 : undefined} onPointerDown={pause} onFocus={pause}>
       <div ref={track} className={css.reasonTrack} data-reader-reasoning-track>
         <div ref={content} className={css.reasonText} data-reader-reasoning-text>{children}</div>

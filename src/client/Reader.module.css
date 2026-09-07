@@ -26,6 +26,7 @@
 .root::before { content: ''; flex: 0 0 auto; align-self: flex-start; width: 20px; margin: 0 8px 0 0; }
 .rail { position: sticky; top: 12px; align-self: flex-start; flex: 0 0 auto; width: 20px; margin: 0 0 0 8px; }
 .railList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; max-height: min(62vh, 460px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.railList:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; border-radius: 9px; }
 .railRow { display: flex; justify-content: center; }
 .railItem { display: flex; align-items: center; justify-content: center; width: 20px; height: 18px; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; }
 .railItem:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -134,6 +135,7 @@
 /* The umbrella busy status mirrors the native chat: pinned at the bottom-left
    of the reading area, above the composer/task bar, shimmering. */
 .statusDock { position: sticky; bottom: calc(var(--dsh-composer-height, 152px) + 12px); align-self: flex-start; z-index: 2; pointer-events: none; }
+.statusDock .thinkText { pointer-events: auto; user-select: text; }
 .nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 4px; }
 .toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 10px 14px 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 11px; }
 .toolHeading:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -288,6 +290,6 @@
 .jump svg { flex: none; }
 [data-motion=off] .chevron, [data-motion=off] .imageOpen img, [data-motion=off] .processMeta { transition: none; }
 @media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img, .processMeta { transition: none; } }
-@media (pointer: coarse) { .disclosureButton { min-height: 44px; } }
+@media (pointer: coarse) { .disclosureButton { min-height: 44px; } .railItem { width: 28px; height: 26px; } }
 @media (max-width: 600px) { .root { padding-inline: 20px; } .column { gap: 18px; } .toolbar { font-size: 11px; } .user { max-width: 90%; } }
 @media (max-width: 640px) { .root::before, .rail { display: none; } }

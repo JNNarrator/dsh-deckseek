@@ -37,7 +37,7 @@ export function usePinnedSelection(root: RefObject<HTMLElement>, selector = '[da
   return keys;
 }
 
-export function StatusText({ text, motion, shimmer = false }: { text: string; motion: boolean; shimmer?: boolean }) {
+export function StatusText({ text, ariaText, motion, shimmer = false }: { text: string; ariaText?: string; motion: boolean; shimmer?: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [visible, setVisible] = useState(() => !document.hidden);
   const [forcedColors, setForcedColors] = useState(() => window.matchMedia('(forced-colors: active)').matches);
@@ -85,7 +85,7 @@ export function StatusText({ text, motion, shimmer = false }: { text: string; mo
       <span key={frame.id} ref={ref} className={`${css.thinkText} ${swapping && frame.phase === 'start' ? css.isEnterStart : ''}`}
         data-reader-status-copy="current" data-reader-shimmer={active || undefined} data-text={text}>{text}</span>
     </span>
-    <span className={css.srOnly} role="status" aria-live="polite" aria-atomic="true">{text}</span>
+    <span className={css.srOnly} role="status" aria-live="polite" aria-atomic="true">{ariaText ?? text}</span>
   </span>;
 }
 

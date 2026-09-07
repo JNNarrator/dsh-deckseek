@@ -2,13 +2,15 @@ import { Component, Fragment, memo, useEffect, useLayoutEffect, useRef, useState
 import type { ReactNode } from 'react';
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment';
 import type { AssistantBlock, UserMessageNode } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { JsonBlock, MarkdownText, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives';
+import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
 import { McpAppFrame } from './McpAppFrame.js';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
 import { ui } from './locale.js';
 import type { BlockRenderProps, ReaderBlockOwner } from './types.js';
 import { useStreamingText } from './streaming.js';
 import { MotionMarkdown, MotionPlainText } from './word-motion.js';
+import { useLiveAnnounce } from './announce.js';
+import { useCopyReceipt } from './copy-receipt.js';
 import css from './Reader.module.css';
 
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
@@ -78,6 +80,7 @@ type TextPresentation = { startedAt?: number; interrupted?: boolean; liveText?: 
 function ReadingMarkdown({ text, streaming, holdFormatting, startedAt, interrupted = false, liveText = false, kind = 'body' }: { text: string; streaming: boolean; holdFormatting: boolean; kind?: 'body' | 'reasoning' } & TextPresentation) {
   const root = useRef<HTMLDivElement>(null);
   const presentation = useStreamingText(text, streaming, { startedAt, interrupted: interrupted || !liveText, selected: holdFormatting });
+  const announced = useLiveAnnounce(presentation.text);
   // Native Markdown changes block keys for its full final parse. Keep the last
   // committed mode while this answer is selected, then finish formatting on
   // deselection. Business status and the source text still update normally.
@@ -87,6 +90,7 @@ function ReadingMarkdown({ text, streaming, holdFormatting, startedAt, interrupt
   return <div ref={root} className={css.readingText} data-reader-text data-reader-text-kind={kind} data-received-length={text.length} data-shown-length={presentation.text.length}
     data-presentation-pending={presentation.pending || undefined} data-motion-style="opacity-blur" data-ud-motion="reader-text-arrival" data-ud-motion-type="reveal" data-ud-motion-no-flash="true">
     <MotionMarkdown text={presentation.text} streaming={effectiveMode} enabled={liveText && presentation.reveal && effectiveMode} revision={presentation.revision} />
+    <span className={css.srOnly} role="log" aria-live="polite">{announced.join('\n')}</span>
   </div>;
 }
 
@@ -123,7 +127,7 @@ function fallback(block: AssistantBlock, streaming: boolean, source: ReaderBlock
 export const Blocks = memo(function Blocks({ blocks, streaming = false, source = 'assistant', holdFormatting = false, startedAt, interrupted, liveText, renderSlotChain, loadImage }: BlockRenderProps & TextPresentation & {
   blocks: readonly AssistantBlock[]; streaming?: boolean; source?: ReaderBlockOwner['source']; holdFormatting?: boolean;
 }) {
-  return <div className={css.blocks} data-streaming={streaming || undefined}>
+  return <div className={css.blocks} data-streaming={streaming || undefined} aria-busy={streaming || undefined}>
     {blocks.map((block, index) => <BlockBoundary key={block.kind === 'image' ? `image:${block.attachment.attachmentId}:${index}` : `${index}:${block.kind}`}>
       <Fragment>{renderSlotChain('dsh-deckseek.block', { block, streaming, source }, { fallback: fallback(block, streaming, source, loadImage, holdFormatting, { startedAt, interrupted, liveText }) })}</Fragment>
     </BlockBoundary>)}
@@ -131,18 +135,11 @@ export const Blocks = memo(function Blocks({ blocks, streaming = false, source =
 });
 
 export function CopyAnswer({ blocks }: { blocks: readonly AssistantBlock[] }) {
-  const [receipt, setReceipt] = useState('');
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const { receipt, copy } = useCopyReceipt();
   const text = blocks.filter((block): block is Extract<AssistantBlock, { kind: 'text' }> => block.kind === 'text').map(block => block.text).join('\n\n');
   if (!text.trim()) return null;
   return <div className={css.answerActions}>
-    <button type="button" className={css.iconButton} aria-label={ui('copy.answer')} title={ui('copy.answer')} onClick={async () => {
-      const accepted = await writeClipboard(text);
-      setReceipt(accepted ? ui('copy.done') : ui('copy.failed'));
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setReceipt(''), 2000);
-    }}>
+    <button type="button" className={css.iconButton} aria-label={ui('copy.answer')} title={ui('copy.answer')} onClick={() => void copy(text)}>
       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5" y="5" width="8" height="8" rx="1.5" /><path d="M3 10H2.8A.8.8 0 0 1 2 9.2V2.8a.8.8 0 0 1 .8-.8h6.4a.8.8 0 0 1 .8.8V3" /></svg>
     </button>
     <span role="status" className={css.meta}>{receipt}</span>

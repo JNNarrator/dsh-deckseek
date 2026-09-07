@@ -1,8 +1,11 @@
+import { ui } from './locale.js';
+
 /**
  * Helpers for the reading-view fallback shown for record kinds that are not
  * rendered natively (system-prompt, turn-process, …). Pure functions so the
  * behavior stays unit-testable without a React environment. The friendly
- * kind label lives in locale.ts (language-aware); these helpers are
+ * kind label and the two summary labels (array prefix, empty object) resolve
+ * through locale.ts and follow the app language; everything else here is
  * language-independent.
  */
 
@@ -41,9 +44,9 @@ function fieldValue(value: unknown, arrayItems: (count: number) => string): stri
 export function summarizeFields(data: unknown, arrayItems: (count: number) => string = count => `${count} 项`): string {
   if (typeof data === 'string' || data === null || data === undefined) return '';
   if (typeof data !== 'object') return '';
-  if (Array.isArray(data)) return `数组 · ${arrayItems(data.length)}`;
+  if (Array.isArray(data)) return `${ui('unknown.arrayOf')}${arrayItems(data.length)}`;
   const entries = Object.entries(data as Record<string, unknown>);
-  if (entries.length === 0) return '空对象';
+  if (entries.length === 0) return ui('unknown.emptyObject');
   return entries.slice(0, PREVIEW_FIELDS).map(([key, value]) => {
     const text = fieldValue(value, arrayItems);
     const shown = text.length <= FIELD_VALUE_LIMIT ? text : text.slice(0, FIELD_VALUE_LIMIT - 1) + '…';

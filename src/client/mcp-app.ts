@@ -42,7 +42,7 @@ export function extractHtmlTitle(html: string): string | undefined {
  * Normalizes user/model generated HTML to ensure a valid HTML5 structure
  * and embeds a dynamic theme listener so dark/light mode switches take effect immediately.
  */
-export function ensureHtmlDocument(rawHtml: string, initialTheme: 'dark' | 'light' = 'light'): string {
+export function ensureHtmlDocument(rawHtml: string, initialTheme: 'dark' | 'light' = 'light', lang: string = 'zh-CN'): string {
   const isDark = initialTheme === 'dark';
   const trimmed = rawHtml.trim();
 
@@ -123,7 +123,7 @@ export function ensureHtmlDocument(rawHtml: string, initialTheme: 'dark' | 'ligh
     return trimmed;
   }
   return `<!DOCTYPE html>
-<html lang="zh-CN" data-theme="${initialTheme}" class="${isDark ? 'dark' : ''}">
+<html lang="${lang}" data-theme="${initialTheme}" class="${isDark ? 'dark' : ''}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

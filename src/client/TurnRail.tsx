@@ -141,7 +141,7 @@ export const TurnRail = memo(function TurnRail({ root, items }: {
 
   return (
     <nav ref={nav} className={css.rail} aria-label={ui('rail.label')}>
-      <ul className={css.railList}>
+      <ul className={css.railList} role="region" aria-label={ui('rail.label')} tabIndex={0}>
         {items.map(item => (
           <li key={item.key} className={css.railRow}>
             <button

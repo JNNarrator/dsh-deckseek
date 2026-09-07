@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pickPreviewText, summarizeFields } from '../src/client/unknown-record.ts';
-import { unknownKindLabel } from '../src/client/locale.ts';
+import { ui, unknownKindLabel } from '../src/client/locale.ts';
 
 test('unknownKindLabel maps known unrendered kinds to friendly labels', () => {
   assert.equal(unknownKindLabel('system-prompt'), '系统提示词');
@@ -33,4 +33,12 @@ test('summarizeFields renders compact field summaries without leaking long value
   assert.equal(summarizeFields({}), '空对象');
   assert.equal(summarizeFields('text'), '');
   assert.equal(summarizeFields(null), '');
+});
+
+test('summarizeFields resolves the array prefix and empty object through ui()', () => {
+  const items = (count: number) => ui('unknown.itemsCount', { count });
+  assert.equal(summarizeFields(['a', 'b'], items), '数组 · 2 项');
+  assert.equal(summarizeFields(['a'], items), '数组 · 1 项');
+  assert.equal(summarizeFields({ list: [1, 2, 3] }, items), 'list: […]3 项');
+  assert.equal(summarizeFields({}), '空对象');
 });
