@@ -227,6 +227,7 @@ export const McpAppFrame = memo(function McpAppFrame({
       </div>
 
       <div className={css.iframeWrapper} style={{ height: `${height}px` }}>
+        {!ready && <div className={css.iframePending} aria-hidden="true"><span className={css.pulseDot} /></div>}
         <iframe
           key={`${frameId}-${reloadNonce}`}
           ref={iframeRef}

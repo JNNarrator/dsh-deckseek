@@ -228,6 +228,8 @@ export function Reader(props: ReaderProps) {
     return () => clearTimeout(timer);
   }, [restoredPosition]);
   return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.5" data-motion={motion ? 'on' : 'off'}>
+    {/* Real element (not ::before): the container query hiding the rail cannot target the container's own pseudo-element. */}
+    <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
       <div className={css.toolbar} role="toolbar" aria-label={ui('reader.toolbarAria')} data-ud-check="reader-toolbar">
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>

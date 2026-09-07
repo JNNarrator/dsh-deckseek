@@ -13,7 +13,15 @@
      lists) from hollowing out the page with empty reserved space, and the
      120px deduction trusts the composer card's own margins so a collapsed
      task bar does not add a second void after a finished turn. */
-  --reader-bottom-clearance: max(56px, min(calc(var(--dsh-composer-height, 152px) - 120px), 45vh));
+  /* Plugin-side single source of truth for the composer region height, so
+     CSS rules and the TS measuring code agree without repeating fallbacks.
+     The other vars are shared chrome: code-block scroll caps and the two
+     elevation shadows used by the floating chrome. */
+  --dsh-deckseek-composer: var(--dsh-composer-height, 152px);
+  --reader-bottom-clearance: max(56px, min(calc(var(--dsh-deckseek-composer) - 120px), 45vh));
+  --dsh-reader-code-max-height: 180px;
+  --dsh-reader-shadow-pop: 0 4px 14px var(--dsw-alias-border-l1);
+  --dsh-reader-shadow-float: 0 2px 10px var(--dsw-alias-border-l1);
   padding: 16px calc(var(--dsh-composer-side-clearance, 16px) + 16px) var(--reader-bottom-clearance);
   min-width: 0;
   flex: 0 0 auto;
@@ -21,24 +29,27 @@
   container-type: inline-size;
 }
 .column { max-width: var(--dsh-chat-content-width, 748px); width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
-/* The rail hugs the reading column's right edge; a matching ::before spacer
-   on the left keeps the column at the true center of the conversation area. */
-.root::before { content: ''; flex: 0 0 auto; align-self: flex-start; width: 20px; margin: 0 8px 0 0; }
+/* The rail hugs the reading column's right edge; a matching .railSpacer on
+   the left keeps the column at the true center of the conversation area. */
+.railSpacer { flex: 0 0 auto; align-self: flex-start; width: 20px; margin: 0 8px 0 0; }
 .rail { position: sticky; top: 12px; align-self: flex-start; flex: 0 0 auto; width: 20px; margin: 0 0 0 8px; }
 .railList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; max-height: min(62vh, 460px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
-.railList:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; border-radius: 9px; }
+.railList:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; border-radius: 8px; }
+.railList:hover, .railList:focus-visible { scrollbar-width: thin; scrollbar-color: var(--dsw-alias-border-l1) transparent; }
 .railRow { display: flex; justify-content: center; }
 .railItem { display: flex; align-items: center; justify-content: center; width: 20px; height: 18px; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; }
 .railItem:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .railItem:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -2px; }
-.railDash { display: block; width: 12px; height: 6px; border-radius: 3px; background: var(--dsw-alias-label-tertiary); transition: background 120ms ease, width 120ms ease; }
+/* The dash animates via transform (not width): a layout-property transition
+   here lands on the same frame as the scroll-driven active-mark updates. */
+.railDash { display: block; width: 18px; height: 6px; border-radius: 3px; background: var(--dsw-alias-label-tertiary); transform: scaleX(0.667); transform-origin: center; transition: background 120ms ease, transform 120ms ease; }
 .railItem:hover .railDash { background: var(--dsw-alias-label-secondary); }
-.railItem[data-active] .railDash { width: 18px; background: var(--dsw-alias-state-business-primary); }
+.railItem[data-active] .railDash { transform: none; background: var(--dsw-alias-state-business-primary); }
 /* Landing flash on the jumped-to message; also reused as the hover bubble. */
 .markFlash { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 12px; }
-.railTip { position: absolute; right: calc(100% + 12px); transform: translateY(-50%); width: max-content; max-width: 320px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font-size: 12px; line-height: 18px; text-align: left; overflow-wrap: anywhere; box-shadow: 0 4px 14px var(--dsw-alias-border-l1); pointer-events: none; z-index: 3; animation: railTipIn 140ms ease 350ms backwards; }
+.railTip { position: absolute; right: calc(100% + 12px); transform: translateY(-50%); width: max-content; max-width: 320px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font-size: 12px; line-height: 18px; text-align: left; overflow-wrap: anywhere; box-shadow: var(--dsh-reader-shadow-pop); pointer-events: none; z-index: 3; animation: railTipIn 140ms ease 350ms backwards; }
 @keyframes railTipIn { from { opacity: 0; } to { opacity: 1; } }
-.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 20px; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 20px; }
 .textButton, .historyButton, .iconButton, .jump, .disclosureButton, .imageOpen, .dialogClose { font: inherit; cursor: pointer; }
 .textButton { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
 .textButton:hover, .iconButton:hover, .disclosureButton:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -134,22 +145,22 @@
 @media (prefers-reduced-motion: reduce) { .toolState[data-phase="preparing"], .toolState[data-phase="running"] { animation: none; } }
 /* The umbrella busy status mirrors the native chat: pinned at the bottom-left
    of the reading area, above the composer/task bar, shimmering. */
-.statusDock { position: sticky; bottom: calc(var(--dsh-composer-height, 152px) + 12px); align-self: flex-start; z-index: 2; pointer-events: none; }
+.statusDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 12px); align-self: flex-start; z-index: 2; pointer-events: none; }
 .statusDock .thinkText { pointer-events: auto; user-select: text; }
-.nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 4px; }
-.toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 10px 14px 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 11px; }
+.nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 6px; }
+.toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 10px 14px 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 12px; }
 .toolHeading:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .toolHeading:focus-visible { outline-offset: -3px !important; }
 .toolGlyph { display: flex; align-items: center; justify-content: center; height: 22px; color: var(--dsw-alias-label-secondary); }
 .toolHeadingCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .toolTitle { font-size: 13px; line-height: 22px; font-weight: 500; overflow-wrap: anywhere; }
-.toolTarget { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 19px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.toolTarget { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 19px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
 .toolHeadingState { display: flex; align-items: center; gap: 7px; min-height: 22px; color: var(--dsw-alias-label-secondary); }
 .toolState { flex: none; font-size: 11px; line-height: 18px; white-space: nowrap; margin-left: 8px; }
 .toolState[data-phase=preparing], .toolState[data-phase=running] { color: var(--dsw-alias-state-business-primary); }
 .toolState[data-phase=failed], .toolState[data-phase=interrupted] { color: var(--dsw-alias-state-error-primary); }
 .toolLedger { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding: 10px 14px 0; color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 18px; font-variant-numeric: tabular-nums; }
-.toolEngine { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.toolEngine { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
 .toolDetails { margin: 6px 0 0 22px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; min-width: 0; overflow: hidden; }
 .toolTabs { display: flex; align-items: center; gap: 15px; padding: 0 14px; }
 .toolTabs > button { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 1px 8px; font: inherit; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-secondary); cursor: pointer; }
@@ -158,10 +169,10 @@
 .toolPanel:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -3px; }
 .toolDetailNote { margin: 0 0 9px; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-secondary); }
 .toolRawLabel { margin: 0; color: var(--dsw-alias-label-secondary); font-size: 12px; font-weight: 500; }
-.toolRaw { margin: 0; max-height: 400px; padding: 12px; overflow: auto; border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font: 12px/20px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.toolRaw { margin: 0; max-height: 400px; /* intentionally the tallest cap: full wire dumps */ padding: 12px; overflow: auto; border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font: 12px/20px var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); white-space: pre-wrap; overflow-wrap: anywhere; }
 .toolReceipt .blocks, .toolDocument .blocks { font-size: 13px; line-height: 22px; }
 .toolChildren { margin: 0 14px 12px 24px; padding-left: 12px; border-left: 1px solid var(--dsw-alias-border-l2); display: flex; flex-direction: column; gap: 9px; }
-@container (max-width: 420px) { .toolHeading { gap: 7px; padding: 11px 10px 6px; grid-template-columns: 16px minmax(0, 1fr) auto; } .toolHeadingState { gap: 4px; } .toolLedger { padding-left: 33px; padding-right: 10px; } .toolPanel { padding: 10px; } .toolChildren { margin-left: 12px; padding-left: 8px; } }
+@container (max-width: 420px) { .toolHeading { gap: 7px; padding: 11px 10px 6px; grid-template-columns: 16px minmax(0, 1fr) auto; } .toolHeadingState { gap: 4px; } .toolLedger { padding-left: calc(16px + 7px + 10px); /* glyph column + heading gap + panel padding */ padding-right: 10px; } .toolPanel { padding: 10px; } .toolChildren { margin-left: 12px; padding-left: 8px; } }
 @media (pointer: coarse) { .toolTabs > button { min-height: 44px; } }
 /* Transitions.dev — Reasoning stream (user-supplied). Transform the one real
    transcript; hand the painted offset to native scrolling for manual reading. */
@@ -231,34 +242,34 @@
 .detail[open] > summary { margin-bottom: 8px; }
 .tool > .tool { margin: 10px 0 0 12px; }
 .meta { font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
-.stopped { align-self: flex-start; border-radius: 6px; padding: 0 6px; background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-tertiary); font-size: 11px; line-height: 18px; margin-top: 12px; }
-.notice, .error, .attention { border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 22px; overflow-wrap: anywhere; }
+.stopped { align-self: flex-start; border-radius: 6px; padding: 0 6px; background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; margin-top: 12px; }
+.notice, .error, .attention { border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 22px; overflow-wrap: anywhere; }
 .notice { background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary); }
 .error { background: var(--dsw-alias-interactive-bg-hover-danger); color: var(--dsw-alias-state-error-primary); }
 .error p { margin: 6px 0; }
 .attention { display: flex; flex-direction: column; gap: 3px; border: 1px solid var(--dsw-alias-state-business-primary); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-base); }
 .attention span { color: var(--dsw-alias-label-secondary); }
-.unknown { background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 22px; }
+.unknown { background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 22px; }
 .unknown p { margin: 0 0 6px; }
 .unknownKind { margin-left: 6px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
-.unknownPreview { margin: 0 0 8px; padding: 8px 10px; max-height: 180px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-size: 12px; line-height: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dsw-alias-label-secondary); }
+.unknownPreview { margin: 0 0 8px; padding: 8px 10px; max-height: var(--dsh-reader-code-max-height); overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-size: 12px; line-height: 18px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); color: var(--dsw-alias-label-secondary); }
 .unknownSummary { margin: 0 0 8px; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
 .unknownActions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 2px; }
 .unknownActions > * { margin: 0; }
 .systemPrompt { font-size: 13px; line-height: 22px; color: var(--dsw-alias-label-secondary); }
 .systemPrompt > summary { cursor: pointer; padding: 3px 0; user-select: none; }
 .systemPrompt[open] > summary { margin-bottom: 8px; }
-.systemPromptBody { margin: 0; padding: 8px 10px; max-height: 141px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
+.systemPromptBody { margin: 0; padding: 8px 10px; max-height: 141px; /* Figma-anchored geometry, intentionally below --dsh-reader-code-max-height */ overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
 .turnProcess { margin: 0; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
 .turnTail { margin: 14px 0 0; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
-.failure { border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 22px; overflow-wrap: anywhere; background: var(--dsw-alias-interactive-bg-hover-danger); color: var(--dsw-alias-state-error-primary); }
+.failure { border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 22px; overflow-wrap: anywhere; background: var(--dsw-alias-interactive-bg-hover-danger); color: var(--dsw-alias-state-error-primary); }
 .failure p { margin: 6px 0; }
 .failure code { display: inline-block; margin-top: 6px; padding: 0 6px; border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover); font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .failureDetail { color: var(--dsw-alias-label-primary); white-space: pre-wrap; }
 .failureNote { color: var(--dsw-alias-label-secondary); font-size: 12px; }
 .failure > details { margin-top: 8px; }
-.rawJson { margin: 8px 0 0; padding: 8px 10px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
-.searchRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; margin: 0 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-module-platform); }
+.rawJson { margin: 8px 0 0; padding: 8px 10px; max-height: 240px; /* wider JSON dump: intentionally above --dsh-reader-code-max-height */ overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
+.searchRow { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; margin: 0 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); }
 .searchInput { flex: 1; min-width: 140px; background: transparent; border: 0; outline: none; color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; }
 .searchMeta { font-size: 12px; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
 .textButton:disabled { opacity: .5; cursor: default; }
@@ -278,18 +289,24 @@
 .imagePlaceholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--dsw-alias-label-tertiary); font-size: 13px; pointer-events: none; }
 .imagePlaceholder button { pointer-events: auto; }
 .imageFigure figcaption { color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 20px; margin-top: 6px; overflow-wrap: anywhere; }
-.imageDialog { border: 1px solid var(--dsw-alias-border-l2); padding: 38px 20px 20px; border-radius: 16px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); max-width: 90vw; max-height: 90vh; }
+.imageDialog { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; border: 1px solid var(--dsw-alias-border-l2); padding: 12px 16px 16px; border-radius: 16px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); max-width: 90vw; max-height: 90vh; }
 .imageDialog::backdrop { background: var(--dsw-alias-bg-mask-photo); }
 .imageDialog img { max-width: 82vw; max-height: 75vh; display: block; object-fit: contain; }
-.dialogClose { position: absolute; right: 8px; top: 4px; border: 0; background: transparent; color: inherit; width: 32px; height: 32px; border-radius: 8px; font-size: 24px; }
+.dialogClose { border: 0; background: transparent; color: inherit; width: 32px; height: 32px; border-radius: 8px; font-size: 24px; }
 /* The host scroller runs behind the floating composer, so the dock must
-   offset by the composer region height, not the raw scrollport edge. */
-.jumpDock { position: sticky; bottom: calc(var(--dsh-composer-height, 152px) + 4px); align-self: center; height: 0; z-index: 2; }
-.jump { transform: translateY(-100%); display: flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; padding: 0; box-shadow: 0 2px 10px var(--dsw-alias-border-l1); }
+   offset by the composer region height, not the raw scrollport edge. When
+   the busy status dock is visible, the jump button lifts above its band. */
+.jumpDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 4px); align-self: center; height: 0; z-index: 2; }
+.column:has([data-reader-status-dock]) .jumpDock { bottom: calc(var(--dsh-deckseek-composer) + 52px); }
+.jump { transform: translateY(-100%); display: flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; padding: 0; box-shadow: var(--dsh-reader-shadow-float); }
 .jump:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .jump svg { flex: none; }
 [data-motion=off] .chevron, [data-motion=off] .imageOpen img, [data-motion=off] .processMeta { transition: none; }
 @media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img, .processMeta { transition: none; } }
-@media (pointer: coarse) { .disclosureButton { min-height: 44px; } .railItem { width: 28px; height: 26px; } }
-@media (max-width: 600px) { .root { padding-inline: 20px; } .column { gap: 18px; } .toolbar { font-size: 11px; } .user { max-width: 90%; } }
-@media (max-width: 640px) { .root::before, .rail { display: none; } }
+@media (pointer: coarse) { .disclosureButton { min-height: 44px; } .railItem { width: 28px; height: 26px; } .textButton, .historyButton, .iconButton { min-height: 44px; } .iconButton, .jump, .dialogClose { min-width: 44px; min-height: 44px; } }
+.textButton:active, .historyButton:active, .iconButton:active, .jump:active, .dialogClose:active { opacity: .75; }
+@media (max-width: 600px) { .root { padding-inline: max(20px, var(--dsh-composer-side-clearance, 16px)); } .column { gap: 18px; } .toolbar { font-size: 11px; } .user { max-width: 90%; } }
+/* The reading column is its own container: narrow HOST columns (split view)
+   must hide the rail even in a wide window, so this is a container query —
+   a viewport media query would keep the rail fighting the centered column. */
+@container (max-width: 640px) { .railSpacer, .rail { display: none; } }

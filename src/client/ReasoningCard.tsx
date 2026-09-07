@@ -49,9 +49,10 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     const host = port?.closest<HTMLElement>('[data-conversation-scroll]');
     if (!port || !host) return;
     const fit = () => {
-      // Public DSH layout variable, updated by the native composer's observer.
+      // Public DSH layout variable, updated by the native composer's observer,
+      // mirrored as the plugin-side --dsh-deckseek-composer on the reader root.
       // Leave room for the permanent identity, footer and reading margin.
-      const composer = parseFloat(getComputedStyle(host).getPropertyValue('--dsh-composer-height')) || 152;
+      const composer = parseFloat(getComputedStyle(port).getPropertyValue('--dsh-deckseek-composer')) || 152;
       const heading = port.parentElement?.querySelector<HTMLElement>('[data-reader-reasoning-heading]')?.offsetHeight || 30;
       const footer = port.parentElement?.querySelector<HTMLElement>('[data-ud-check=reasoning-controls]')?.offsetHeight || 38;
       const available = Math.max(120, host.clientHeight - composer - heading - footer - 32);
@@ -249,7 +250,7 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
       const card = port.parentElement;
       const host = port.closest<HTMLElement>('[data-conversation-scroll]');
       if (card && host) {
-        const composer = parseFloat(getComputedStyle(host).getPropertyValue('--dsh-composer-height')) || 152;
+        const composer = parseFloat(getComputedStyle(port).getPropertyValue('--dsh-deckseek-composer')) || 152;
         const region = host.getBoundingClientRect();
         const box = card.getBoundingClientRect();
         const top = region.top + 16;

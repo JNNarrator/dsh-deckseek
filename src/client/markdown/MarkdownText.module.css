@@ -58,18 +58,14 @@
 .markdown a {
   /* deepsuite markdown.css uses brand-text (blue in newDesign); this sheet
      keeps design-platform brand-text as near-black, so links use the blue
-     business-primary alias instead. */
+     business-primary alias instead. Padding (not a transparent border) grows
+     the hit area: forced-colors repaints zero-alpha borders as CanvasText. */
   color: var(--dsw-alias-state-business-primary);
   transition: box-shadow var(--ds-transition-duration) var(--ds-ease-in-out);
   position: relative;
   text-decoration: none;
-  /* Transparent hit-area padding; literal zero-alpha only (no painted color). */
-  border-left: 3px solid rgb(255 255 255 / 0);
-  border-right: 3px solid rgb(255 255 255 / 0);
-  border-top: 2px solid rgb(255 255 255 / 0);
-  border-bottom: 2px solid rgb(255 255 255 / 0);
-  margin-left: -3px;
-  margin-right: -3px;
+  padding: 2px 3px;
+  margin: -2px -3px;
 }
 
 .markdown a:hover,
@@ -144,9 +140,13 @@
 }
 
 .markdown :not(pre) > code {
-  display: inline-flex;
-  align-items: center;
+  /* Inline-block + wrap (not inline-flex): an atomic flex box ignores the
+     surrounding overflow-wrap, so long tokens blew through the column. */
+  display: inline-block;
+  max-width: 100%;
   box-sizing: border-box;
+  overflow-wrap: anywhere;
+  white-space: break-spaces;
   font: var(--dsw-font-markdown-code);
   font-family: var(--ds-font-family-code);
   font-size: 0.875em !important;
@@ -164,6 +164,7 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-x: contain;
 }
 
 .markdown input[type='checkbox'] {
@@ -197,6 +198,14 @@
   padding-bottom: 0;
 }
 
+/* Touch has no hover: wide tables stay scrollable instead of clipped. */
+@media (pointer: coarse) {
+  .tableScroll:global(.md-table-wide) {
+    overflow-x: auto;
+    padding-bottom: 0;
+  }
+}
+
 /* Chromium keyboard-focuses scrollable containers by default; the ring uses
    the sheet's link focus color. */
 .tableScroll:focus-visible {
@@ -228,18 +237,18 @@
   border-bottom: 1px solid var(--dsw-alias-border-l3);
   border-top: none;
   font: var(--dsw-font-markdown-table-head);
-  max-width: 320px;
   max-width: min(30vw, 320px);
   min-width: 100px;
+  overflow-wrap: anywhere;
 }
 
 .tableScroll td {
   padding: 10px 16px;
   border-bottom: 1px solid var(--dsw-alias-border-l2);
   font: var(--dsw-font-markdown-table);
-  max-width: 320px;
   max-width: min(30vw, 320px);
   min-width: 100px;
+  overflow-wrap: anywhere;
 }
 
 .tableScroll th:first-child,
@@ -274,6 +283,7 @@
   display: block;
   width: auto;
   max-width: 100%;
+  max-height: 60vh;
   height: auto;
   margin: 0;
   border-radius: 8px;
@@ -327,4 +337,11 @@
 .tableWrap:hover .tableCopy,
 .tableCopy:focus-visible {
   opacity: 1;
+}
+
+/* Touch has no hover: the copy action must be visible to be reachable. */
+@media (pointer: coarse) {
+  .tableCopy {
+    opacity: 1;
+  }
 }
