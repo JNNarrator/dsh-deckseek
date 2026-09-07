@@ -33,7 +33,7 @@ dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa22
 - **Generative MCP Apps (SEP-1865)**: any ````mcp-app```` code block in the final answer is auto-mounted as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, communicating with the host via JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, ...).
 - **Adaptive theme & height**: live dark/light sync with zero first-frame flash; container height smoothly follows content (60–2400px).
 - **Lossless fidelity**: native Markdown, syntax-highlighted code, math, tables, images, and tool facts render faithfully.
-- **71 unit tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, and two-line streaming follow.
+- **75 unit tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, and two-line streaming follow.
 
 ## Other
 
