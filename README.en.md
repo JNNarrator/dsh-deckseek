@@ -35,9 +35,22 @@ dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa22
 - **Lossless fidelity**: native Markdown, syntax-highlighted code, math, tables, images, and tool facts render faithfully.
 - **75 unit tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, and two-line streaming follow.
 
+## Installation & listings
+
+Published on npm: [dsh-deckseek](https://www.npmjs.com/package/dsh-deckseek)
+
+```sh
+dsh plugin add dsh-deckseek
+```
+
+Listings submitted:
+
+- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) (PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528), under review)
+- [awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins) / [deepseek1024.com](https://deepseek1024.com/) (PR [#367](https://github.com/imsai-sh/awesome-deepseek-harness-plugins/pull/367) merged; the entry upgrades to one-click install once the published npm package is detected)
+
 ## Other
 
 - Features and usage are also described in the upstream repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md)
 
-**v0.4.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
+**v0.4.5 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**

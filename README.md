@@ -35,9 +35,22 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 - **无损保真**：原生 Markdown、代码高亮、数学公式、表格、图片与工具事实 100% 忠实呈现。
 - **75 项单元测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算与两行流式跟随等。
 
+## 安装与收录
+
+已发布至 npm：[dsh-deckseek](https://www.npmjs.com/package/dsh-deckseek)
+
+```sh
+dsh plugin add dsh-deckseek
+```
+
+已提交收录于：
+
+- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)（PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528)，评审中）
+- [awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins)（[deepseek1024.com](https://deepseek1024.com/)，PR [#367](https://github.com/imsai-sh/awesome-deepseek-harness-plugins/pull/367) 已合并；条目在 npm 包发布后自动升级为一键安装）
+
 ## 其他
 
 - 功能与使用说明亦可参考原仓库：[aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - 第三方声明：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · 变更记录：[CHANGELOG.md](CHANGELOG.md) · 设计契约：[DESIGN.md](DESIGN.md)
 
-**v0.4.0 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**
+**v0.4.5 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**
