@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { searchMatches, type SearchEntry } from './search-index.js';
 import { ui } from './locale.js';
@@ -20,6 +20,25 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+  // The owning message can be a huge article (process records included).
+  // Descend to the smallest element that still contains the hit so the jump,
+  // the flash and the per-match marking always land on something the user
+  // can actually see.
+  const locate = useCallback((key: string, needle: string): HTMLElement | null => {
+    const container = root.current;
+    if (!container) return null;
+    const owner = Array.from(container.querySelectorAll<HTMLElement>('[data-reader-key]'))
+      .find(element => element.dataset.readerKey === key);
+    if (!owner) return null;
+    let target: HTMLElement = owner;
+    for (;;) {
+      const child = Array.from(target.children)
+        .filter((node): node is HTMLElement => node instanceof HTMLElement && !!node.textContent && node.textContent.toLowerCase().includes(needle))[0];
+      if (!child) break;
+      target = child;
+    }
+    return target;
+  }, [root]);
   useEffect(() => {
     input.current?.focus();
     // Inserting the panel shifts the flow and the browser's scroll anchoring
@@ -38,23 +57,29 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
     });
     return () => { cancelAnimationFrame(frame1); cancelAnimationFrame(frame2); };
   }, []);
+  const marked = useRef<HTMLElement[]>([]);
+  // Every matching block keeps a quiet tint while the search is open; the
+  // active match additionally gets the flashing outline on jump.
+  useEffect(() => {
+    const clear = () => {
+      for (const element of marked.current) element.classList.remove(css.searchMarked);
+      marked.current = [];
+    };
+    const needle = query.trim().toLowerCase();
+    if (!active || needle === '') { clear(); return; }
+    for (const match of matches) {
+      const target = locate(match.key, needle);
+      if (!target) continue;
+      target.classList.add(css.searchMarked);
+      marked.current.push(target);
+    }
+    return clear;
+  }, [matches, active, query, locate]);
   useEffect(() => {
     const container = root.current;
     if (!container || !active) return;
-    const owner = Array.from(container.querySelectorAll<HTMLElement>('[data-reader-key]'))
-      .find(element => element.dataset.readerKey === active.key);
-    if (!owner) return;
-    // The owning message can be a huge article (process records included).
-    // Descend to the smallest element that still contains the hit so the jump
-    // and the flash always land on something the user can actually see.
-    const needle = query.trim().toLowerCase();
-    let target: HTMLElement = owner;
-    for (;;) {
-      const child = Array.from(target.children)
-        .filter((node): node is HTMLElement => node instanceof HTMLElement && !!node.textContent && node.textContent.toLowerCase().includes(needle))[0];
-      if (!child) break;
-      target = child;
-    }
+    const target = locate(active.key, query.trim().toLowerCase());
+    if (!target) return;
     // Scroll the conversation port itself; scrollIntoView would also drag the
     // host app's outer page scroller and displace the whole shell.
     const scroller = container.closest<HTMLElement>('[data-conversation-scroll]') ?? container;
@@ -64,7 +89,7 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
     target.classList.add(css.searchHit);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => target.classList.remove(css.searchHit), 2000);
-  }, [active, root, query]);
+  }, [active, locate, query]);
 
   const step = (delta: number) => {
     if (matches.length > 0) setCursor(value => (value + delta + matches.length) % matches.length);
