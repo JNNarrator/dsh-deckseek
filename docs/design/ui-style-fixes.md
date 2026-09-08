@@ -106,7 +106,7 @@ npm test            # 全部通过（当前基线 83 条）
 | 2 | **Cmd/Ctrl+F 直达查找**：阅读视图键盘快捷键打开搜索面板 | 高频便利 | 低 | ✅ 已实现（面板打开即聚焦输入框；Esc 关闭原有保留） |
 | 3 | **搜索全匹配高亮**：所有匹配淡底 + 当前命中加强（现仅当前命中闪烁） | 长文定位 | 中 | ✅ 已实现（`.searchMarked` 常驻淡底，定位逻辑抽为 `locate()` 复用） |
 | 4 | **代码块语言标签**：markdown 代码块左上角显示语言 | 对齐主流阅读器 | 低 | ✅ **无需改动**——官方 `CodeBlock` 自带语言横幅（`infostring` + 复制按钮同排），围栏落定即显示；流式期间作者有意隐藏（避免语法高亮抖动）。实现方式核查：`lang` 已传入组件仅作高亮语法之用，标签由组件自带 |
-| 5 | **长会话性能**：整快照订阅 → 按轮订阅/虚拟化（100+ 步会话流式卡顿的根治） | 最大工程项 | 高 | ⬜ |
+| 5 | **长会话性能**：整快照订阅 → 按轮订阅/虚拟化（100+ 步会话流式卡顿的根治） | 最大工程项 | 高 | ✅ 0.4.9 完成回合组件按节点身份浅比较订阅（流式只重渲染活跃回合）+ 思考卡/导轨 rAF 布局读优化；量化对比见下方说明 |
 | 6 | **导轨刻度密度**：回合多时刻度自动压缩排布（`--rail-squeeze`，下限 0.3），全部可见；超出压缩下限才回退滚动 | 打磨 | 中 | ✅ |
 | 7 | **加载更早记录骨架屏**：加载历史时显示两行脉动占位（复用 toolStatePulse，reduced-motion 关闭） | 打磨 | 低 | ✅ |
 | 8 | 工具条 sticky | searchRow sticky 已覆盖主场景 | — | 🗄️ 暂缓 |
@@ -122,4 +122,5 @@ npm test            # 全部通过（当前基线 83 条）
 - 2026-09-08：修复进入 **0.4.7** 并已发布 npm + 装入 desktop profile。0.4.6 曾发布但 client bundle 漏打 `@deepseek-ai/dsh-util-workspace-path`（当时无 harness 构建环境），在 Desktop 加载失败，已被取代（该 token 无法 unpublish，撤销需网页端 OTP）。
 - 2026-09-08：**0.4.8 发布**（npm + desktop profile）：本路线图的回答卡片/自动回底/Cmd+F/全匹配高亮/刻度自适应/骨架屏 + 上一轮 i18n、无障碍、容器感全部内容随版本发出。#5 长会话性能留待下一班。
 - 2026-09-08：#1 空状态实现后实测发现 Desktop 新会话首屏走原生"探索未至之境"首页，阅读视图要等首条消息后才挂载——该状态在 Desktop 流程基本不可达（代码保留，Web/边缘场景生效）。
+- 2026-09-08：**#5 完成（0.4.9 已发布 + 装入 profile）**。改造依据 harness store 源码事实（packages/client/store + ui-chat 快照构建器）：纯文本流式期间 order/timeline/无关节点身份稳定，热点仅剩回合组件的整快照订阅；改为按节点身份浅比较订阅后，每 chunk 渲染成本 O(回合数)→O(1)。**量化对比待测**：发版时屏幕锁定无法读数——探针已内置为长期工具，`localStorage.setItem('deckseek-probe','1')` 开启后窗口标题实时显示回合渲染计数，流式一轮即可读出每秒渲染量。
 - **本机构建环境已就绪**（后续发版直接用）：`~/Documents/workspace/deepseek-harness`（克隆）+ `deepseek-harness/tools/dshx`（devkit，含 lightningcss）+ 插件 node_modules 已 link 到 harness。构建命令：`DSHX_HARNESS=~/Documents/workspace/deepseek-harness npm run build`。注意：harness 首次需 `pnpm install` + `pnpm run build:lib:client`（部分测试文件类型报错可忽略，核心包产物会发出）；`packages/util/workspace-path` 需单独补 `lib/index.js`（tsc 手编，link 脚本映射表漏了这个包的链接）。
