@@ -2,6 +2,8 @@
 
 [English](./README.en.md) | [中文](./README.md)
 
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
 > 🙏 Thanks to the original repository [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display) (MIT) and its authors and contributors.
 
 dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display), independently maintained by [JNNarrator](https://github.com/JNNarrator) as a DeepSeek Harness display & interaction enhancement plugin (MIT).
@@ -23,9 +25,11 @@ dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa22
 ## Features
 
 - **Reading view**: live native steps, thinking, and progress during execution; the process folds away on successful completion, leaving the final answer and interactive cards. An independent **DeckSeek** tab keeps the original Chat / Trajectory views, input box, model selector, tools, and approvals intact. Every known record kind (system prompts, turn processes, turn stats, …) is adapted; unknown kinds fall back to a copyable raw-record card — DSH is not stable yet, so the fallback stays. Failed tools / commands render as unified error cards: reason, exit code, and an expandable raw record.
-- **Message navigation rail**: a minimal right-edge rail of tiny pill marks — one per message you sent, editor-minimap style. It takes no layout space and the reading column stays truly centered; the mark at your reading position widens and highlights, hovering shows a styled "Turn N · title" info bubble, and clicking scrolls that message into view with a landing flash (at the document end the newest message owns the highlight; hidden on narrow widths).
-- **Status & follow**: the thinking card follows the latest lines and settles at the end; the open-turn status shows "BigFatFish is thinking… {time}" with a live clock, and tools show per-family start/done labels (Reading…/Read, Searching…/Found, Writing…/Written); scrolling up reveals a centered ⬇ back-to-latest button floating above the composer.
-- **In-view search**: search keywords live inside the reading view across your questions and the model's answers — match counts, previous / next navigation, and jumps that scroll the exact hit element into view with a flash highlight.
+- **Reading view**: live native steps, thinking, and progress during execution; the process folds away on successful completion, leaving the final answer and interactive cards. An independent **DeckSeek** tab keeps the original Chat / Trajectory views, input box, model selector, tools, and approvals intact. Every known record kind (system prompts, turn processes, turn stats, …) is adapted; unknown kinds fall back to a copyable raw-record card — DSH is not stable yet, so the fallback stays. Failed tools / commands render as unified error cards: reason, exit code, and an expandable raw record.
+- **Answer cards**: the reply and its copy action sit in a card matching the reasoning/tool surfaces; the copy chip floats over the card's top-right corner on hover, keeping the answer at full density.
+- **Message navigation rail**: a minimal right-edge rail of tiny pill marks — one per message you sent, editor-minimap style. It takes no layout space and the reading column stays truly centered; the mark at your reading position widens and highlights, hovering shows a styled "Turn N · title" info bubble, and clicking scrolls that message into view with a landing flash (at the document end the newest message owns the highlight; hidden on narrow widths). Marks compress to fit when turns pile up, so every mark stays visible.
+- **Status & follow**: the thinking card follows the latest lines and settles at the end; the open-turn status shows "BigFatFish is thinking… {time}" with a live clock, and tools show per-family start/done labels (Reading…/Read, Searching…/Found, Writing…/Written); scrolling up reveals a centered ⬇ back-to-latest button floating above the composer. Sending or steering a message returns the reader to the bottom (pinned follow takes over).
+- **In-view search**: live search across your questions and the model's answers; Cmd/Ctrl+F opens the panel; every match keeps a quiet tint with character-exact highlighting (CSS Custom Highlight API) and the active hit inverts; match counts, previous / next navigation, and jumps that scroll the exact hit into view with a flash highlight.
 - **Reading position memory**: reopening a session returns to your previous reading position with a brief notice; "Back to latest" jumps to the bottom anytime.
 - **Copy enhancements**: one-click code-block copy; every table shows a hover "Copy as CSV" action (RFC 4180 — quotes and newlines handled).
 - **Bilingual UI (i18n)**: all reading-view copy follows the DSH app language (Chinese / English) with no restart.
@@ -33,7 +37,7 @@ dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa22
 - **Generative MCP Apps (SEP-1865)**: any ````mcp-app```` code block in the final answer is auto-mounted as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, communicating with the host via JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, ...).
 - **Adaptive theme & height**: live dark/light sync with zero first-frame flash; container height smoothly follows content (60–2400px).
 - **Lossless fidelity**: native Markdown, syntax-highlighted code, math, tables, images, and tool facts render faithfully.
-- **75 unit tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, and two-line streaming follow.
+- **94 unit and component tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / reading-position interactions (happy-dom).
 
 ## Installation & listings
 
@@ -53,4 +57,4 @@ Listings submitted:
 - Features and usage are also described in the upstream repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md)
 
-**v0.5.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
+**v0.6.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
