@@ -213,6 +213,17 @@ export function Reader(props: ReaderProps) {
   const streamMotion = useMemo(() => ({ enabled: motion, activatedAt: activatedAt.current }), [motion]);
   const groups = useMemo(() => groupNodes(order, key => nodes.get(key)), [order, nodes, timeline]);
   const scroll = useReadingScroll(root, motion);
+  // A freshly sent message always returns the reader to the bottom: the
+  // composer sits below the fold, so the reply would stream out of frame.
+  // History prepends and the initial mount never change the tail node, so
+  // neither triggers this.
+  const lastTail = useRef<string | null>(null);
+  useEffect(() => {
+    const tail = order.at(-1) ?? null;
+    const previous = lastTail.current;
+    lastTail.current = tail;
+    if (previous !== null && tail !== null && tail !== previous && nodes.get(tail)?.kind === 'user') scroll.jump();
+  }, [order, nodes, scroll]);
   const pinnedKeys = usePinnedSelection(root);
   const selectedProcessKeys = usePinnedSelection(root, '[data-reader-process]');
   const [historyError, setHistoryError] = useState(false);

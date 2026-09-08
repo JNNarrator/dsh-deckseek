@@ -286,6 +286,7 @@
   max-height: 60vh;
   height: auto;
   margin: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 8px;
   background: var(--dsw-alias-bg-base);
   object-fit: contain;

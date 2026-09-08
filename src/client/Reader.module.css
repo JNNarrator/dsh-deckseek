@@ -55,10 +55,10 @@
 .textButton:hover, .iconButton:hover, .disclosureButton:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .root button:focus-visible, .root summary:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; }
 .turn { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.turn + .turn { margin-top: 12px; }
+.turn + .turn { margin-top: 16px; }
 .user { align-self: flex-end; max-width: min(525px, 82%); padding: 10px 16px; border-radius: 22px; background: var(--dsw-specific-bubble); color: var(--dsw-alias-label-primary); line-height: 24px; margin-bottom: 4px; overflow-wrap: anywhere; }
 .user .blocks { gap: 10px; }
-.answer { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.answer { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; padding: 12px 16px; }
 .readingText { min-width: 0; }
 .reasonPlain { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; color: inherit; }
 .readingText button { min-width: 24px; min-height: 24px; }
@@ -261,7 +261,7 @@
 .systemPrompt[open] > summary { margin-bottom: 8px; }
 .systemPromptBody { margin: 0; padding: 8px 10px; max-height: 141px; /* Figma-anchored geometry, intentionally below --dsh-reader-code-max-height */ overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
 .turnProcess { margin: 0; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
-.turnTail { margin: 14px 0 0; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
+.turnTail { margin: 14px 0 0; padding-left: 16px; font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary); }
 .failure { border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 22px; overflow-wrap: anywhere; background: var(--dsw-alias-interactive-bg-hover-danger); color: var(--dsw-alias-state-error-primary); }
 .failure p { margin: 6px 0; }
 .failure code { display: inline-block; margin-top: 6px; padding: 0 6px; border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover); font-size: 12px; color: var(--dsw-alias-label-secondary); }
@@ -277,7 +277,7 @@
 .historyButton { align-self: center; background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .historyButton:disabled { opacity: .55; cursor: default; }
 .empty { padding: 40px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
-.answerActions { display: flex; align-items: center; gap: 8px; margin: 13px 0 0; min-height: 32px; }
+.answerActions { display: flex; align-items: center; gap: 8px; margin: 12px 0 2px; min-height: 32px; }
 .answerActions .iconButton { border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary); }
 .iconButton { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; padding: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); }
 .iconButton svg { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
