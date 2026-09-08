@@ -83,6 +83,7 @@ npm test            # 全部通过（当前基线 83 条）
 | 元素 | 现状 | 处理 |
 |---|---|---|
 | 回答正文 `.answer`（含复制按钮） | 裸文本 | ✅ 加标准卡面（bg-module-platform + border-l2 + 12px 圆角 + padding 12/16） |
+| 复制按钮 | 卡内左下、边框盒与卡同底色显歪 | ✅ 幽灵样式（去边框盒）+ `row-reverse` 固定到卡片右下角 |
 | 轮次间距 `.turn + .turn` | 12px | ✅ 16px（卡片化后呼吸感） |
 | 轮次统计 `.turnTail` | 裸小字 | ✅ padding-left 16px 与卡片内文对齐（保持裸排，元数据语义） |
 | markdown 图片 `.image` | 无边框 | ✅ 加 border-l2 与附件图统一 |
