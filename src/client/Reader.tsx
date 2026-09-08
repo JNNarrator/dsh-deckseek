@@ -256,6 +256,11 @@ export function Reader(props: ReaderProps) {
       {historyError && <div className={css.notice} role="status">{ui('reader.historyFailed')}</div>}
       {openError && <div className={css.error} role="alert">{ui('reader.openFailed')}{openError.message}</div>}
       {loading && groups.length === 0 && <p className={css.empty} role="status">{ui('reader.loading')}</p>}
+      {!loading && !openError && groups.length === 0 && <div className={css.emptyState} role="status" data-reader-empty>
+        <p className={css.emptyBrand}>DeckSeek</p>
+        <p className={css.emptyTitle}>{ui('empty.title')}</p>
+        <p className={css.emptyHint}>{ui('empty.hint')}</p>
+      </div>}
       {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} />)}
       {pending !== undefined && <div className={css.attention} role="alert" data-reader-attention>
         <strong>{pending.kind === 'question' ? ui('reader.needQuestion') : ui('reader.needConfirm')}</strong>
