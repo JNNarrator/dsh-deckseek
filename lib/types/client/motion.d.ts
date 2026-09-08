@@ -1,8 +1,9 @@
 import type { ReactNode, RefObject } from 'react';
 export declare function useMotionAllowed(enabled: boolean): boolean;
 export declare function usePinnedSelection(root: RefObject<HTMLElement>, selector?: string): readonly string[];
-export declare function StatusText({ text, motion, shimmer }: {
+export declare function StatusText({ text, ariaText, motion, shimmer }: {
     text: string;
+    ariaText?: string;
     motion: boolean;
     shimmer?: boolean;
 }): import("react").JSX.Element;

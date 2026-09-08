@@ -2,7 +2,8 @@
  * Helpers for the reading-view fallback shown for record kinds that are not
  * rendered natively (system-prompt, turn-process, …). Pure functions so the
  * behavior stays unit-testable without a React environment. The friendly
- * kind label lives in locale.ts (language-aware); these helpers are
+ * kind label and the two summary labels (array prefix, empty object) resolve
+ * through locale.ts and follow the app language; everything else here is
  * language-independent.
  */
 /** True when the payload is non-empty plain text. */

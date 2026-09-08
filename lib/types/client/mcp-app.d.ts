@@ -12,7 +12,7 @@ export declare function extractHtmlTitle(html: string): string | undefined;
  * Normalizes user/model generated HTML to ensure a valid HTML5 structure
  * and embeds a dynamic theme listener so dark/light mode switches take effect immediately.
  */
-export declare function ensureHtmlDocument(rawHtml: string, initialTheme?: 'dark' | 'light'): string;
+export declare function ensureHtmlDocument(rawHtml: string, initialTheme?: 'dark' | 'light', lang?: string): string;
 /**
  * Determines whether a markdown code block represents an MCP App.
  */
