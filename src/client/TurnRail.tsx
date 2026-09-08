@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { ui } from './locale.js';
 import type { RailItem } from './turn-rail.js';
@@ -35,6 +35,27 @@ export const TurnRail = memo(function TurnRail({ root, items }: {
   const tipOf = (item: RailItem) =>
     [item.turn !== null ? ui('rail.turn', { turn: item.turn }) : null, item.label || ui('rail.message')]
       .filter(Boolean).join(' · ');
+
+  const list = useRef<HTMLUListElement>(null);
+  // Dense histories: compress the per-mark footprint so every mark stays
+  // visible without scrolling; past the compression floor the rail falls
+  // back to its hover/focus-revealed scrollbar.
+  useLayoutEffect(() => {
+    const listEl = list.current;
+    if (!listEl) return;
+    const fit = () => {
+      listEl.style.removeProperty('--rail-squeeze');
+      if (items.length < 2) return;
+      const natural = listEl.scrollHeight;
+      if (natural <= listEl.clientHeight) return;
+      listEl.style.setProperty('--rail-squeeze', Math.max(0.3, listEl.clientHeight / natural).toFixed(3));
+      if (listEl.scrollHeight > listEl.clientHeight + 2) listEl.style.removeProperty('--rail-squeeze');
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(listEl);
+    return () => observer.disconnect();
+  }, [items]);
 
   useEffect(() => {
     const content = root.current;
@@ -141,7 +162,7 @@ export const TurnRail = memo(function TurnRail({ root, items }: {
 
   return (
     <nav ref={nav} className={css.rail} aria-label={ui('rail.label')}>
-      <ul className={css.railList} role="region" aria-label={ui('rail.label')} tabIndex={0}>
+      <ul ref={list} className={css.railList} role="region" aria-label={ui('rail.label')} tabIndex={0}>
         {items.map(item => (
           <li key={item.key} className={css.railRow}>
             <button

@@ -250,7 +250,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.7" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.8" data-motion={motion ? 'on' : 'off'}>
     {/* Real element (not ::before): the container query hiding the rail cannot target the container's own pseudo-element. */}
     <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
@@ -265,6 +265,7 @@ export function Reader(props: ReaderProps) {
         setHistoryError(false);
         try { await props.loadOlder(); } catch { setHistoryError(true); }
       }}>{loadingOlder ? ui('reader.loadingEarlier') : ui('reader.loadEarlier')}</button>}
+      {loadingOlder && <div className={css.historySkeleton} aria-hidden="true"><span /><span /></div>}
       {historyError && <div className={css.notice} role="status">{ui('reader.historyFailed')}</div>}
       {openError && <div className={css.error} role="alert">{ui('reader.openFailed')}{openError.message}</div>}
       {loading && groups.length === 0 && <p className={css.empty} role="status">{ui('reader.loading')}</p>}
