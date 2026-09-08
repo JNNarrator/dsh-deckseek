@@ -58,7 +58,7 @@
 .turn + .turn { margin-top: 16px; }
 .user { align-self: flex-end; max-width: min(525px, 82%); padding: 10px 16px; border-radius: 22px; background: var(--dsw-specific-bubble); color: var(--dsw-alias-label-primary); line-height: 1.5rem; margin-bottom: 4px; overflow-wrap: anywhere; }
 .user .blocks { gap: 10px; }
-.answer { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; padding: 12px 16px; }
+.answer { position: relative; display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; padding: 12px 16px; }
 .readingText { min-width: 0; }
 .reasonPlain { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; color: inherit; }
 .readingText button { min-width: 24px; min-height: 24px; }
@@ -293,9 +293,13 @@
 .emptyBrand { margin: 0 0 6px; font-size: 1.375rem; line-height: 1.875rem; font-weight: 600; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); }
 .emptyTitle { margin: 0; font-size: 0.875rem; line-height: 1.5rem; color: var(--dsw-alias-label-primary); }
 .emptyHint { margin: 0; max-width: 420px; font-size: 0.75rem; line-height: 1.25rem; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
-.answerActions { display: flex; flex-direction: row-reverse; justify-content: flex-start; align-items: center; gap: 8px; margin: 8px -6px 0; min-height: 28px; }
+/* The copy action floats over the card's top-right corner instead of taking
+   a row: hidden at rest so the answer keeps full density, revealed on card
+   hover with its own chip so overlaid text stays legible. */
+.answerActions { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: row-reverse; align-items: center; gap: 6px; min-height: 28px; padding: 2px 4px; background: var(--dsw-alias-bg-base); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+.answer:hover .answerActions, .answer:focus-within .answerActions, .answerActions:focus-within { opacity: 1; pointer-events: auto; }
 .answerActions .iconButton { color: var(--dsw-alias-label-tertiary); }
-.answerActions .iconButton:hover { color: var(--dsw-alias-label-secondary); }
+.answerActions .iconButton:hover { color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-interactive-bg-hover); }
 .iconButton { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; padding: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); }
 .iconButton svg { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 .imageFigure { margin: 0; width: min(100%, 460px); align-self: flex-start; }
