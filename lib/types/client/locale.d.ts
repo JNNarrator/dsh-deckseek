@@ -33,6 +33,7 @@ export declare const zh: {
     readonly 'reader.pendingHint': "请在下方原生操作区处理。此提示不会收进执行过程。";
     readonly 'reader.positionRestored': "已回到上次阅读位置。";
     readonly 'reader.jumpLatest': "回到最新";
+    readonly 'reader.showEarlierTurns': "展开更早的 {count} 轮";
     readonly 'empty.title': "在下方发送消息，开始一场对话";
     readonly 'empty.hint': "阅读视图会自动折叠执行过程、保留最终回答；页内查找与消息导航随时可用。";
     readonly 'rail.label': "消息导航";

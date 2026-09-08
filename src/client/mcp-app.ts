@@ -245,6 +245,21 @@ export function formatReceiptPrompt(params: Record<string, unknown>, title?: str
  * Updates a React-controlled textarea and properly notifies React's valueTracker
  * so the backdrop and input state immediately reflect the text.
  */
+/**
+ * The composer that belongs to the same conversation view as the card: walk
+ * up from the card to the narrowest container that owns a textarea, falling
+ * back to the document-wide first match (single-view layouts).
+ */
+export function findComposerTextarea(from: Element | null): HTMLTextAreaElement | null {
+  let scope: Element | null = from;
+  while (scope) {
+    const textarea = scope.querySelector<HTMLTextAreaElement>('textarea');
+    if (textarea) return textarea;
+    scope = scope.parentElement;
+  }
+  return null;
+}
+
 export function setReactInputValue(textarea: HTMLTextAreaElement, value: string): void {
   try {
     const nativeSetter = Object.getOwnPropertyDescriptor(

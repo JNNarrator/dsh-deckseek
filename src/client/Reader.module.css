@@ -282,6 +282,7 @@
 .historySkeleton span:last-child { width: 62%; animation-delay: 120ms; }
 @media (prefers-reduced-motion: reduce) { .historySkeleton span { animation: none; } }
 .historyButton:disabled { opacity: .55; cursor: default; }
+.olderTurns { display: flex; justify-content: center; padding: 6px 0 2px; }
 .empty { padding: 40px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
 .emptyState { margin: auto 0; padding: 64px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .emptyBrand { margin: 0 0 6px; font-size: 22px; line-height: 30px; font-weight: 600; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); }

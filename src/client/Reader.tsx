@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import type { ChatConversationViewNode, ChatNode, ChatNodeKind } from '@deepseek-ai/dsh-client-ui-chat/client';
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
@@ -263,8 +263,51 @@ export function Reader(props: ReaderProps) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  const searchIndex = useMemo(() => buildSearchIndex(order, key => nodes.get(key)), [order, nodes]);
+  // The index is only consumed by the search panel: skip the O(session)
+  // rebuild while the panel is closed.
+  const searchIndex = useMemo(
+    () => (searchOpen ? buildSearchIndex(order, key => nodes.get(key)) : []),
+    [order, nodes, searchOpen],
+  );
   const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
+  // Long histories render a trailing window: older turns collapse into a
+  // one-line placeholder that expands — automatically when scrolled near, or
+  // on click — with the scroll position compensated for the inserted height.
+  // The newest turns always render, so streaming and auto-follow are intact.
+  const [turnWindow, setTurnWindow] = useState(15);
+  useEffect(() => { setTurnWindow(15); }, [props.sessionId]);
+  const visibleGroups = groups.length > turnWindow ? groups.slice(groups.length - turnWindow) : groups;
+  const hiddenCount = groups.length - visibleGroups.length;
+  const olderRef = useRef<HTMLDivElement>(null);
+  const expandBase = useRef<number | null>(null);
+  const pendingExpand = useRef(false);
+  const expandTurns = useCallback((count: number) => {
+    const scroller = root.current?.closest<HTMLElement>('[data-conversation-scroll]');
+    expandBase.current = scroller ? scroller.scrollHeight : null;
+    pendingExpand.current = true;
+    setTurnWindow(size => Math.min(groups.length, size + count));
+  }, [groups.length, root]);
+  useEffect(() => {
+    const placeholder = olderRef.current;
+    const scroller = root.current?.closest<HTMLElement>('[data-conversation-scroll]');
+    if (!placeholder || !scroller || hiddenCount === 0) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) expandTurns(10);
+    }, { root: scroller, rootMargin: '120% 0px' });
+    observer.observe(placeholder);
+    return () => observer.disconnect();
+  }, [hiddenCount, root, expandTurns]);
+  useLayoutEffect(() => {
+    const scroller = root.current?.closest<HTMLElement>('[data-conversation-scroll]');
+    if (!scroller) return;
+    if (pendingExpand.current && expandBase.current !== null) {
+      // Content was inserted above the viewport: keep the reading position
+      // stable by shifting the scroll by the inserted height.
+      const delta = scroller.scrollHeight - expandBase.current;
+      if (delta > 0 && scroller.scrollTop > 0) scroller.scrollTop += delta;
+      pendingExpand.current = false;
+    }
+  });
   const restoredPosition = useReadingPosition(root, props.sessionId, groups.length > 0);
   const [positionNotice, setPositionNotice] = useState(false);
   useEffect(() => {
@@ -297,7 +340,12 @@ export function Reader(props: ReaderProps) {
         <p className={css.emptyTitle}>{ui('empty.title')}</p>
         <p className={css.emptyHint}>{ui('empty.hint')}</p>
       </div>}
-      {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} />)}
+      {hiddenCount > 0 && <div ref={olderRef} className={css.olderTurns} data-reader-older>
+        <button type="button" className={css.textButton} onClick={() => expandTurns(groups.length)}>
+          {ui('reader.showEarlierTurns', { count: hiddenCount })}
+        </button>
+      </div>}
+      {visibleGroups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} />)}
       {pending !== undefined && <div className={css.attention} role="alert" data-reader-attention>
         <strong>{pending.kind === 'question' ? ui('reader.needQuestion') : ui('reader.needConfirm')}</strong>
         <span>{ui('reader.pendingHint')}</span>

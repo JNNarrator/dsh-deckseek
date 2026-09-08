@@ -4,6 +4,7 @@ import {
   getCssTokens,
   extractHtmlTitle,
   ensureHtmlDocument,
+  findComposerTextarea,
   formatReceiptPrompt,
   setReactInputValue,
 } from './mcp-app.js';
@@ -64,7 +65,7 @@ export const McpAppFrame = memo(function McpAppFrame({
 
     // Populate DSH composer with natural prompt and trigger React input state
     try {
-      const textarea = document.querySelector<HTMLTextAreaElement>('textarea');
+      const textarea = findComposerTextarea(iframeRef.current);
       if (textarea) {
         const prompt = formatReceiptPrompt(params, title);
         setReactInputValue(textarea, prompt);
@@ -254,7 +255,7 @@ export const McpAppFrame = memo(function McpAppFrame({
               className={css.sendKbd}
               title={ui('mcp.focusSend')}
               onClick={() => {
-                const textarea = document.querySelector<HTMLTextAreaElement>('textarea');
+                const textarea = findComposerTextarea(iframeRef.current);
                 if (textarea) {
                   const prompt = formatReceiptPrompt(lastParamsRef.current, title);
                   setReactInputValue(textarea, prompt);
