@@ -36,7 +36,7 @@
         "build": "tsc -p tsconfig.json && tsdown",
         "bundle": "tsdown",
         "typecheck": "tsc -p tsconfig.json --noEmit",
-        "test": "node --import tsx/esm --test tests/*.test.ts",
+        "test": "node --import tsx/esm --import ./tests/setup-dom.mjs --test \"tests/*.test.ts\" \"tests/*.test.tsx\"",
         "link:harness": "node scripts/link-harness-dependencies.mjs"
     },
     "peerDependencies": {
@@ -56,9 +56,13 @@
     },
     "devDependencies": {
         "@deepseek-ai/dsh-api-session-controller": "0.1.2-rc.1",
+        "@happy-dom/global-registrator": "20.14.0",
+        "@testing-library/react": "16.3.3",
         "@types/mdast": "^4.0.4",
         "@types/node": "^22.20.0",
         "@types/react": "~18.3.1",
+        "happy-dom": "20.14.0",
+        "react-dom": "18.3.1",
         "tsdown": "^0.22.2",
         "tsx": "^4.22.4",
         "typescript": "^6.0.3"
