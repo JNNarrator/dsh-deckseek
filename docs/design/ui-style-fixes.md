@@ -107,8 +107,8 @@ npm test            # 全部通过（当前基线 83 条）
 | 3 | **搜索全匹配高亮**：所有匹配淡底 + 当前命中加强（现仅当前命中闪烁） | 长文定位 | 中 | ✅ 已实现（`.searchMarked` 常驻淡底，定位逻辑抽为 `locate()` 复用） |
 | 4 | **代码块语言标签**：markdown 代码块左上角显示语言 | 对齐主流阅读器 | 低 | ✅ **无需改动**——官方 `CodeBlock` 自带语言横幅（`infostring` + 复制按钮同排），围栏落定即显示；流式期间作者有意隐藏（避免语法高亮抖动）。实现方式核查：`lang` 已传入组件仅作高亮语法之用，标签由组件自带 |
 | 5 | **长会话性能**：整快照订阅 → 按轮订阅/虚拟化（100+ 步会话流式卡顿的根治） | 最大工程项 | 高 | ⬜ |
-| 6 | **导轨刻度密度**：回合多时右缘刻度聚合/展开 | 打磨 | 中 | ⬜ |
-| 7 | **加载更早记录骨架屏**：按钮文字变化 → 两行骨架占位 | 打磨 | 低 | ⬜ |
+| 6 | **导轨刻度密度**：回合多时刻度自动压缩排布（`--rail-squeeze`，下限 0.3），全部可见；超出压缩下限才回退滚动 | 打磨 | 中 | ✅ |
+| 7 | **加载更早记录骨架屏**：加载历史时显示两行脉动占位（复用 toolStatePulse，reduced-motion 关闭） | 打磨 | 低 | ✅ |
 | 8 | 工具条 sticky | searchRow sticky 已覆盖主场景 | — | 🗄️ 暂缓 |
 
 另见上方 S1-S3（有意不改项）。
@@ -120,5 +120,6 @@ npm test            # 全部通过（当前基线 83 条）
 - 2026-09-07：文档创建，批次 A/B/C 全部待修。
 - 2026-09-07：**三批全部完成**（typecheck 0 错误、npm test 83/83）。计划修正两处：rail 占位改真实元素 `.railSpacer`（container query 限制）；B1 用 `:has` 仅在 dock 可见时抬升 jumpDock。剩余后续工作 = 三个 S 项（有意不改）+ 人工视觉抽查。
 - 2026-09-08：修复进入 **0.4.7** 并已发布 npm + 装入 desktop profile。0.4.6 曾发布但 client bundle 漏打 `@deepseek-ai/dsh-util-workspace-path`（当时无 harness 构建环境），在 Desktop 加载失败，已被取代（该 token 无法 unpublish，撤销需网页端 OTP）。
+- 2026-09-08：**0.4.8 发布**（npm + desktop profile）：本路线图的回答卡片/自动回底/Cmd+F/全匹配高亮/刻度自适应/骨架屏 + 上一轮 i18n、无障碍、容器感全部内容随版本发出。#5 长会话性能留待下一班。
 - 2026-09-08：#1 空状态实现后实测发现 Desktop 新会话首屏走原生"探索未至之境"首页，阅读视图要等首条消息后才挂载——该状态在 Desktop 流程基本不可达（代码保留，Web/边缘场景生效）。
 - **本机构建环境已就绪**（后续发版直接用）：`~/Documents/workspace/deepseek-harness`（克隆）+ `deepseek-harness/tools/dshx`（devkit，含 lightningcss）+ 插件 node_modules 已 link 到 harness。构建命令：`DSHX_HARNESS=~/Documents/workspace/deepseek-harness npm run build`。注意：harness 首次需 `pnpm install` + `pnpm run build:lib:client`（部分测试文件类型报错可忽略，核心包产物会发出）；`packages/util/workspace-path` 需单独补 `lib/index.js`（tsc 手编，link 脚本映射表漏了这个包的链接）。
