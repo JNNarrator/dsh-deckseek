@@ -118,9 +118,22 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
       automatic = true;
       port.dataset.reasoningMode = 'transform';
     };
+    // --reason-preview-height only changes with the container-width query;
+    // cache it between reads so the follow animation's rAF ticks stop forcing
+    // a style recalculation every frame.
+    let cachedPreviewHeight: number | null = null;
+    let cachedPreviewWidth: number | null = null;
+    const previewHeight = () => {
+      const width = port.clientWidth;
+      if (cachedPreviewHeight === null || cachedPreviewWidth !== width) {
+        cachedPreviewWidth = width;
+        cachedPreviewHeight = parseFloat(getComputedStyle(port).getPropertyValue('--reason-preview-height'));
+      }
+      return cachedPreviewHeight;
+    };
     const measure = (recordHeight = true) => {
-      const previewHeight = parseFloat(getComputedStyle(port).getPropertyValue('--reason-preview-height'));
-      setOverflow(text.offsetHeight > previewHeight + 1);
+      const height = previewHeight();
+      setOverflow(text.offsetHeight > height + 1);
       lastPainted = paintedOffset();
       const top = lastPainted > 1;
       const bottom = tail() - lastPainted > 1;

@@ -61,13 +61,15 @@ export const TurnRail = memo(function TurnRail({ root, items }: {
     const content = root.current;
     if (!content) return;
     const scroller = content.closest<HTMLElement>('[data-conversation-scroll]') ?? content;
+    // Anchor elements are stable per rail item; build the lookup once per
+    // item list instead of on every scroll frame.
+    const anchors = new Map(Array.from(content.querySelectorAll<HTMLElement>('[data-reader-key]'))
+      .map(element => [element.dataset.readerKey, element] as const));
     const update = () => {
       frame.current = 0;
       if (pending.current) return;
       const threshold = scroller.getBoundingClientRect().top + 24;
       let current: string | null = null;
-      const anchors = new Map(Array.from(content.querySelectorAll<HTMLElement>('[data-reader-key]'))
-        .map(element => [element.dataset.readerKey, element] as const));
       for (const item of items) {
         const anchor = anchors.get(item.key);
         if (!anchor) continue;

@@ -152,8 +152,27 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
   return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} />;
 }
 
+// Element-wise identity comparison for the per-node subscription: unrelated
+// chunks keep node identities, so equal arrays let the subscriber bail out.
+function eqNodeValues(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return a.length === b.length && a.every((value, index) => Object.is(value, b[index]));
+}
+
 const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedProcessKeys, ...props }: ReaderProps & { group: ReaderGroup; motion: boolean; pinnedKeys: readonly string[]; selectedProcessKeys: readonly string[] }) {
-  const chat = props.useChat(snapshot => snapshot);
+  // Dev probe: enable with localStorage.setItem('deckseek-probe', '1'), then
+  // read the window title — it carries the live TurnGroup render counter.
+  if (localStorage.getItem('deckseek-probe') === '1') {
+    const w = window as unknown as { __dsTG?: number; __dsTGEl?: HTMLDivElement };
+    w.__dsTG = (w.__dsTG ?? 0) + 1;
+    if (!w.__dsTGEl || !w.__dsTGEl.isConnected) {
+      const el = document.createElement('div');
+      el.style.cssText = 'position:fixed;right:6px;bottom:34px;z-index:9999;background:#000c;color:#4f8;font:11px/16px monospace;padding:2px 6px;border-radius:4px;pointer-events:none';
+      document.body.appendChild(el);
+      w.__dsTGEl = el;
+    }
+    w.__dsTGEl.textContent = `TG renders: ${w.__dsTG}`;
+    document.title = `TG ${w.__dsTG} · DeckSeek`;
+  }
   const turn = props.useChat(snapshot => group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn));
   const boundary = useMemo(() => boundaryOf(turn), [turn]);
   const choiceKey = processChoiceKey(group.key, boundary);
@@ -165,8 +184,12 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   const firstKind = props.useChat(snapshot => snapshot.nodes.get(group.keys[0])?.kind);
   const startsWithUser = firstKind === 'user';
   const mainKeys = startsWithUser ? group.keys.slice(1) : group.keys;
-  const flow = useMemo(() => readerFlow({ ...group, keys: mainKeys }, turn, key => chat.nodes.get(key)), [chat, group, mainKeys, turn]);
-  const hasProcess = flow.some(item => item.kind === 'tool' || hasProcessContent(chat.nodes.get(item.nodeKey), boundary));
+  // Per-node identity subscription: unrelated chunks keep node identities, so
+  // this group re-renders only when one of its own nodes changes.
+  const nodeValues = props.useChat(snapshot => mainKeys.map(key => snapshot.nodes.get(key)), eqNodeValues);
+  const nodeMap = useMemo(() => new Map(mainKeys.map((key, index) => [key, nodeValues[index]!])), [mainKeys, nodeValues]);
+  const flow = useMemo(() => readerFlow({ ...group, keys: mainKeys }, turn, key => nodeMap.get(key)), [group, mainKeys, turn, nodeMap]);
+  const hasProcess = flow.some(item => item.kind === 'tool' || hasProcessContent(nodeMap.get(item.nodeKey), boundary));
   // Only a real, still-active text selection delays folding. Merely clicking,
   // focusing or scrolling the live card does not create a permanent override.
   const holdingSelection = flow.some(item => selectedProcessKeys.includes(item.key));
@@ -250,7 +273,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.8" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.4.9" data-motion={motion ? 'on' : 'off'}>
     {/* Real element (not ::before): the container query hiding the rail cannot target the container's own pseudo-element. */}
     <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
