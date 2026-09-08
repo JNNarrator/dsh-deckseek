@@ -34,6 +34,12 @@ export declare const zh: {
     readonly 'reader.positionRestored': "已回到上次阅读位置。";
     readonly 'reader.jumpLatest': "回到最新";
     readonly 'reader.showEarlierTurns': "展开更早的 {count} 轮";
+    readonly 'reader.export': "导出";
+    readonly 'reader.exportTitle': "将本轮会话导出为 Markdown 文件";
+    readonly 'export.heading': "DeckSeek 会话导出";
+    readonly 'export.user': "用户";
+    readonly 'export.steering': "用户 · 补充消息";
+    readonly 'export.assistant': "求索";
     readonly 'empty.title': "在下方发送消息，开始一场对话";
     readonly 'empty.hint': "阅读视图会自动折叠执行过程、保留最终回答；页内查找与消息导航随时可用。";
     readonly 'rail.label': "消息导航";

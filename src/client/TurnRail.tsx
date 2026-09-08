@@ -162,6 +162,48 @@ export const TurnRail = memo(function TurnRail({ root, items }: {
     setTip({ key, top });
   };
 
+  // Latest jump for the keyboard handler below (jump closes over items and
+  // refs; the ref keeps the window listener mount-once and always fresh).
+  const jumpRef = useRef(jump);
+  jumpRef.current = jump;
+
+  // Alt+↑/↓ walk the same rows the rail shows. The current row comes from the
+  // same viewport test the highlight uses (plus the at-bottom rule), so keys,
+  // clicks and scrolling stay in agreement. Rows whose anchors are not in the
+  // DOM (folded behind the turn window) are skipped in the pressed direction:
+  // their content is not rendered, so there is nothing to land on yet.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+      const source = event.target as HTMLElement | null;
+      if (source && (source.isContentEditable || source.tagName === 'INPUT' || source.tagName === 'TEXTAREA' || source.tagName === 'SELECT')) return;
+      const content = root.current;
+      if (!content || items.length === 0) return;
+      const scroller = content.closest<HTMLElement>('[data-conversation-scroll]') ?? content;
+      const anchors = new Map(Array.from(content.querySelectorAll<HTMLElement>('[data-reader-key]'))
+        .map(element => [element.dataset.readerKey, element] as const));
+      const threshold = scroller.getBoundingClientRect().top + 24;
+      let current = -1;
+      for (let index = 0; index < items.length; index += 1) {
+        const anchor = anchors.get(items[index]!.key);
+        if (!anchor) continue;
+        if (anchor.getBoundingClientRect().top <= threshold) current = index;
+        else break;
+      }
+      if (current === -1 && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 96) current = items.length - 1;
+      const step = event.key === 'ArrowUp' ? -1 : 1;
+      for (let index = current + step; index >= 0 && index < items.length; index += step) {
+        if (!anchors.get(items[index]!.key)) continue;
+        event.preventDefault();
+        jumpRef.current(items[index]!);
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [root, items]);
+
   return (
     <nav ref={nav} className={css.rail} aria-label={ui('rail.label')}>
       <ul ref={list} className={css.railList} role="region" aria-label={ui('rail.label')} tabIndex={0}>

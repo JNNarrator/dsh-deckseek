@@ -13,6 +13,7 @@ import { ui } from './locale.js';
 import { readerFlow } from './tool-activity.js';
 import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingPosition, useReadingScroll } from './motion.js';
 import { buildSearchIndex } from './search-index.js';
+import { buildExportMarkdown, exportFileName } from './export.js';
 import { SearchPanel } from './SearchPanel.js';
 import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
@@ -270,6 +271,17 @@ export function Reader(props: ReaderProps) {
     [order, nodes, searchOpen],
   );
   const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
+  // Export builds on demand (click) rather than eagerly: like the search
+  // index, it walks the whole session and streaming would redo it per chunk.
+  const downloadExport = useCallback(() => {
+    const markdown = buildExportMarkdown(order, key => nodes.get(key));
+    const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = exportFileName();
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }, [order, nodes]);
   // Long histories render a trailing window: older turns collapse into a
   // one-line placeholder that expands — automatically when scrolled near, or
   // on click — with the scroll position compensated for the inserted height.
@@ -316,7 +328,7 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.5.0" data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-dsh-deckseek="0.6.1" data-motion={motion ? 'on' : 'off'}>
     {/* Real element (not ::before): the container query hiding the rail cannot target the container's own pseudo-element. */}
     <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
@@ -324,6 +336,7 @@ export function Reader(props: ReaderProps) {
         <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
         <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
         <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
+        <button type="button" className={css.textButton} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
       </div>
       {searchOpen && <SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} />}
       {positionNotice && <div className={css.notice} role="status" data-reader-position-restored>{ui('reader.positionRestored')}</div>}
