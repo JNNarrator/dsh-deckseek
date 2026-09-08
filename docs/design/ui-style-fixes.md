@@ -102,7 +102,7 @@ npm test            # 全部通过（当前基线 83 条）
 
 | # | 优化点 | 价值 | 成本 | 状态 |
 |---|---|---|---|---|
-| 1 | **新会话空状态**：DeckSeek 页签首屏品牌化空状态（标识 + 开始提示 + 能力一句话），替代空白 | 首屏观感 | 低 | 🔧 |
+| 1 | **新会话空状态**：DeckSeek 页签首屏品牌化空状态（标识 + 开始提示 + 能力一句话），替代空白 | 首屏观感 | 低 | ✅ 已实现并入档；**实测发现 Desktop 流程基本不可达**——新会话首屏是原生"探索未至之境"首页，阅读视图要等首条消息后才挂载（届时已有内容）。Web 变体/边缘场景生效，代码保留 |
 | 2 | **Cmd/Ctrl+F 直达查找**：阅读视图键盘快捷键打开搜索面板 | 高频便利 | 低 | ⬜ |
 | 3 | **搜索全匹配高亮**：所有匹配淡底 + 当前命中加强（现仅当前命中闪烁） | 长文定位 | 中 | ⬜ |
 | 4 | **代码块语言标签**：markdown 代码块左上角显示语言 | 对齐主流阅读器 | 低 | ⬜ |
@@ -120,4 +120,5 @@ npm test            # 全部通过（当前基线 83 条）
 - 2026-09-07：文档创建，批次 A/B/C 全部待修。
 - 2026-09-07：**三批全部完成**（typecheck 0 错误、npm test 83/83）。计划修正两处：rail 占位改真实元素 `.railSpacer`（container query 限制）；B1 用 `:has` 仅在 dock 可见时抬升 jumpDock。剩余后续工作 = 三个 S 项（有意不改）+ 人工视觉抽查。
 - 2026-09-08：修复进入 **0.4.7** 并已发布 npm + 装入 desktop profile。0.4.6 曾发布但 client bundle 漏打 `@deepseek-ai/dsh-util-workspace-path`（当时无 harness 构建环境），在 Desktop 加载失败，已被取代（该 token 无法 unpublish，撤销需网页端 OTP）。
+- 2026-09-08：#1 空状态实现后实测发现 Desktop 新会话首屏走原生"探索未至之境"首页，阅读视图要等首条消息后才挂载——该状态在 Desktop 流程基本不可达（代码保留，Web/边缘场景生效）。
 - **本机构建环境已就绪**（后续发版直接用）：`~/Documents/workspace/deepseek-harness`（克隆）+ `deepseek-harness/tools/dshx`（devkit，含 lightningcss）+ 插件 node_modules 已 link 到 harness。构建命令：`DSHX_HARNESS=~/Documents/workspace/deepseek-harness npm run build`。注意：harness 首次需 `pnpm install` + `pnpm run build:lib:client`（部分测试文件类型报错可忽略，核心包产物会发出）；`packages/util/workspace-path` 需单独补 `lib/index.js`（tsc 手编，link 脚本映射表漏了这个包的链接）。
