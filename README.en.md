@@ -47,9 +47,9 @@ Published on npm: [dsh-deckseek](https://www.npmjs.com/package/dsh-deckseek)
 dsh plugin add dsh-deckseek
 ```
 
-Listings submitted:
+Listed in:
 
-- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) (PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528), under review)
+- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) (PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528) merged)
 - [awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins) / [deepseek1024.com](https://deepseek1024.com/) (PR [#367](https://github.com/imsai-sh/awesome-deepseek-harness-plugins/pull/367) merged; the entry upgrades to one-click install once the published npm package is detected)
 
 ## Other
