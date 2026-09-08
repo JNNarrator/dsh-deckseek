@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.4.6 - 2026-09-08
+## 0.4.7 - 2026-09-08
+
+
+- **i18n completion** — five hard-coded Chinese strings now route through the locale dictionary: the tool detail notes (returned / media / empty), the unknown-tool fallback label, and the unknown-record array prefix and empty-object summary (which previously duplicated the prefix in English UIs, e.g. "数组 · Array · N items"). The message-rail label reads "Message navigation" in English, and MCP Apps now hand their language (`zh-CN` / `en`) to sandboxed frames instead of always initializing in Chinese.
+- **Screen-reader polish** — the thinking / delving status no longer re-announces the ticking clock every second (the live region announces the static phase label instead); streamed answers are announced through a sentence-aware `role="log"` region with the reading area marked `aria-busy` while streaming; the MCP receipt and transient notices are announced via `role="status"`; the reasoning region uses the pre-built localized scrollable label.
+- **Keyboard & roles** — the message-rail list is keyboard-scrollable (`tabIndex` + region), the toolbar carries `role="toolbar"` with an accessible label, the search navigation buttons have accessible names, and coarse-pointer devices get a larger rail hit target.
+- **Copy feedback unified** — answer / record copy actions share one receipt pattern with timer cleanup on unmount; the bottom-left status dock text is selectable again.
+
+## 0.4.6 - 2026-09-08（有缺陷，请勿使用）
+
+- 该版本的 client bundle 遗漏了 `@deepseek-ai/dsh-util-workspace-path` 的内联（构建环境缺 harness 包产物导致外部化），在 Desktop 加载失败。已被 0.4.7 取代；如需可在 npm 网页端用账号 OTP 撤销。
 
 - **i18n completion** — five hard-coded Chinese strings now route through the locale dictionary: the tool detail notes (returned / media / empty), the unknown-tool fallback label, and the unknown-record array prefix and empty-object summary (which previously duplicated the prefix in English UIs, e.g. "数组 · Array · N items"). The message-rail label reads "Message navigation" in English, and MCP Apps now hand their language (`zh-CN` / `en`) to sandboxed frames instead of always initializing in Chinese.
 - **Screen-reader polish** — the thinking / delving status no longer re-announces the ticking clock every second (the live region announces the static phase label instead); streamed answers are announced through a sentence-aware `role="log"` region with the reading area marked `aria-busy` while streaming; the MCP receipt and transient notices are announced via `role="status"`; the reasoning region uses the pre-built localized scrollable label.
