@@ -80,3 +80,5 @@ npm test            # 全部通过（当前基线 83 条）
 
 - 2026-09-07：文档创建，批次 A/B/C 全部待修。
 - 2026-09-07：**三批全部完成**（typecheck 0 错误、npm test 83/83）。计划修正两处：rail 占位改真实元素 `.railSpacer`（container query 限制）；B1 用 `:has` 仅在 dock 可见时抬升 jumpDock。剩余后续工作 = 三个 S 项（有意不改）+ 人工视觉抽查。
+- 2026-09-08：修复进入 **0.4.7** 并已发布 npm + 装入 desktop profile。0.4.6 曾发布但 client bundle 漏打 `@deepseek-ai/dsh-util-workspace-path`（当时无 harness 构建环境），在 Desktop 加载失败，已被取代（该 token 无法 unpublish，撤销需网页端 OTP）。
+- **本机构建环境已就绪**（后续发版直接用）：`~/Documents/workspace/deepseek-harness`（克隆）+ `deepseek-harness/tools/dshx`（devkit，含 lightningcss）+ 插件 node_modules 已 link 到 harness。构建命令：`DSHX_HARNESS=~/Documents/workspace/deepseek-harness npm run build`。注意：harness 首次需 `pnpm install` + `pnpm run build:lib:client`（部分测试文件类型报错可忽略，核心包产物会发出）；`packages/util/workspace-path` 需单独补 `lib/index.js`（tsc 手编，link 脚本映射表漏了这个包的链接）。
