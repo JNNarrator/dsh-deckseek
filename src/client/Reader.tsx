@@ -228,6 +228,18 @@ export function Reader(props: ReaderProps) {
   const selectedProcessKeys = usePinnedSelection(root, '[data-reader-process]');
   const [historyError, setHistoryError] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // Cmd/Ctrl+F opens the in-view search while the reading view is mounted;
+  // preventDefault keeps the host webview's own find bar out of the way.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const searchIndex = useMemo(() => buildSearchIndex(order, key => nodes.get(key)), [order, nodes]);
   const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
   const restoredPosition = useReadingPosition(root, props.sessionId, groups.length > 0);

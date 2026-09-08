@@ -73,7 +73,7 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
   return (
     <div ref={row} className={css.searchRow} data-reader-search role="search">
       <input
-        ref={input} className={css.searchInput} value={query}
+        ref={input} className={css.searchInput} value={query} autoFocus
         onChange={event => { setQuery(event.target.value); setCursor(0); }}
         placeholder={ui('reader.searchPlaceholder')}
         onKeyDown={event => {
