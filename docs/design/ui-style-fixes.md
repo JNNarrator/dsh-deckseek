@@ -111,6 +111,16 @@ npm test            # 全部通过（当前基线 83 条）
 | 7 | **加载更早记录骨架屏**：加载历史时显示两行脉动占位（复用 toolStatePulse，reduced-motion 关闭） | 打磨 | 低 | ✅ |
 | 8 | 工具条 sticky | searchRow sticky 已覆盖主场景 | — | 🗄️ 暂缓 |
 
+## 第三轮（2026-09-08 追加，随 0.5.0 发布）
+
+| # | 优化点 | 状态 |
+|---|---|---|
+| T1 | **MCP App 提示词作用域修复（M8 补完）**：`findComposerTextarea` 从卡片向上找同会话视图的 composer，替代 document 级第一个 textarea | ✅ |
+| T2 | **长会话尾部窗口**：初始只渲染最近 15 轮，更早轮次折叠为一行占位（带锚点，导轨跳转可落）；滚动接近自动展开 10 轮 + 滚动位置补偿；点击展开全部。首开/内存成本不再随历史线性增长 | ✅ |
+| T3 | **搜索索引懒建**：仅在查找面板打开时构建（此前每次节点增减都 O(全会话) 重建） | ✅ |
+
+v1 已知取舍（T2）：折叠轮次的搜索匹配会计入计数但需展开后才能定位/高亮；深位置恢复降级为回到窗口顶部后向上滚动展开。
+
 另见上方 S1-S3（有意不改项）。
 
 ---
@@ -122,5 +132,6 @@ npm test            # 全部通过（当前基线 83 条）
 - 2026-09-08：修复进入 **0.4.7** 并已发布 npm + 装入 desktop profile。0.4.6 曾发布但 client bundle 漏打 `@deepseek-ai/dsh-util-workspace-path`（当时无 harness 构建环境），在 Desktop 加载失败，已被取代（该 token 无法 unpublish，撤销需网页端 OTP）。
 - 2026-09-08：**0.4.8 发布**（npm + desktop profile）：本路线图的回答卡片/自动回底/Cmd+F/全匹配高亮/刻度自适应/骨架屏 + 上一轮 i18n、无障碍、容器感全部内容随版本发出。#5 长会话性能留待下一班。
 - 2026-09-08：#1 空状态实现后实测发现 Desktop 新会话首屏走原生"探索未至之境"首页，阅读视图要等首条消息后才挂载——该状态在 Desktop 流程基本不可达（代码保留，Web/边缘场景生效）。
+- 2026-09-08：**0.5.0 发布**（npm + desktop profile）：第三轮 T1/T2/T3（MCP 作用域修复、长会话尾部窗口、搜索索引懒建）。
 - 2026-09-08：**#5 完成（0.4.9 已发布 + 装入 profile）**。改造依据 harness store 源码事实（packages/client/store + ui-chat 快照构建器）：纯文本流式期间 order/timeline/无关节点身份稳定，热点仅剩回合组件的整快照订阅；改为按节点身份浅比较订阅后，每 chunk 渲染成本 O(回合数)→O(1)。**量化对比待测**：发版时屏幕锁定无法读数——探针已内置为长期工具，`localStorage.setItem('deckseek-probe','1')` 开启后窗口标题实时显示回合渲染计数，流式一轮即可读出每秒渲染量。
 - **本机构建环境已就绪**（后续发版直接用）：`~/Documents/workspace/deepseek-harness`（克隆）+ `deepseek-harness/tools/dshx`（devkit，含 lightningcss）+ 插件 node_modules 已 link 到 harness。构建命令：`DSHX_HARNESS=~/Documents/workspace/deepseek-harness npm run build`。注意：harness 首次需 `pnpm install` + `pnpm run build:lib:client`（部分测试文件类型报错可忽略，核心包产物会发出）；`packages/util/workspace-path` 需单独补 `lib/index.js`（tsc 手编，link 脚本映射表漏了这个包的链接）。
