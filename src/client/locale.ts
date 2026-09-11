@@ -271,6 +271,8 @@ export const zh = {
   'tool.searchContent': '搜索内容',
   'tool.searchWeb': '搜索网页',
   'tool.readWeb': '读取网页',
+  // Settings
+  'settings.nav': 'DeckSeek',
 } as const
 
 export type UiKey = keyof typeof zh
@@ -521,6 +523,8 @@ export const en: Record<UiKey, string> = {
   'tool.searchContent': 'Search content',
   'tool.searchWeb': 'Search the web',
   'tool.readWeb': 'Read web page',
+  // Settings
+  'settings.nav': 'DeckSeek',
 }
 
 /** The DSH app marks its language on <html lang="…">; browser fallback otherwise. */
