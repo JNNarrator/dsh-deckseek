@@ -8,6 +8,8 @@
  * default authoring language.
  */
 
+import type { SkinId } from '../skin.js';
+
 export type UiLang = 'zh' | 'en'
 
 export const zh = {
@@ -273,6 +275,16 @@ export const zh = {
   'tool.readWeb': '读取网页',
   // Settings
   'settings.nav': 'DeckSeek',
+  'settings.title': 'DeckSeek',
+  'settings.subtitle': '阅读视图的外观与行为。切换即时生效，不用重启。',
+  'settings.appearance': '阅读区外观',
+  'settings.readonly': '当前部署不支持持久化设置，外观保持默认。',
+  'settings.skin.paper': '纸面',
+  'settings.skin.paper.hint': '排版流：留白分组，字号落差大，不用卡片。',
+  'settings.skin.soft': '软卡',
+  'settings.skin.soft.hint': '卡片承载，留白多、字号大，适合久读。',
+  'settings.skin.terminal': '终端',
+  'settings.skin.terminal.hint': '行列对齐，等宽高密度，适合盯执行过程。',
 } as const
 
 export type UiKey = keyof typeof zh
@@ -525,6 +537,16 @@ export const en: Record<UiKey, string> = {
   'tool.readWeb': 'Read web page',
   // Settings
   'settings.nav': 'DeckSeek',
+  'settings.title': 'DeckSeek',
+  'settings.subtitle': 'Appearance and behaviour of the reading view. Changes apply immediately.',
+  'settings.appearance': 'Reading appearance',
+  'settings.readonly': 'This deployment does not persist settings; the default appearance is used.',
+  'settings.skin.paper': 'Paper',
+  'settings.skin.paper.hint': 'Typographic flow: whitespace grouping, strong size contrast, no cards.',
+  'settings.skin.soft': 'Soft',
+  'settings.skin.soft.hint': 'Cards, generous whitespace and larger type for long reading.',
+  'settings.skin.terminal': 'Terminal',
+  'settings.skin.terminal.hint': 'Aligned rows, monospace and dense, for watching execution.',
 }
 
 /** The DSH app marks its language on <html lang="…">; browser fallback otherwise. */
@@ -615,4 +637,18 @@ export function unknownKindLabelIn(lang: UiLang, kind: string): string {
 /** Friendly label for a record kind, for the current app language. */
 export function unknownKindLabel(kind: string): string {
   return unknownKindLabelIn(currentLocale(), kind);
+}
+
+/** Settings-page name for one reading skin. */
+export function skinName(id: SkinId): string {
+  if (id === 'paper') return ui('settings.skin.paper');
+  if (id === 'terminal') return ui('settings.skin.terminal');
+  return ui('settings.skin.soft');
+}
+
+/** One-line description for one reading skin. */
+export function skinHint(id: SkinId): string {
+  if (id === 'paper') return ui('settings.skin.paper.hint');
+  if (id === 'terminal') return ui('settings.skin.terminal.hint');
+  return ui('settings.skin.soft.hint');
 }
