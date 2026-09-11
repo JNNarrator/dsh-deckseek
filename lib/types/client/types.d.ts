@@ -1,6 +1,7 @@
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment';
 import type { AssistantBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots';
+import type { SkinId } from '../skin.js';
 import type { createReaderStore } from './store.js';
 export interface ReaderBlockOwner {
     block: AssistantBlock;
@@ -23,6 +24,8 @@ export interface ReaderInjected {
         data: Uint8Array;
         mediaType: string;
     }>;
+    /** Current reading skin, reactive to the Host settings document. */
+    useSkin: () => SkinId;
 }
 export type ReaderProps = PropsRuntime<'conversation.view'> & PropsLocale<'chat'> & PropsRenderSlots<'dsh-deckseek.block'> & PropsStore<ReturnType<typeof createReaderStore>> & ReaderInjected;
 /** Values threaded from a turn down to its rows. */
@@ -33,4 +36,13 @@ export interface TurnRowContext {
     failureNote?: string;
 }
 export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'>;
+/** Injected face of the DeckSeek settings page. */
+export interface DeckSeekSectionInjected {
+    /** Current reading skin, reactive to the Host settings document. */
+    useSkin: () => SkinId;
+    /** Whether the Host document accepts writes; memory-mode deployments never do. */
+    useWritable: () => boolean;
+    /** Persist one skin choice. */
+    setSkin: (next: SkinId) => void;
+}
 //# sourceMappingURL=types.d.ts.map

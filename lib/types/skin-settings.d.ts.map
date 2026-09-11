@@ -1,0 +1,1 @@
+{"version":3,"file":"skin-settings.d.ts","sourceRoot":"","sources":["../../src/skin-settings.ts"],"names":[],"mappings":"AAAA,2DAA2D;AAE3D,OAAO,CAAC,MAAM,0BAA0B,CAAC;AACzC,OAAO,EAAsC,KAAK,MAAM,EAAE,MAAM,WAAW,CAAC;AAE5E,4FAA4F;AAC5F,MAAM,WAAW,gBAAgB;IAC/B,6BAA6B;IAC7B,IAAI,EAAE,MAAM,CAAC;CACd;AAED,+BAA+B;AAC/B,eAAO,MAAM,sBAAsB,EAAE,CAAC,CAAC,gBAAgB,CAErD,CAAC"}

@@ -26,6 +26,7 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 
 - **阅读视图**：执行中实时呈现原生步骤、思考与进度；任务成功后自动收起过程，保留最终回答与交互卡片。独立的 **DeckSeek** 页签，原「对话 / 轨迹」、输入框、模型选择、工具与审批均完整保留。全部已知记录类型（系统提示词、执行过程、轮次统计等）均已适配，未知类型自动回退为可复制的原始记录卡片——DSH 尚未稳定，兜底始终保留。工具 / 命令失败以统一错误卡片呈现：失败原因、退出码与可展开的原始记录。
 - **回答卡片**：回答正文与复制按钮收进与思考卡/工具卡同语言的卡片容器；复制按钮悬浮于卡片右上角（悬停浮现），回答区保持满密度。
+- **三套阅读皮肤**：纸面（排版流）、软卡（卡片）、终端（行列）三套皮肤，在 DSH 设置的独立 **DeckSeek** 页里切换、即时生效；皮肤只表达结构、密度、字体与圆角，颜色全部取自宿主主题 token，亮暗主题自动适配，默认为软卡。
 - **消息导航导轨**：右缘最小化气泡导轨（编辑器 minimap 风格）——每条你发送的消息对应一颗小刻度，不占布局空间、会话栏保持居中；当前阅读位置的刻度自动加宽高亮，悬停显示「第 N 轮 · 标题」信息气泡，点击平滑跳转并以蓝色描边闪烁标记落点（贴底时最新消息自动获得高亮，窄屏自动隐藏）。回合多时刻度自动压缩排布，始终全部可见。
 - **状态与跟随**：思考卡片紧跟最新并在结束后停在底部；正在思考时显示「大肥鱼正在思考中… 用时」，工具按类别显示阅读中/已阅读、搜索中/已找到等中英文状态；滚动离开底部时底部中央出现悬于输入框上方的 ⬇ 到底部按钮；发送或插话消息后阅读视图自动跳回底部（贴底跟随接管）。
 - **阅读页查找**：在阅读页内实时查找关键词，覆盖你的问题与模型回答；Cmd/Ctrl+F 直达，匹配计数、上 / 下跳转，命中精确滚动定位并闪烁高亮；所有匹配块淡底标记，字符级出现位置经 CSS Custom Highlight API 精确染色、当前命中反白加强。
@@ -50,6 +51,12 @@ dsh plugin add dsh-deckseek
 
 - [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)（PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528) 已合并）
 - [awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins)（[deepseek1024.com](https://deepseek1024.com/)，PR [#367](https://github.com/imsai-sh/awesome-deepseek-harness-plugins/pull/367) 已合并；npm 包已发布，市场检测到后自动升级为一键安装）
+
+## 开发
+
+- **依赖来自 DSH 检出，而非 npm**：开发依赖通过 `node scripts/link-harness-dependencies.mjs <DSH 检出路径>` 以符号链接接入一个已构建的 Harness 检出，不要在本目录执行 `pnpm install` / `pnpm add`。
+- **`package-lock.json` 是 `--legacy-peer-deps` 语义下的尽力而为产物**：已发布的 `@deepseek-ai/dsh-client-ui-settings` 对 `@deepseek-ai/dsh-client-ui-primitives` 声明了 `^0.0.1-rc.1` peer，与本插件 0.1.x 区间无法相交，严格解析必然 ERESOLVE。
+- 因此**不要在本目录运行 `npm ci`**——它无法复现可用的依赖树。
 
 ## 其他
 

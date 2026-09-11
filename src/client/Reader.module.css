@@ -483,3 +483,18 @@
 [data-deckseek-skin='paper'] .toolDelta { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.7813rem; }
 [data-deckseek-skin='paper'] .nativeToolSummary { color: var(--dsw-alias-label-secondary); }
 [data-deckseek-skin='paper'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 0 0 0 16px; }
+/* Controls follow the skin: same radii and density as the content they sit in. */
+[data-deckseek-skin='terminal'] .searchRow,
+[data-deckseek-skin='terminal'] .historyButton,
+[data-deckseek-skin='terminal'] .answerActions,
+[data-deckseek-skin='terminal'] .jump,
+[data-deckseek-skin='terminal'] .imageFrame { border-radius: var(--dx-radius-chip); }
+[data-deckseek-skin='terminal'] .toolbar,
+[data-deckseek-skin='terminal'] .textButton,
+[data-deckseek-skin='terminal'] .searchMeta,
+[data-deckseek-skin='terminal'] .emptyHint { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+[data-deckseek-skin='paper'] .searchRow,
+[data-deckseek-skin='paper'] .historyButton,
+[data-deckseek-skin='paper'] .answerActions { border-radius: var(--dx-radius-chip); }
+[data-deckseek-skin='paper'] .toolbar { color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='paper'] .emptyBrand { letter-spacing: 0.04em; }

@@ -7,6 +7,7 @@
  * zh when no browser context exists (unit tests, SSR), matching the plugin's
  * default authoring language.
  */
+import type { SkinId } from '../skin.js';
 export type UiLang = 'zh' | 'en';
 export declare const zh: {
     readonly 'reader.tab': "DeckSeek";
@@ -44,6 +45,7 @@ export declare const zh: {
     readonly 'turn.errorTitle': "本轮出现错误";
     readonly 'turn.maxTokens': "已到达输出长度限制，回答尚未完整。";
     readonly 'turn.retryWaiting': "模型请求未成功，正在等待重试。";
+    readonly 'turn.you': "你";
     readonly 'turn.steering': "补充消息";
     readonly 'turn.process': "思考与过程";
     readonly 'turn.foldAriaCollapse': "收起思考与过程";
@@ -254,6 +256,17 @@ export declare const zh: {
     readonly 'tool.searchContent': "搜索内容";
     readonly 'tool.searchWeb': "搜索网页";
     readonly 'tool.readWeb': "读取网页";
+    readonly 'settings.nav': "DeckSeek";
+    readonly 'settings.title': "DeckSeek";
+    readonly 'settings.subtitle': "阅读视图的外观与行为。切换即时生效，不用重启。";
+    readonly 'settings.appearance': "阅读区外观";
+    readonly 'settings.readonly': "当前部署不支持持久化设置，外观保持默认。";
+    readonly 'settings.skin.paper': "纸面";
+    readonly 'settings.skin.paper.hint': "排版流：留白分组，字号落差大，不用卡片。";
+    readonly 'settings.skin.soft': "软卡";
+    readonly 'settings.skin.soft.hint': "卡片承载，留白多、字号大，适合久读。";
+    readonly 'settings.skin.terminal': "终端";
+    readonly 'settings.skin.terminal.hint': "行列对齐，等宽高密度，适合盯执行过程。";
 };
 export type UiKey = keyof typeof zh;
 export declare const en: Record<UiKey, string>;
@@ -291,4 +304,8 @@ export declare function turnTailStats(data: TurnTailData): string | null;
 export declare function unknownKindLabelIn(lang: UiLang, kind: string): string;
 /** Friendly label for a record kind, for the current app language. */
 export declare function unknownKindLabel(kind: string): string;
+/** Settings-page name for one reading skin. */
+export declare function skinName(id: SkinId): string;
+/** One-line description for one reading skin. */
+export declare function skinHint(id: SkinId): string;
 //# sourceMappingURL=locale.d.ts.map
