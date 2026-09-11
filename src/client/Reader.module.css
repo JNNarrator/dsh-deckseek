@@ -381,3 +381,61 @@
   box-shadow: inset 0 1px 0 var(--dsw-alias-border-inverted), 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 [data-deckseek-skin='soft'] .user { border-radius: 14px 14px 4px 14px; }
+/* Terminal — one vertical axis: a 12px state-glyph column, the content, and a
+   right-aligned number column. Hairline row rules, no cards, no radii. Colour
+   is reserved for state. */
+.toolGlyphState { display: none; }
+[data-deckseek-skin='terminal'] {
+  --dx-radius-card: 0px;
+  --dx-radius-panel: 3px;
+  --dx-radius-chip: 3px;
+  --dx-rail-width: 0px;
+  --dx-surface-record: transparent;
+  --dx-surface-answer: transparent;
+  --dx-border-answer: none;
+  --dx-rule: 1px solid var(--dsw-alias-border-l1);
+  --dx-gap-block: 8px;
+}
+[data-deckseek-skin='terminal'] .toolActivity,
+[data-deckseek-skin='terminal'] .unknown,
+[data-deckseek-skin='terminal'] .systemPrompt,
+[data-deckseek-skin='terminal'] .turnProcess,
+[data-deckseek-skin='terminal'] .turnTail,
+[data-deckseek-skin='terminal'] .reasonCard {
+  background: transparent;
+  border: 0;
+  border-bottom: var(--dx-rule);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 7px 0;
+}
+[data-deckseek-skin='terminal'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 14px 0; }
+[data-deckseek-skin='terminal'] .user {
+  border-radius: 0;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);
+  border-left: 2px solid var(--dsw-alias-state-business-primary);
+  padding: 7px 12px;
+}
+/* The glyph column lives in the primitive's 16px leading slot; the phase picks
+   the glyph from the real ToolPhase union — there is no 'done'. Only the tool
+   icon inside our own wrapper is hidden, never the primitive's expand chevron.
+   The base `.toolGlyphState { display: none }` at the top of this block keeps
+   the glyph out of the soft and paper skins. */
+.toolLead { display: inline-flex; align-items: center; justify-content: center; }
+[data-deckseek-skin='terminal'] .toolLead > :first-child { display: none; }
+[data-deckseek-skin='terminal'] .toolGlyphState { display: block; font-size: 0.75rem; line-height: 1.25rem; }
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='preparing']::before,
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='running']::before { content: '▸'; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='succeeded']::before,
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='returned']::before { content: '✓'; color: var(--dsw-alias-state-success-primary); }
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='failed']::before,
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='interrupted']::before { content: '✗'; color: var(--dsw-alias-state-error-primary); }
+/* Tool chrome goes monospace; the state text stays available to screen readers. */
+[data-deckseek-skin='terminal'] .nativeToolSummary,
+[data-deckseek-skin='terminal'] .toolDelta,
+[data-deckseek-skin='terminal'] .toolLedger { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+[data-deckseek-skin='terminal'] .toolState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+[data-deckseek-skin='terminal'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 7px 12px; }
+[data-deckseek-skin='terminal'] .reasonCard { overflow: visible; }
+[data-deckseek-skin='terminal'] .reasonHeading { padding: 0 0 4px; }
+[data-deckseek-skin='terminal'] .reasonText { padding: 4px 0 8px; }

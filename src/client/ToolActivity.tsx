@@ -179,7 +179,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
   const activate = (index: number) => { const item = tabs[(index + tabs.length) % tabs.length]!; setTab(item[0]); tabRefs.current[(index + tabs.length) % tabs.length]?.focus(); };
   if (depth > 6) return <p className={css.meta}>{ui('tool.nestedHint')}</p>;
   return <div ref={element => { control.current = element?.querySelector<HTMLElement>('[data-disclosure-row]') ?? null; }} className={css.toolActivity} data-reader-tool-call={entry.callId} data-tool-phase={phase} data-tool-args-length={model.raw.length} data-tool-category={model.category} data-expanded={open} data-ud-check="reader-tool-activity">
-    <DisclosureRow icon={<Icon size={14} />} title={rowTitle} open={open} expandable expandOnRowClick keepContentWhenOpen
+    <DisclosureRow icon={<span className={css.toolLead}><Icon size={14} /><span className={css.toolGlyphState} data-phase={phase} aria-hidden="true" /></span>} title={rowTitle} open={open} expandable expandOnRowClick keepContentWhenOpen
       onToggle={() => { onRead(); setOpen(value => !value); }} rowClassName={css.nativeToolRow}
       collapsedContent={<><span className={css.rowSeparator} aria-hidden /><span className={css.nativeToolSummary} title={rowSummary} data-reader-tool-summary>{rowSummary}</span>
         {delta && <span className={css.toolDelta} data-reader-tool-delta>+{delta.added} -{delta.removed}</span>}
