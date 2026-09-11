@@ -111,15 +111,15 @@ npm test            # 全部通过（当前基线 83 条）
 | 7 | **加载更早记录骨架屏**：加载历史时显示两行脉动占位（复用 toolStatePulse，reduced-motion 关闭） | 打磨 | 低 | ✅ |
 | 8 | 工具条 sticky | searchRow sticky 已覆盖主场景 | — | 🗄️ 暂缓 |
 
-## 第四轮（2026-09-08 立项，0.6.0 候选）—— 质量基建 + 查找体验
+## 第四轮（2026-09-08 立项；R1-R3 随 0.6.0、R4/R5 随 0.6.1 发布）—— 质量基建 + 查找体验
 
 | # | 优化点 | 价值 | 成本 | 状态 |
 |---|---|---|---|---|
 | R1 | **组件测试基建**：happy-dom + @testing-library/react（保持 node:test 运行器），优先覆盖 6 个高危交互——搜索定位/闪烁、⬇ 回底与贴底跟随、发送自动回底、思考卡展开/焦点归还、位置记忆、MCP 提示词作用域。R1.2（后续）：Reader 级集成测试 | 回归网覆盖历史 bug 密集区 | 高 | ✅ 基建+首批 11 条用例落地（94/94）：SearchPanel/CopyAnswer/UnknownRecord 全链路；R1.2 Reader 级集成测试留待下一批 |
 | R2 | **字符级搜索高亮**：CSS Custom Highlight API（Chromium ✓），逐出现位置染色 + 当前出现加强，计数升为真实出现次数（叠加在块级淡底上） | 查找体验最后一档 | 中 | ✅ 0.6.0 |
 | R3 | **rem 字号化（主动解锁 S1）**：根字号 rem + 正文/组件字号机械转 rem（几何保持 px，native/ 覆盖层不动） | 无障碍/宿主字号联动 | 中 | ✅ 0.6.0 |
-| R4 | **会话导出 Markdown**：阅读视图"导出"按钮，复用现有 markdown 管线 | 实用功能 | 低-中 | ⬜ |
-| R5 | **轮次键盘导航**：Alt+↑/↓ 在用户消息间跳转（与导轨/闪烁联动） | 键盘党 | 低 | ⬜ |
+| R4 | **会话导出 Markdown**：阅读视图"导出"按钮，复用现有 markdown 管线 | 实用功能 | 低-中 | ✅ 0.6.1——`export.ts` 与查找索引同一文本抽取（用户提问 + 模型回答，过程折叠），同轮多段回答合并单标题；工具栏按钮按需构建（不随流式重算），文件名带时间戳 |
+| R5 | **轮次键盘导航**：Alt+↑/↓ 在用户消息间跳转（与导轨/闪烁联动） | 键盘党 | 低 | ✅ 0.6.1——TurnRail 内实现：当前行用导轨同一视口规则（含贴底归属），跳转复用 jump 的平滑滚动/落点闪烁/pending 锁；折叠轮次沿方向顺延；输入框内打字不触发 |
 
 不进本轮：S2/S3（不变）、真·虚拟化卸载（0.5.0 尾部窗口已覆盖，会话规模再涨再立项）、原生 chrome。
 
@@ -147,3 +147,4 @@ v1 已知取舍（T2）：折叠轮次的搜索匹配会计入计数但需展开
 - 2026-09-08：**0.5.0 发布**（npm + desktop profile）：第三轮 T1/T2/T3（MCP 作用域修复、长会话尾部窗口、搜索索引懒建）。
 - 2026-09-08：**#5 完成（0.4.9 已发布 + 装入 profile）**。改造依据 harness store 源码事实（packages/client/store + ui-chat 快照构建器）：纯文本流式期间 order/timeline/无关节点身份稳定，热点仅剩回合组件的整快照订阅；改为按节点身份浅比较订阅后，每 chunk 渲染成本 O(回合数)→O(1)。**量化对比待测**：发版时屏幕锁定无法读数——探针已内置为长期工具，`localStorage.setItem('deckseek-probe','1')` 开启后窗口标题实时显示回合渲染计数，流式一轮即可读出每秒渲染量。
 - **本机构建环境已就绪**（后续发版直接用）：`~/Documents/workspace/deepseek-harness`（克隆）+ `deepseek-harness/tools/dshx`（devkit，含 lightningcss）+ 插件 node_modules 已 link 到 harness。构建命令：`DSHX_HARNESS=~/Documents/workspace/deepseek-harness npm run build`。注意：harness 首次需 `pnpm install` + `pnpm run build:lib:client`（部分测试文件类型报错可忽略，核心包产物会发出）；`packages/util/workspace-path` 需单独补 `lib/index.js`（tsc 手编，link 脚本映射表漏了这个包的链接）。
+- 2026-09-08：**第四轮收口（0.6.1）**：R4 会话导出 Markdown（`src/client/export.ts`，与查找索引同一抽取管线，工具栏按钮按需构建）+ R5 轮次键盘导航（Alt+↑/↓，TurnRail 内复用 jump 全套落点机制）。测试 94→104。**第四轮全部完成**；遗留 = R1.2 Reader 级集成测试、人工视觉抽查、量化性能对比（探针已内置）。
