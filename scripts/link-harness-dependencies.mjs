@@ -18,6 +18,9 @@ const shared = {
   '@deepseek-ai/dsh-attachment': 'packages/attachment/attachment',
   '@deepseek-ai/dsh-session': 'packages/core/session',
   '@deepseek-ai/dsh-util-workspace-path': 'packages/util/workspace-path',
+  '@deepseek-ai/dsh-client-ui-settings': 'packages/client/ui-settings',
+  '@deepseek-ai/dsh-settings': 'packages/settings/settings',
+  '@deepseek-ai/schemastery': 'vendor/schemastery',
 };
 function link(name, target) {
   const destination = join(local, name);
