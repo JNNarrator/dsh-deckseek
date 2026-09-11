@@ -439,3 +439,47 @@
 [data-deckseek-skin='terminal'] .reasonCard { overflow: visible; }
 [data-deckseek-skin='terminal'] .reasonHeading { padding: 0 0 4px; }
 [data-deckseek-skin='terminal'] .reasonText { padding: 4px 0 8px; }
+/* Paper — typographic flow. No containers at all: grouping is whitespace and
+   the size gap between the answer and everything else. Only the closing stats
+   line draws a rule, and only failures carry colour. */
+.userRole { display: none; }
+[data-deckseek-skin='paper'] {
+  --dx-radius-card: 0px;
+  --dx-radius-panel: 4px;
+  --dx-radius-chip: 4px;
+  --dx-rail-width: 0px;
+  --dx-surface-record: transparent;
+  --dx-surface-answer: transparent;
+  --dx-border-answer: none;
+  --dx-rule: none;
+  --dx-gap-block: 20px;
+}
+[data-deckseek-skin='paper'] .column { gap: 26px; }
+[data-deckseek-skin='paper'] .toolActivity,
+[data-deckseek-skin='paper'] .unknown,
+[data-deckseek-skin='paper'] .systemPrompt,
+[data-deckseek-skin='paper'] .turnProcess,
+[data-deckseek-skin='paper'] .reasonCard {
+  background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0;
+}
+[data-deckseek-skin='paper'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; font-size: 1.0625rem; line-height: 1.8; }
+[data-deckseek-skin='paper'] .turnTail { padding: 14px 0 0; border-top: 1px solid var(--dsw-alias-border-l1); }
+/* The user block becomes a labelled paragraph, not a bubble. */
+[data-deckseek-skin='paper'] .user { align-self: stretch; max-width: none; display: flex; gap: 14px; padding: 0; border-radius: 0; background: transparent; }
+[data-deckseek-skin='paper'] .userGlyph { display: none; }
+[data-deckseek-skin='paper'] .userRole { display: block; flex: none; width: 26px; padding-top: 3px; color: var(--dsw-alias-label-caption); font-size: 0.6875rem; line-height: 1.125rem; letter-spacing: 0.06em; }
+[data-deckseek-skin='paper'] .userBody { font-size: 0.9375rem; line-height: 1.7; color: var(--dsw-alias-label-secondary); }
+/* Reasoning hangs off a hairline thread; tools are plain monospace lines. */
+[data-deckseek-skin='paper'] .reasonCard { overflow: visible; }
+[data-deckseek-skin='paper'] .reasonHeading { padding: 0 0 4px; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='paper'] .reasonText { padding: 0 0 0 16px; border-left: 2px solid var(--dsw-alias-border-l2); margin-left: 2px; font-size: 0.8438rem; line-height: 1.85; color: var(--dsw-alias-label-tertiary); }
+[data-deckseek-skin='paper'] .toolActivity { border-top: 0; }
+/* Tools are plain monospace lines with a › lead; the primitive's tool icon is
+   dropped inside our own wrapper, never the primitive's expand chevron. */
+[data-deckseek-skin='paper'] .toolLead > :first-child { display: none; }
+[data-deckseek-skin='paper'] .toolGlyphState { display: block; }
+[data-deckseek-skin='paper'] .toolGlyphState::before { content: '›'; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='paper'] .nativeToolSummary,
+[data-deckseek-skin='paper'] .toolDelta { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.7813rem; }
+[data-deckseek-skin='paper'] .nativeToolSummary { color: var(--dsw-alias-label-secondary); }
+[data-deckseek-skin='paper'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 0 0 0 16px; }

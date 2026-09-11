@@ -73,6 +73,7 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
   const node = useChat(snapshot => snapshot.nodes.get(nodeKey));
   if (!node || node.visibility === 'hidden') return null;
   if (isNode(node, 'user') || isNode(node, 'steering')) return <div className={css.user} data-reader-anchor data-reader-key={nodeKey}>
+    <span className={css.userRole} aria-hidden="true">{ui('turn.you')}</span>
     <span className={css.userGlyph} aria-hidden="true"><IconUserOutline16 /></span>
     <div className={css.userBody}>
       {node.kind === 'steering' && <p className={css.meta}>{ui('turn.steering')}</p>}
