@@ -43,8 +43,11 @@ DSHX_HARNESS=/Users/jiangnan/Documents/workspace/deepseek-harness npm run build
 
 ```sh
 readlink node_modules/@deepseek-ai/dsh-client-ui-primitives   # 应指向 ~/Documents/deepseek-harness
-npm test                                                       # 基线：101 项，全绿
+npm test                                                       # 开工前基线：101 项，全绿
 ```）
+
+- 各任务 `Expected:` 行里的测试**绝对条数只是指示**——每完成一个任务都会新增测试，数字必然滚动。真正的验收标准是"本任务新增的测试全绿、且没有回归"。派发时控制器会给出当时的真实基线，不要去凑某个数字，更不要为了对齐数字而增删断言。
+- `package-lock.json` 是**被跟踪**的文件。改动 `package.json` 的依赖后它会失配，而本仓库禁止跑 `pnpm install`（会重写软链）。统一在最后一个任务里用 `npm install --package-lock-only` 重建并提交。
 
 ## File Structure
 
@@ -1061,11 +1064,15 @@ git commit -m "feat(skin): paper skin — typographic flow without containers"
 
 ```bash
 cd /Users/jiangnan/Documents/workspace/dsh-deckseek
+# package.json gained three dependencies across earlier tasks; the tracked lock
+# must match. --package-lock-only rewrites the lock without touching node_modules,
+# which is what keeps the dev symlink set intact.
+npm install --package-lock-only
 DSHX_HARNESS=/Users/jiangnan/Documents/workspace/deepseek-harness npm run build
 npm run typecheck && npm test
 ```
 
-Expected: 构建成功；类型 0 错误；104 passing。
+Expected: 构建成功；类型 0 错误；测试全绿（本任务不新增测试）。`git diff --stat` 里应看到 `package-lock.json` 与 `lib/` 都被更新。
 
 ```bash
 git add -A
