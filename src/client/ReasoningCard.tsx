@@ -7,8 +7,8 @@ import css from './Reader.module.css';
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
 /** One real transcript: reference transform while following, native scroll while reading. */
-export function ReasoningCard({ children, step, active, motion, selected, onRead }: {
-  children: ReactNode; step: number; active: boolean; motion: boolean; selected: boolean; onRead: () => void;
+export function ReasoningCard({ children, step, active, history = false, motion, selected, onRead }: {
+  children: ReactNode; step: number; active: boolean; /** A closed turn's card rests as its heading line until expanded. */ history?: boolean; motion: boolean; selected: boolean; onRead: () => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -296,7 +296,7 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     setExpanded(value => !value);
   };
 
-  return <div className={css.reasonCard} data-reader-reasoning-card data-reader-anchor data-expanded={expanded} data-following={allowed} data-overflow={overflow} data-ud-motion="reader-reasoning-size">
+  return <div className={css.reasonCard} data-reader-reasoning-card data-reader-anchor data-expanded={expanded} data-history={history || undefined} data-following={allowed} data-overflow={overflow} data-ud-motion="reader-reasoning-size">
     <div className={css.reasonHeading} data-reader-reasoning-heading data-ud-check="reasoning-identity">
       <span className={css.reasonLabel} data-reader-reasoning-label>{ui('reasoning.label')}</span>
       <span>{ui('reasoning.step', { step })}</span>
@@ -308,14 +308,14 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
         <div ref={content} className={css.reasonText} data-reader-reasoning-text>{children}</div>
       </div>
     </div>
-    {(overflow || expanded) && <div className={css.reasonFooter} data-ud-check="reasoning-controls">
+    {(overflow || expanded || history) && <div className={css.reasonFooter} data-ud-check="reasoning-controls">
       {active && motion ? <button type="button" className={css.reasonAction} disabled={selected} aria-controls={controls}
         aria-label={following ? ui('reasoning.pauseFollowAria') : ui('reasoning.resumeFollowAria')}
         title={selected ? ui('reasoning.followHint') : undefined}
         onClick={() => { if (following) pause(); else { onRead(); setFollowing(true); } }}>
         <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">{following ? <path d="M5.5 4v8m5-8v8" /> : <path d="M8 3v10m-4-4 4 4 4-4" />}</svg>
         {following ? ui('reasoning.pauseFollow') : ui('reasoning.resumeFollow')}
-      </button> : <span className={css.reasonCaption}>{expanded ? ui('reasoning.manual') : ui('reasoning.scrollable')}</span>}
+      </button> : expanded ? <span className={css.reasonCaption}>{ui('reasoning.manual')}</span> : null}
       <button type="button" className={css.reasonAction} aria-expanded={expanded} aria-controls={controls}
         aria-label={expanded ? ui('reasoning.collapseFullAria') : ui('reasoning.expandFullAria')} onClick={toggleReading}>
         {expanded ? ui('reasoning.collapse') : ui('reasoning.expandRead')}

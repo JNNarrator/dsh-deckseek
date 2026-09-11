@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { diffStat, toolFailureLine, toolFailureText, toolStateLabel } from '../src/client/tool-activity.ts';
+import { diffStat, toolFailureFacts, toolFailureText, toolFailureTitle, toolStateLabel } from '../src/client/tool-activity.ts';
 
 function failed(text: string, meta?: Record<string, unknown>): ToolCallBlock {
   return {
@@ -18,10 +18,19 @@ test('toolFailureText returns the first non-empty text payload, cleaned and clam
   assert.equal(toolFailureText(failed(long)), `${'x'.repeat(239)}…`);
 });
 
-test('toolFailureLine joins name, exit code and signal', () => {
-  assert.equal(toolFailureLine(failed('', { exitCode: 1 })), 'edit · 退出码 1');
-  assert.equal(toolFailureLine(failed('', { exitCode: 1, signal: 'SIGKILL' })), 'edit · 退出码 1 · 信号 SIGKILL');
-  assert.equal(toolFailureLine(failed('')), 'edit');
+test('toolFailureFacts keeps only exit code and signal, and is empty without either', () => {
+  assert.equal(toolFailureFacts(failed('', { exitCode: 1 })), '退出码 1');
+  assert.equal(toolFailureFacts(failed('', { exitCode: 1, signal: 'SIGKILL' })), '退出码 1 · 信号 SIGKILL');
+  assert.equal(toolFailureFacts(failed('')), null);
+});
+
+test('toolFailureTitle names the failed tool inside the title', () => {
+  assert.equal(toolFailureTitle(failed('')), '工具执行失败 · edit');
+});
+
+test('toolFailureTitle falls back to the generic title without a declared name', () => {
+  const anonymous = { ...failed(''), call: { argsRaw: '{}' } } as unknown as ToolCallBlock;
+  assert.equal(toolFailureTitle(anonymous), '工具执行失败');
 });
 
 test('toolStateLabel maps start and end phases per tool category', () => {

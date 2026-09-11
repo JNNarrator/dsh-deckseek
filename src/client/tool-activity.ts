@@ -161,13 +161,23 @@ export function toolFailureText(block: ToolCallBlock): string | null {
   return null;
 }
 
-/** One-line failure summary for a failed tool row: name, exit code, signal. */
-export function toolFailureLine(block: ToolCallBlock, lang: UiLang = currentLocale()): string {
+/** Exit-code and signal line for a failed tool, or null when the result carries neither. */
+export function toolFailureFacts(block: ToolCallBlock, lang: UiLang = currentLocale()): string | null {
   const facts = executionFacts(block);
-  const parts = [toolIdentity({ block }).name];
+  const parts: string[] = [];
   if (facts.exitCode !== undefined) parts.push(uiIn(lang, 'failure.exitCode', { code: facts.exitCode }));
   if (facts.signal) parts.push(uiIn(lang, 'failure.signal', { signal: facts.signal }));
-  return parts.join(' · ');
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+/**
+ * Title for a failed tool's card: the generic failure title plus the tool name
+ * when the call declared one, so the name never needs a line of its own.
+ */
+export function toolFailureTitle(block: ToolCallBlock, lang: UiLang = currentLocale()): string {
+  const title = uiIn(lang, 'failure.toolTitle');
+  const name = 'kind' in block ? block.call?.name : block.name;
+  return name ? `${title} · ${name}` : title;
 }
 
 /** Category-aware tool state label: start (preparing/running) and end (succeeded/returned) per tool family. */

@@ -43,7 +43,7 @@ export declare const zh: {
     readonly 'turn.stopped': "已停止";
     readonly 'turn.errorTitle': "本轮出现错误";
     readonly 'turn.maxTokens': "已到达输出长度限制，回答尚未完整。";
-    readonly 'turn.retryWaiting': "模型请求未成功，正在等待重试。详情保留在执行记录中。";
+    readonly 'turn.retryWaiting': "模型请求未成功，正在等待重试。";
     readonly 'turn.steering': "补充消息";
     readonly 'turn.process': "思考与过程";
     readonly 'turn.foldAriaCollapse': "收起思考与过程";
@@ -171,7 +171,6 @@ export declare const zh: {
     readonly 'reasoning.pauseFollow': "暂停跟随";
     readonly 'reasoning.resumeFollow': "跟随最新";
     readonly 'reasoning.manual': "手动阅读";
-    readonly 'reasoning.scrollable': "可滚动阅读";
     readonly 'reasoning.followHint': "取消文字选择后可继续跟随";
     readonly 'mcp.title': "交互式 MCP App";
     readonly 'mcp.summaryChoice': "选择: {choice}";

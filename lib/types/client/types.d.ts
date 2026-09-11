@@ -25,5 +25,12 @@ export interface ReaderInjected {
     }>;
 }
 export type ReaderProps = PropsRuntime<'conversation.view'> & PropsLocale<'chat'> & PropsRenderSlots<'dsh-deckseek.block'> & PropsStore<ReturnType<typeof createReaderStore>> & ReaderInjected;
+/** Values threaded from a turn down to its rows. */
+export interface TurnRowContext {
+    /** Session workspace root; a tool-row path beneath it displays relative. */
+    cwd?: string;
+    /** Trailing note for a failure card; omitted once the turn renders its own terminal line. */
+    failureNote?: string;
+}
 export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'>;
 //# sourceMappingURL=types.d.ts.map

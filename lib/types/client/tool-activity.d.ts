@@ -52,8 +52,13 @@ export declare function activitySummary(entry: Pick<ToolActivityEntry, 'block' |
 export declare function preparingLabel(name: string, lang?: UiLang): string;
 /** First non-empty text payload of a failed tool result, clamped for inline preview. */
 export declare function toolFailureText(block: ToolCallBlock): string | null;
-/** One-line failure summary for a failed tool row: name, exit code, signal. */
-export declare function toolFailureLine(block: ToolCallBlock, lang?: UiLang): string;
+/** Exit-code and signal line for a failed tool, or null when the result carries neither. */
+export declare function toolFailureFacts(block: ToolCallBlock, lang?: UiLang): string | null;
+/**
+ * Title for a failed tool's card: the generic failure title plus the tool name
+ * when the call declared one, so the name never needs a line of its own.
+ */
+export declare function toolFailureTitle(block: ToolCallBlock, lang?: UiLang): string;
 /** Category-aware tool state label: start (preparing/running) and end (succeeded/returned) per tool family. */
 export declare function toolStateLabel(category: ToolCategory, phase: ToolPhase, lang?: UiLang): string;
 /**

@@ -5,9 +5,9 @@ import { DiffBlock, DisclosureRow, JsonTree, ReadBlock, SearchBlock, TerminalBlo
   IconApiOutline14, IconBrowseOutline16, IconEditOutline16, IconSearchOutline16, IconSkillOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives';
 import { Blocks, contentBlocks } from './Blocks.js';
 import { ProcessFragment } from './motion.js';
-import { activityPhase, activitySummary, diffStat, executionFacts, objectValue, toolFailureLine, toolFailureText, toolIdentity, toolStateLabel } from './tool-activity.js';
+import { activityPhase, activitySummary, diffStat, executionFacts, objectValue, toolFailureFacts, toolFailureText, toolFailureTitle, toolIdentity, toolStateLabel } from './tool-activity.js';
 import type { ToolActivityEntry, ToolCategory, ToolPhase } from './tool-activity.js';
-import type { BlockRenderProps } from './types.js';
+import type { BlockRenderProps, TurnRowContext } from './types.js';
 import { classifyTool, toolRowModel, VARIANT_TITLES } from './native/tool-call-model.js';
 import { McpAppFrame, StreamingMcpAppPlaceholder } from './McpAppFrame.js';
 import { diffBlockLabels, jsonTreeLabels, readBlockLabels, searchBlockLabels, terminalBlockLabels, webBlockLabels } from './primitive-labels.js';
@@ -130,7 +130,7 @@ function ResultView({ entry, model, phase, ...render }: BlockRenderProps & { ent
 }
 
 /** One occurrence, keyed by call id all the way from generation to result. */
-export const ToolActivity = memo(function ToolActivityView({ entry, motion, turnClosed, onRead, depth = 0, ...render }: BlockRenderProps & {
+export const ToolActivity = memo(function ToolActivityView({ entry, motion, turnClosed, onRead, depth = 0, cwd, ...render }: BlockRenderProps & TurnRowContext & {
   entry: ToolActivityEntry; motion: boolean; turnClosed: boolean; onRead: () => void; depth?: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -156,7 +156,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
   const facts = executionFacts(entry.block);
   const Icon = model.name === 'skill' ? IconSkillOutline16 : ICONS[model.category];
   const block = entry.block;
-  const native = block ? toolRowModel(model.name, block) : null;
+  const native = block ? toolRowModel(model.name, block, cwd) : null;
   // "+N -M" line changes for write/edit rows, from the settled diff record.
   const delta = useMemo(() => {
     const settled = entry.block;
@@ -215,7 +215,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
   && previous.onRead === next.onRead && previous.renderSlotChain === next.renderSlotChain && previous.loadImage === next.loadImage);
 
 /** Media and failures never disappear inside a folded execution record. */
-export function ToolMedia({ block, depth = 0, ...render }: BlockRenderProps & { block: ToolCallBlock; depth?: number }) {
+export function ToolMedia({ block, depth = 0, failureNote, ...render }: BlockRenderProps & TurnRowContext & { block: ToolCallBlock; depth?: number }) {
   if (depth > 6) return null;
   const settled = 'kind' in block;
   const failed = activityPhase({ block }) === 'failed';
@@ -224,7 +224,7 @@ export function ToolMedia({ block, depth = 0, ...render }: BlockRenderProps & { 
   // walls and duplicated the record. Only media repeats outside the fold.
   const visible = settled ? contentBlocks(block.content).filter(item => item.kind === 'image' || item.kind === 'other') : [];
   return <>
-    {failed && <FailureCard title={ui('failure.toolTitle')} message={toolFailureLine(block)} detail={toolFailureText(block) ?? undefined} raw={'kind' in block ? { content: block.content, isError: block.isError, meta: block.meta } : undefined} />}
+    {failed && <FailureCard title={toolFailureTitle(block)} message={toolFailureFacts(block) ?? undefined} detail={toolFailureText(block) ?? undefined} note={failureNote} raw={'kind' in block ? { content: block.content, isError: block.isError, meta: block.meta } : undefined} />}
     {visible.length > 0 && <Blocks {...render} blocks={visible} source="tool" />}
     {block.subCalls.map(child => <ToolMedia key={child.callId} {...render} block={child} depth={depth + 1} />)}
   </>;

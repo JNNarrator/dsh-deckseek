@@ -1,7 +1,7 @@
 import { Fragment, memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import type { ChatConversationViewNode, ChatNode, ChatNodeKind } from '@deepseek-ai/dsh-client-ui-chat/client';
-import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
+import { IconUserOutline16, JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
 import { BlockBoundary, Blocks, contentBlocks, CopyAnswer } from './Blocks.js';
 import { ReasoningCard } from './ReasoningCard.js';
 import { ToolActivity, ToolMedia } from './ToolActivity.js';
@@ -20,7 +20,7 @@ import { StreamMotionContext } from './streaming.js';
 import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
-import type { BlockRenderProps, ReaderProps } from './types.js';
+import type { BlockRenderProps, ReaderProps, TurnRowContext } from './types.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
 
@@ -28,7 +28,7 @@ function isNode<K extends ChatNodeKind>(node: ChatConversationViewNode, kind: K)
   return node.kind === kind;
 }
 
-type SeatProps = BlockRenderProps & Pick<ReaderProps, 'useChat'> & {
+type SeatProps = BlockRenderProps & Pick<ReaderProps, 'useChat'> & TurnRowContext & {
   nodeKey: string; boundary: TurnBoundary; pinned?: boolean; processOpen?: boolean;
 };
 
@@ -55,7 +55,7 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
   const body = data.blocks.filter(block => block.kind !== 'reasoning' && block.kind !== 'tool-call');
   return <>{parts.map((part, index) => part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
-      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead}>
+      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} history={boundary.status === 'closed'} motion={motion} selected={pinned} onRead={onRead}>
         <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running' && index === parts.length - 1 && data.blocks.at(-1)?.kind === 'reasoning'}
           holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
       </ReasoningCard>
@@ -69,25 +69,28 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
     </RetiringContent>)}</>;
 });
 
-const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, processOpen = false, ...render }: SeatProps) {
+const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, processOpen = false, failureNote, ...render }: SeatProps) {
   const node = useChat(snapshot => snapshot.nodes.get(nodeKey));
   if (!node || node.visibility === 'hidden') return null;
   if (isNode(node, 'user') || isNode(node, 'steering')) return <div className={css.user} data-reader-anchor data-reader-key={nodeKey}>
-    {node.kind === 'steering' && <p className={css.meta}>{ui('turn.steering')}</p>}
-    <Blocks {...render} blocks={contentBlocks(node.data.content)} source="user" />
+    <span className={css.userGlyph} aria-hidden="true"><IconUserOutline16 /></span>
+    <div className={css.userBody}>
+      {node.kind === 'steering' && <p className={css.meta}>{ui('turn.steering')}</p>}
+      <Blocks {...render} blocks={contentBlocks(node.data.content)} source="user" />
+    </div>
   </div>;
   if (isNode(node, 'assistant-step')) return null;
-  if (isNode(node, 'tool-call')) return <ToolMedia {...render} block={node.data.root} />;
-  if (isNode(node, 'turn-error')) return <FailureCard title={ui('turn.errorTitle')} message={node.data.message} code={node.data.code} />;
+  if (isNode(node, 'tool-call')) return <ToolMedia {...render} failureNote={failureNote} block={node.data.root} />;
+  if (isNode(node, 'turn-error')) return <FailureCard title={ui('turn.errorTitle')} message={node.data.message} code={node.data.code} note={failureNote} />;
   if (isNode(node, 'turn-max-tokens')) return <div className={css.notice}>{ui('turn.maxTokens')}</div>;
   if (isNode(node, 'model-retry')) return node.data.current.retryState === 'scheduled'
     ? <div className={css.notice} role="status">{ui('turn.retryWaiting')}</div> : null;
   if (isNode(node, 'command')) {
-    if (node.data.outcome?.kind === 'error') return <FailureCard title={ui('command.failedTitle')} message={node.data.outcome.text ?? node.data.name ?? ui('command.fallback')} />;
+    if (node.data.outcome?.kind === 'error') return <FailureCard title={ui('command.failedTitle')} message={node.data.outcome.text ?? node.data.name ?? ui('command.fallback')} note={failureNote} />;
     return node.data.outcome?.text ? <MarkdownText text={node.data.outcome.text} labels={markdownLabels} /> : null;
   }
   if (isNode(node, 'manual-compaction')) {
-    if (node.data.command.outcome?.kind === 'error') return <FailureCard title={ui('compaction.failedTitle')} message={node.data.command.outcome.text} />;
+    if (node.data.command.outcome?.kind === 'error') return <FailureCard title={ui('compaction.failedTitle')} message={node.data.command.outcome.text} note={failureNote} />;
     return node.data.compaction ? <p className={css.meta}>{ui('compaction.done')}</p> : <p className={css.meta}>{ui('compaction.running')}</p>;
   }
   if (node.kind === 'compaction') return <details className={css.detail}><summary>{ui('compaction.summary')}</summary><pre className={css.rawJson}>{JSON.stringify(node.data, null, 2)}</pre></details>;
@@ -194,8 +197,12 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   // focusing or scrolling the live card does not create a permanent override.
   const holdingSelection = flow.some(item => selectedProcessKeys.includes(item.key));
   const expanded = holdingSelection || processExpanded(expansionChoice, boundary);
-  const shared = { useChat: props.useChat, renderSlotChain: props.renderSlotChain, loadImage: props.loadImage };
   const terminal = terminalLabel(boundary.reason);
+  // A failure card and the terminal line both point at the full record, so the
+  // card carries that note only while no terminal line says it below.
+  const failureNote = terminal === null ? ui('failure.note') : undefined;
+  const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
+  const shared = { useChat: props.useChat, renderSlotChain: props.renderSlotChain, loadImage: props.loadImage, cwd, failureNote };
   return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton}
