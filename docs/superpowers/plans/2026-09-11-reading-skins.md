@@ -17,7 +17,7 @@
 - "墨"（图标、色条、状态字形）只能用 `label-*` / `state-*`。表面 token（如 `specific-bubble`）当墨用会隐身。
 - `DESIGN.md` 的动效与折叠契约不变：流式揭示、推理跟随的两行步进与缓动、2s 字形 shimmer、28px 视口遮罩、14px/24px 状态标签。
 - 文案走插件自带的 `src/client/locale.ts` 双字典（zh/en）。**每次加键必须两个字典同时补齐**（`tests/locale.test.ts` 校验键集一致）。
-- 新增依赖：`@deepseek-ai/schemastery`（dependencies）、`@deepseek-ai/dsh-settings` 与 `@deepseek-ai/dsh-client-ui-settings`（devDependencies + peerDependencies）。三者都要加进 `scripts/link-harness-dependencies.mjs` 的 `shared` 映射。
+- 新增依赖：`@deepseek-ai/schemastery`（**dependencies**，`^3.18.2`——宿主半运行时构造 schema）、`@deepseek-ai/dsh-settings` 与 `@deepseek-ai/dsh-client-ui-settings`（**devDependencies**，`0.0.1-rc.1`——纯类型依赖）。三者都要加进 `scripts/link-harness-dependencies.mjs` 的 `shared` 映射。**不要**给后两者加 peerDependencies。
 - `lib/` 是**提交进仓库**的构建产物：中间任务只提交源码，避免构建噪声；最后一个任务统一 `npm run build` 并提交 `lib/`。
 - `.gitignore` 增加 `.superpowers/`（可视化伴侣的产物，不该入库）。
 
@@ -233,14 +233,15 @@ Expected: FAIL — `Cannot find module '../src/skin-settings.js'`
 
 `package.json`：
 
-- `dependencies` 加 `"@deepseek-ai/schemastery": "workspace:^"`
-- `devDependencies` 加 `"@deepseek-ai/dsh-settings": "0.1.2-rc.1"`、`"@deepseek-ai/dsh-client-ui-settings": "0.1.2-rc.1"`
-- `peerDependencies` 加（与既有条目同风格）：
+- `dependencies` 加 `"@deepseek-ai/schemastery": "^3.18.2"`。
 
-```json
-"@deepseek-ai/dsh-client-ui-settings": ">=0.1.2-rc.1 <0.1.3-0 || >=0.1.3-rc.1 <0.2.0-0",
-"@deepseek-ai/dsh-settings": ">=0.1.2-rc.1 <0.1.3-0 || >=0.1.3-rc.1 <0.2.0-0",
-```
+  > **不要写 `workspace:^`**。那是宿主仓库内部的写法（`ui-theme` 用它是因为它自己就在那个 pnpm workspace 里）；本插件在仓库之外分发，消费者 `pnpm install` 时无法解析 `workspace:` 协议。registry 上 `@deepseek-ai/schemastery` 的最新版是 `3.18.2`，与 `vendor/schemastery` 一致。宿主半在模块加载时就要构造 schema 对象，所以这是**运行时**依赖。
+
+- `devDependencies` 加 `"@deepseek-ai/dsh-settings": "0.0.1-rc.1"`、`"@deepseek-ai/dsh-client-ui-settings": "0.0.1-rc.1"`。
+
+  > 这两个包在 registry 上只发布到 `0.0.1-rc.1`。它们**只用于类型**（`ctx.settings` 与 `ctx.settingsScope` 的模块增强），编译时被擦除，`ui-theme` 同样只把它们放在 devDependencies。
+
+- **不要**给这两个包加 `peerDependencies`。它们是纯类型依赖，加进去只会让消费者去解析一个不存在的版本区间而安装失败。
 
 `scripts/link-harness-dependencies.mjs` 的 `shared` 对象里加三行（包名 → 相对检出根的路径）：
 
