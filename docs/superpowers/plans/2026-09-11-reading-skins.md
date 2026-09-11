@@ -37,7 +37,14 @@ node --import tsx/esm --import ./tests/setup-dom.mjs --test tests/skin.test.ts
 DSHX_HARNESS=/Users/jiangnan/Documents/workspace/deepseek-harness npm run build
 ```
 
-（`tools/dshx` 只存在于旧检出 `workspace/deepseek-harness`，构建必须指向它。新检出 `~/Documents/deepseek-harness` 有相同的 settings API，因此类型检查与测试用当前 dev link 即可。）
+（**两个检出分工不同，混用会炸**：构建适配器 `tools/dshx` 只在旧检出 `workspace/deepseek-harness`，所以 `DSHX_HARNESS` 必须指向它；而构建产物 `lib/` 只在新检出 `~/Documents/deepseek-harness`，所以 `node_modules` 的开发软链必须指向**新检出**——同一批软链拆到两个检出会让 React 变成双实例，报 "Cannot read properties of null (reading 'useState')"。
+
+开工前确认链路：
+
+```sh
+readlink node_modules/@deepseek-ai/dsh-client-ui-primitives   # 应指向 ~/Documents/deepseek-harness
+npm test                                                       # 基线：101 项，全绿
+```）
 
 ## File Structure
 
@@ -247,14 +254,14 @@ Expected: FAIL — `Cannot find module '../src/skin-settings.js'`
 
 ```bash
 cd /Users/jiangnan/Documents/workspace/dsh-deckseek
-R=/Users/jiangnan/Documents/workspace/deepseek-harness
+R=/Users/jiangnan/Documents/deepseek-harness
 ln -sfn "$R/packages/client/ui-settings"      node_modules/@deepseek-ai/dsh-client-ui-settings
 ln -sfn "$R/packages/settings/settings"       node_modules/@deepseek-ai/dsh-settings
 ln -sfn "$R/vendor/schemastery"               node_modules/@deepseek-ai/schemastery
 ls -l node_modules/@deepseek-ai/ | grep -E "schemastery|dsh-settings"
 ```
 
-Expected: 三条软链存在且指向 `workspace/deepseek-harness`。
+Expected: 三条软链存在且指向 `~/Documents/deepseek-harness`（与其余 30 条同源；指向旧检出会让 React 双实例）。
 
 - [ ] **Step 4: 写 schema**
 
