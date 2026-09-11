@@ -48,6 +48,8 @@ npm test                                                       # 开工前基线
 
 - 各任务 `Expected:` 行里的测试**绝对条数只是指示**——每完成一个任务都会新增测试，数字必然滚动。真正的验收标准是"本任务新增的测试全绿、且没有回归"。派发时控制器会给出当时的真实基线，不要去凑某个数字，更不要为了对齐数字而增删断言。
 - `package-lock.json` 是**被跟踪**的文件。改动 `package.json` 的依赖后它会失配，而本仓库禁止跑 `pnpm install`（会重写软链）。统一在最后一个任务里用 `npm install --package-lock-only` 重建并提交。
+- **CSS 任务里的"目视确认"步骤由人执行，不由实现者执行。** 执行者没有浏览器、没有运行中的 DSH 实例，无法看到渲染结果；遇到这类步骤应当**跳过并明确声明已推迟**，绝不允许声称"已确认观感"。人能做的验证写在 Task 10 Step 5。执行者能做的是：`npm run typecheck`、全量 `npm test`、以及结构性自检（括号配平、类名在源码中真实存在、选择器特异性不低于被覆盖的基础规则）。
+- **CSS 里引用的类名必须先在源码中确认存在。** 本插件有一批 0.6.x 遗留的死规则（`.toolHeading`、`.toolGlyph`、`.toolTitle`、`.toolHeadingCopy`、`.toolHeadingState` 等），移动标记后没有对应元素；给死类名写皮肤规则等于写了一条永远不生效的规则。
 
 ## File Structure
 
@@ -837,16 +839,17 @@ git commit -m "feat(skin): soft skin — cards with real volume, no colour strip
 
 - [ ] **Step 1: 前导格加状态字形**
 
-`src/client/ToolActivity.tsx` 的 `.toolGlyph` 元素内部，在现有图标之后加一个字形 span（装饰性，状态本身已由 `.toolState` 文本承载可访问名）：
+先看清现状：工具行**不是** deckseek 自己的标记，而是宿主 `DisclosureRow` 原语渲染的，图标走它的 `icon` prop；`data-phase` 挂在 `.toolState` 上，不在图标格上。CSS 里的 `.toolGlyph` / `.toolTitle` / `.toolHeading*` 是 0.6.x 遗留的死规则，**没有对应标记**——不要去改它们。
+
+`src/client/ToolActivity.tsx` 的 `collapsedContent` 片段里，在 `rowSeparator` **之前**插入一个真实的状态字形元素（`phase` 是 React 已经拿到的值；该元素装饰性，状态本身已由 `.toolState` 文本承载可访问名）：
 
 ```tsx
-<span className={css.toolGlyph} aria-hidden="true">
-  <ToolGlyphIcon />
-  <span className={css.toolGlyphState} />
-</span>
+collapsedContent={<><span className={css.toolGlyphState} data-phase={phase} aria-hidden="true" /><span className={css.rowSeparator} aria-hidden />…
 ```
 
-（保留现有图标元素的写法，只新增 `toolGlyphState` 这一个 span；`data-phase` 已经在现有父元素上。）
+非终端皮肤下它是 `display: none`，所以布局不变。
+
+**`ToolPhase` 的真实取值是** `'preparing' | 'running' | 'returned' | 'succeeded' | 'failed' | 'interrupted'`（`src/client/tool-activity.ts:8`）——**没有 `'done'`**。字形映射按这个联合来写。
 
 - [ ] **Step 2: 写字形与终端覆盖块**
 
@@ -888,19 +891,22 @@ git commit -m "feat(skin): soft skin — cards with real volume, no colour strip
   border-left: 2px solid var(--dsw-alias-state-business-primary);
   padding: 7px 12px;
 }
-/* The glyph column replaces the icon; the phase picks the glyph. */
-[data-deckseek-skin='terminal'] .toolGlyph { width: 12px; }
-[data-deckseek-skin='terminal'] .toolGlyph > :first-child { display: none; }
-[data-deckseek-skin='terminal'] .toolGlyphState { display: block; font-size: 0.75rem; line-height: 1.25rem; }
-[data-deckseek-skin='terminal'] .toolGlyph[data-phase='preparing'] .toolGlyphState::before,
-[data-deckseek-skin='terminal'] .toolGlyph[data-phase='running'] .toolGlyphState::before { content: '▸'; color: var(--dsw-alias-label-caption); }
-[data-deckseek-skin='terminal'] .toolGlyph[data-phase='done'] .toolGlyphState::before { content: '✓'; color: var(--dsw-alias-state-success-primary); }
-[data-deckseek-skin='terminal'] .toolGlyph[data-phase='failed'] .toolGlyphState::before,
-[data-deckseek-skin='terminal'] .toolGlyph[data-phase='interrupted'] .toolGlyphState::before { content: '✗'; color: var(--dsw-alias-state-error-primary); }
+/* The glyph column replaces the primitive's own tool icon; the phase picks the
+   glyph. Phases are the real ToolPhase union — there is no 'done'. The base
+   `.toolGlyphState { display: none }` at the top of this block keeps the glyph
+   out of the other two skins. */
+[data-deckseek-skin='terminal'] .nativeToolRow svg { display: none; }
+[data-deckseek-skin='terminal'] .toolGlyphState { display: block; flex: none; width: 12px; font-size: 0.75rem; line-height: 1.25rem; }
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='preparing']::before,
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='running']::before { content: '▸'; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='succeeded']::before,
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='returned']::before { content: '✓'; color: var(--dsw-alias-state-success-primary); }
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='failed']::before,
+[data-deckseek-skin='terminal'] .toolGlyphState[data-phase='interrupted']::before { content: '✗'; color: var(--dsw-alias-state-error-primary); }
 /* Tool chrome goes monospace; the state text stays available to screen readers. */
-[data-deckseek-skin='terminal'] .toolTitle,
-[data-deckseek-skin='terminal'] .toolLedger,
-[data-deckseek-skin='terminal'] .toolDeltas { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+[data-deckseek-skin='terminal'] .nativeToolSummary,
+[data-deckseek-skin='terminal'] .toolDelta,
+[data-deckseek-skin='terminal'] .toolLedger { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
 [data-deckseek-skin='terminal'] .toolState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 [data-deckseek-skin='terminal'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 7px 12px; }
 [data-deckseek-skin='terminal'] .reasonCard { overflow: visible; }
@@ -908,7 +914,7 @@ git commit -m "feat(skin): soft skin — cards with real volume, no colour strip
 [data-deckseek-skin='terminal'] .reasonText { padding: 4px 0 8px; }
 ```
 
-> `.toolGlyph[data-phase=…]` 依赖该元素已有 `data-phase`。Step 1 之后先 `grep -n "toolGlyph" src/client/ToolActivity.tsx` 确认属性在正确的元素上；若 `data-phase` 落在父级 `.nativeToolRow`，把上面选择器改成 `.nativeToolRow[data-phase='…'] .toolGlyphState::before`。
+> 上面的选择器已按**当前源码**逐个核对过：字形元素自带 `data-phase`（Step 1 里 React 传入），所以不依赖祖先上的属性；`.nativeToolSummary`、`.toolDelta`、`.toolLedger`、`.toolState` 都是活类名。`.toolGlyph` / `.toolTitle` / `.toolHeading*` 是 0.6.x 遗留的死规则（移动标记后没有对应元素），本任务不碰它们——是否清理留给最终审查。
 
 - [ ] **Step 3: 目视确认（暗色）**
 
@@ -971,8 +977,7 @@ git commit -m "feat(skin): terminal skin — glyph column, hairline rows, no car
 [data-deckseek-skin='paper'] .unknown,
 [data-deckseek-skin='paper'] .systemPrompt,
 [data-deckseek-skin='paper'] .turnProcess,
-[data-deckseek-skin='paper'] .reasonCard,
-[data-deckseek-skin='paper'] .tileFrames {
+[data-deckseek-skin='paper'] .reasonCard {
   background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0;
 }
 [data-deckseek-skin='paper'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; font-size: 1.0625rem; line-height: 1.8; }
@@ -987,9 +992,13 @@ git commit -m "feat(skin): terminal skin — glyph column, hairline rows, no car
 [data-deckseek-skin='paper'] .reasonHeading { padding: 0 0 4px; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='paper'] .reasonText { padding: 0 0 0 16px; border-left: 2px solid var(--dsw-alias-border-l2); margin-left: 2px; font-size: 0.8438rem; line-height: 1.85; color: var(--dsw-alias-label-tertiary); }
 [data-deckseek-skin='paper'] .toolActivity { border-top: 0; }
-[data-deckseek-skin='paper'] .toolHeading { grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; }
-[data-deckseek-skin='paper'] .toolGlyph { width: 10px; color: var(--dsw-alias-label-caption); }
-[data-deckseek-skin='paper'] .toolTitle { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.7813rem; font-weight: 400; color: var(--dsw-alias-label-secondary); }
+/* Tools are plain monospace lines with a › lead; the primitive's icon is dropped. */
+[data-deckseek-skin='paper'] .nativeToolRow svg { display: none; }
+[data-deckseek-skin='paper'] .toolGlyphState { display: block; flex: none; width: 10px; }
+[data-deckseek-skin='paper'] .toolGlyphState::before { content: '›'; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='paper'] .nativeToolSummary,
+[data-deckseek-skin='paper'] .toolDelta { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.7813rem; }
+[data-deckseek-skin='paper'] .nativeToolSummary { color: var(--dsw-alias-label-secondary); }
 [data-deckseek-skin='paper'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 0 0 0 16px; }
 ```
 
