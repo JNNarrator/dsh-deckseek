@@ -396,6 +396,10 @@
   --dx-border-answer: none;
   --dx-rule: 1px solid var(--dsw-alias-border-l1);
   --dx-gap-block: 8px;
+  /* A terminal has no elevation: the plugin's two chrome shadows resolve to
+     nothing in this skin, so no control needs its own override. */
+  --dsh-reader-shadow-pop: none;
+  --dsh-reader-shadow-float: none;
 }
 [data-deckseek-skin='terminal'] .toolActivity,
 [data-deckseek-skin='terminal'] .unknown,
@@ -408,15 +412,15 @@
   border-bottom: var(--dx-rule);
   border-radius: 0;
   box-shadow: none;
-  padding: 7px 0;
+  padding: 3px 0;
 }
-[data-deckseek-skin='terminal'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 14px 0; }
-[data-deckseek-skin='terminal'] .user {
-  border-radius: 0;
-  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);
-  border-left: 2px solid var(--dsw-alias-state-business-primary);
-  padding: 7px 12px;
-}
+[data-deckseek-skin='terminal'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 2px 0; }
+/* The input line is a prompt, not a bubble: a `> ` marker and the text, with
+   no fill, no bar and no avatar. */
+[data-deckseek-skin='terminal'] .user { border-radius: 0; background: transparent; border-left: 0; padding: 1px 0; gap: 8px; }
+[data-deckseek-skin='terminal'] .userGlyph { display: none; }
+[data-deckseek-skin='terminal'] .userRole { display: block; flex: none; width: auto; font-size: 0; }
+[data-deckseek-skin='terminal'] .userRole::before { content: '>'; font-size: 0.875rem; line-height: 1.25rem; color: var(--dsw-alias-label-secondary); }
 /* The glyph column lives in the primitive's 16px leading slot; the phase picks
    the glyph from the real ToolPhase union — there is no 'done'. Only the tool
    icon inside our own wrapper is hidden, never the primitive's expand chevron.
@@ -456,6 +460,26 @@
 [data-deckseek-skin='terminal'] .toolState { font-size: 0.78125rem; line-height: 1.25rem; }
 [data-deckseek-skin='terminal'] .turnTail,
 [data-deckseek-skin='terminal'] .processMetaLine { font-size: 0.6875rem; line-height: 1.0625rem; }
+/* Terminal v2 — the skin must read as a terminal, not as dark paper. Density
+   comes first: `--dx-gap-block` was declared from the start but nothing ever
+   consumed it, so every gap silently inherited the soft skin's 22/16/16. */
+[data-deckseek-skin='terminal'] .column {
+  gap: var(--dx-gap-block);
+  font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  border: 1px solid var(--dsw-alias-border-l2);
+  padding: 10px 12px;
+}
+[data-deckseek-skin='terminal'] .turn { gap: 4px; }
+[data-deckseek-skin='terminal'] .turn + .turn { margin-top: var(--dx-gap-block); }
+[data-deckseek-skin='terminal'] .mainFlow,
+[data-deckseek-skin='terminal'] .blocks { gap: 5px; }
+/* One glyph vocabulary for the whole skin: the tool marker, the result bracket
+   the tool result hangs off, and the thinking star. */
+[data-deckseek-skin='terminal'] .toolLead { gap: 6px; }
+[data-deckseek-skin='terminal'] .toolLead::before { content: '⏺'; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='terminal'] .toolDetails { position: relative; padding-left: 2ch; }
+[data-deckseek-skin='terminal'] .toolDetails::before { content: '⎿'; position: absolute; left: 0; top: 0; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='terminal'] .reasonHeading::before { content: '✻ '; color: var(--dsw-alias-label-caption); }
 /* Paper — typographic flow. No containers at all: grouping is whitespace and
    the size gap between the answer and everything else. Only the closing stats
    line draws a rule, and only failures carry colour. */

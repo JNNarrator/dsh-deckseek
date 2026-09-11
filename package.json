@@ -1,6 +1,6 @@
 {
     "name": "dsh-deckseek",
-    "version": "0.7.1",
+    "version": "0.7.2",
     "description": "A calmer reading view for DeepSeek Harness: native process details, live reasoning, and clean final answers.",
     "type": "module",
     "license": "MIT",
