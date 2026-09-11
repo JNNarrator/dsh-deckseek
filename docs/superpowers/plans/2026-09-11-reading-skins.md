@@ -837,17 +837,31 @@ git commit -m "feat(skin): soft skin — cards with real volume, no colour strip
 - Consumes: `--dx-*`（Task 6）、`data-deckseek-skin`（Task 5）
 - Produces: `[data-deckseek-skin='terminal']` 覆盖块，以及工具行前导格里的状态字形元素。
 
-- [ ] **Step 1: 前导格加状态字形**
+- [ ] **Step 1: 把状态字形放进原语的前导格**
 
-先看清现状：工具行**不是** deckseek 自己的标记，而是宿主 `DisclosureRow` 原语渲染的，图标走它的 `icon` prop；`data-phase` 挂在 `.toolState` 上，不在图标格上。CSS 里的 `.toolGlyph` / `.toolTitle` / `.toolHeading*` 是 0.6.x 遗留的死规则，**没有对应标记**——不要去改它们。
+先看清现状。工具行由宿主 `DisclosureRow` 原语渲染，DOM 顺序是：
 
-`src/client/ToolActivity.tsx` 的 `collapsedContent` 片段里，在 `rowSeparator` **之前**插入一个真实的状态字形元素（`phase` 是 React 已经拿到的值；该元素装饰性，状态本身已由 `.toolState` 文本承载可访问名）：
-
-```tsx
-collapsedContent={<><span className={css.toolGlyphState} data-phase={phase} aria-hidden="true" /><span className={css.rowSeparator} aria-hidden />…
+```
+<div class=root>
+  <div class="row nativeToolRow">
+    <span class=leading>…前导格…</span>   ← 16px 的图标格
+    <span class=title>工具名</span>
+    {collapsedContent}                    ← 排在标题之后
+  </div>
+</div>
 ```
 
-非终端皮肤下它是 `display: none`，所以布局不变。
+前导格里的内容由原语的 `icon` prop 决定，而 deckseek 本来就往它传自己的元素（`icon={<Icon size={14} />}`）——**前导格就在这里**。不要把字形塞进 `collapsedContent`：那会落在标题后面，不是设计里的前导格。
+
+`src/client/ToolActivity.tsx` 把 `icon` 换成带阶段属性的包装元素：
+
+```tsx
+icon={<span className={css.toolLead}><Icon size={14} /><span className={css.toolGlyphState} data-phase={phase} aria-hidden="true" /></span>}
+```
+
+字形是装饰性的：状态本身仍由 `.toolState` 文本承载可访问名。
+
+**不要**用 `.nativeToolRow svg { display: none }` 藏原语的图标——展开时原语会把前导格换成它自己的 chevron（`DisclosureRow.tsx:68-70`），那条规则会把展开指示一起藏掉，属于功能回归。只在**我们自己包装元素内部**藏第一个子元素。
 
 **`ToolPhase` 的真实取值是** `'preparing' | 'running' | 'returned' | 'succeeded' | 'failed' | 'interrupted'`（`src/client/tool-activity.ts:8`）——**没有 `'done'`**。字形映射按这个联合来写。
 
@@ -891,12 +905,14 @@ collapsedContent={<><span className={css.toolGlyphState} data-phase={phase} aria
   border-left: 2px solid var(--dsw-alias-state-business-primary);
   padding: 7px 12px;
 }
-/* The glyph column replaces the primitive's own tool icon; the phase picks the
-   glyph. Phases are the real ToolPhase union — there is no 'done'. The base
-   `.toolGlyphState { display: none }` at the top of this block keeps the glyph
-   out of the other two skins. */
-[data-deckseek-skin='terminal'] .nativeToolRow svg { display: none; }
-[data-deckseek-skin='terminal'] .toolGlyphState { display: block; flex: none; width: 12px; font-size: 0.75rem; line-height: 1.25rem; }
+/* The glyph column lives in the primitive's 16px leading slot; the phase picks
+   the glyph from the real ToolPhase union — there is no 'done'. Only the tool
+   icon inside our own wrapper is hidden, never the primitive's expand chevron.
+   The base `.toolGlyphState { display: none }` at the top of this block keeps
+   the glyph out of the soft and paper skins. */
+.toolLead { display: inline-flex; align-items: center; justify-content: center; }
+[data-deckseek-skin='terminal'] .toolLead > :first-child { display: none; }
+[data-deckseek-skin='terminal'] .toolGlyphState { display: block; font-size: 0.75rem; line-height: 1.25rem; }
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='preparing']::before,
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='running']::before { content: '▸'; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='succeeded']::before,
@@ -992,9 +1008,10 @@ git commit -m "feat(skin): terminal skin — glyph column, hairline rows, no car
 [data-deckseek-skin='paper'] .reasonHeading { padding: 0 0 4px; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='paper'] .reasonText { padding: 0 0 0 16px; border-left: 2px solid var(--dsw-alias-border-l2); margin-left: 2px; font-size: 0.8438rem; line-height: 1.85; color: var(--dsw-alias-label-tertiary); }
 [data-deckseek-skin='paper'] .toolActivity { border-top: 0; }
-/* Tools are plain monospace lines with a › lead; the primitive's icon is dropped. */
-[data-deckseek-skin='paper'] .nativeToolRow svg { display: none; }
-[data-deckseek-skin='paper'] .toolGlyphState { display: block; flex: none; width: 10px; }
+/* Tools are plain monospace lines with a › lead; the primitive's tool icon is
+   dropped inside our own wrapper, never the primitive's expand chevron. */
+[data-deckseek-skin='paper'] .toolLead > :first-child { display: none; }
+[data-deckseek-skin='paper'] .toolGlyphState { display: block; }
 [data-deckseek-skin='paper'] .toolGlyphState::before { content: '›'; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='paper'] .nativeToolSummary,
 [data-deckseek-skin='paper'] .toolDelta { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.7813rem; }
