@@ -396,6 +396,15 @@
   --dx-border-answer: none;
   --dx-rule: 1px solid var(--dsw-alias-border-l1);
   --dx-gap-block: 8px;
+  /* The frame's bottom margin is a flat value, and the skin's own block gap at
+     that. Measured on the real app, the distance from the frame's bottom border
+     to the composer card's top edge equals exactly what the root reserves here
+     (56px when the floor bound, 66.5px when the composer-derived value bound):
+     the host already reserves the card's own height, and
+     `--dsh-composer-height` counts the status row and margins on top of it, so
+     the derived formula double counts and grows with a tall composer. A frame
+     is a block — one line of the terminal's rhythm closes it. */
+  --reader-bottom-clearance: var(--dx-gap-block);
   /* A terminal has no elevation: the plugin's two chrome shadows resolve to
      nothing in this skin, so no control needs its own override. */
   --dsh-reader-shadow-pop: none;
@@ -429,6 +438,18 @@
 .toolLead { display: inline-flex; align-items: center; justify-content: center; }
 [data-deckseek-skin='terminal'] .toolLead > :first-child { display: none; }
 [data-deckseek-skin='terminal'] .toolGlyphState { display: block; font-size: 0.75rem; line-height: 1.25rem; }
+/* Two glyphs share this slot — the ⏺ marker and the 12px state glyph — but the
+   primitive sizes the slot at a fixed 16px while the pair measures ~23px. The
+   slot centered the overflow, so the marker hung past its left edge and the
+   row's `overflow: hidden` sheared the circle into a half-disc. Take the
+   content width instead, floored at the pair's own width (so a font fallback
+   with a wider marker grows the slot rather than clipping it again), and anchor
+   left so the collapsed marker and the expanded chevron share one left edge. */
+[data-deckseek-skin='terminal'] .nativeToolRow > :first-child {
+  width: auto;
+  min-width: 28px;
+  justify-content: flex-start;
+}
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='preparing']::before,
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='running']::before { content: '▸'; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='succeeded']::before,
