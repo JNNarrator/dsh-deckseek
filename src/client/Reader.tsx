@@ -228,6 +228,11 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   </section>;
 });
 
+/** Render every turn the host has loaded, dropping the trailing render window.
+ *  Set by an explicit history load: the fetched page is older than every turn
+ *  the window keeps, so a window that stays put would mount none of it. */
+const TURN_WINDOW_ALL = Number.MAX_SAFE_INTEGER;
+
 export function Reader(props: ReaderProps) {
   const root = useRef<HTMLDivElement>(null);
   const activatedAt = useRef(Date.now());
@@ -338,7 +343,13 @@ export function Reader(props: ReaderProps) {
       {positionNotice && <div className={css.notice} role="status" data-reader-position-restored>{ui('reader.positionRestored')}</div>}
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
         setHistoryError(false);
-        try { await props.loadOlder(); } catch { setHistoryError(true); }
+        try {
+          await props.loadOlder();
+          // An explicit load is a request to read that page, but a fetched page
+          // is older than everything the trailing window keeps — without this
+          // the turns mount nowhere and the button reads as dead.
+          setTurnWindow(TURN_WINDOW_ALL);
+        } catch { setHistoryError(true); }
       }}>{loadingOlder ? ui('reader.loadingEarlier') : ui('reader.loadEarlier')}</button>}
       {loadingOlder && <div className={css.historySkeleton} aria-hidden="true"><span /><span /></div>}
       {historyError && <div className={css.notice} role="status">{ui('reader.historyFailed')}</div>}
