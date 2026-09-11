@@ -173,10 +173,11 @@
 @keyframes toolStatePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 [data-motion=off] .toolState[data-phase="preparing"], [data-motion=off] .toolState[data-phase="running"] { animation: none; }
 @media (prefers-reduced-motion: reduce) { .toolState[data-phase="preparing"], .toolState[data-phase="running"] { animation: none; } }
-/* The umbrella busy status mirrors the native chat: pinned at the bottom-left
-   of the reading area, above the composer/task bar, shimmering. */
-.statusDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 12px); align-self: flex-start; z-index: 2; pointer-events: none; }
-.statusDock .thinkText { pointer-events: auto; user-select: text; }
+/* The umbrella busy status closes the turn in the reading flow, the way the
+   native chat view ends a running turn: a plain row under the last block that
+   scrolls away with it. It must not float over the conversation — an overlay
+   hides the very content the reader is waiting on. */
+.statusDock { align-self: flex-start; flex: none; }
 .nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 6px; }
 .toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 2px 0 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: var(--dx-radius-panel); }
 .toolHeading:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -353,10 +354,8 @@
 .imageDialog img { max-width: 82vw; max-height: 75vh; display: block; object-fit: contain; }
 .dialogClose { border: 0; background: transparent; color: inherit; width: 32px; height: 32px; border-radius: 8px; font-size: 1.5rem; }
 /* The host scroller runs behind the floating composer, so the dock must
-   offset by the composer region height, not the raw scrollport edge. When
-   the busy status dock is visible, the jump button lifts above its band. */
+   offset by the composer region height, not the raw scrollport edge. */
 .jumpDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 4px); align-self: center; height: 0; z-index: 2; }
-.column:has([data-reader-status-dock]) .jumpDock { bottom: calc(var(--dsh-deckseek-composer) + 52px); }
 .jump { transform: translateY(-100%); display: flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 0.75rem; line-height: 1.25rem; padding: 0; box-shadow: var(--dsh-reader-shadow-float); }
 .jump:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .jump svg { flex: none; }
@@ -482,11 +481,16 @@
 }
 [data-deckseek-skin='paper'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; font-size: 1.0625rem; line-height: 1.8; }
 [data-deckseek-skin='paper'] .turnTail { background: transparent; border: 0; border-top: 1px solid var(--dsw-alias-border-l1); border-radius: 0; box-shadow: none; padding: 14px 0 0; }
-/* The user block becomes a labelled paragraph, not a bubble. */
-[data-deckseek-skin='paper'] .user { align-self: stretch; max-width: none; display: flex; gap: 14px; padding: 0; border-radius: 0; background: transparent; }
+/* The user block opens a turn: the speaker name sits at the single left edge
+   with a name rule carrying the eye out to the right margin, so a message can
+   never be read as the answer's next paragraph. Typography only — paper's
+   colour licence stays with failures, and the left vertical rule is already
+   reasoning's mark. */
+[data-deckseek-skin='paper'] .user { align-self: stretch; max-width: none; display: block; margin: 0; padding: 0; border-radius: 0; background: transparent; }
 [data-deckseek-skin='paper'] .userGlyph { display: none; }
-[data-deckseek-skin='paper'] .userRole { display: block; flex: none; width: 26px; padding-top: 3px; color: var(--dsw-alias-label-caption); font-size: 0.6875rem; line-height: 1.125rem; letter-spacing: 0.06em; }
-[data-deckseek-skin='paper'] .userBody { font-size: 0.9375rem; line-height: 1.7; color: var(--dsw-alias-label-secondary); }
+[data-deckseek-skin='paper'] .userRole { display: flex; align-items: center; gap: 12px; width: auto; padding: 0 0 7px; color: var(--dsw-alias-label-secondary); font-size: 0.71875rem; line-height: 1.125rem; letter-spacing: 0.1em; font-weight: 600; }
+[data-deckseek-skin='paper'] .userRole::after { content: ''; flex: 1 1 auto; border-top: 1px solid var(--dsw-alias-border-l1); }
+[data-deckseek-skin='paper'] .userBody { font-size: 0.9375rem; line-height: 1.625rem; color: var(--dsw-alias-label-secondary); }
 /* Reasoning hangs off a hairline thread; tools are plain monospace lines. */
 [data-deckseek-skin='paper'] .reasonCard { overflow: visible; }
 [data-deckseek-skin='paper'] .reasonHeading { padding: 0 0 4px; color: var(--dsw-alias-label-caption); }
