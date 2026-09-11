@@ -40,9 +40,11 @@
   --dx-rule: 1px solid var(--dsw-alias-border-l1);
   --dx-gap-block: 12px;
   --dx-rail-neutral: var(--dsw-alias-border-l3);
-  /* The hairline carries the record containers' edge; danger tint derives
-     from the static red the user reads as "standard error red" — red-500 is
-     rgb(239,68,68). */
+  /* The hairline is the record surfaces' base edge colour: soft hides it on
+     record cards, terminal and paper drop it with the containers and
+     re-derive their rules from the same alias, and notice/error keep it in
+     every skin. Danger tint derives from the static red the user reads as
+     "standard error red" — red-500 is rgb(239,68,68). */
   --dx-border-hairline: var(--dsw-alias-border-l1);
   --dx-rail-danger: var(--dsw-static-red-500);
   --dx-surface-danger: color-mix(in srgb, var(--dsw-static-red-500) 10%, transparent);
@@ -430,15 +432,31 @@
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='returned']::before { content: '✓'; color: var(--dsw-alias-state-success-primary); }
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='failed']::before,
 [data-deckseek-skin='terminal'] .toolGlyphState[data-phase='interrupted']::before { content: '✗'; color: var(--dsw-alias-state-error-primary); }
-/* Tool chrome goes monospace; the state text stays available to screen readers. */
+/* Tool chrome goes monospace; the state text stays available to screen readers.
+   The sr-only treatment applies only while collapsed: when open the primitive's
+   chevron replaces the whole leading slot, so the inline state text is the only
+   state left. */
 [data-deckseek-skin='terminal'] .nativeToolSummary,
 [data-deckseek-skin='terminal'] .toolDelta,
 [data-deckseek-skin='terminal'] .toolLedger { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
-[data-deckseek-skin='terminal'] .toolState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+[data-deckseek-skin='terminal'] .toolActivity:not([data-expanded='true']) .toolState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 [data-deckseek-skin='terminal'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 7px 12px; }
 [data-deckseek-skin='terminal'] .reasonCard { overflow: visible; }
 [data-deckseek-skin='terminal'] .reasonHeading { padding: 0 0 4px; }
 [data-deckseek-skin='terminal'] .reasonText { padding: 4px 0 8px; }
+/* Type scale — the design doc's terminal column: 14px answer, 12.5px body
+   rows, 11px meta and closing lines. */
+[data-deckseek-skin='terminal'] .answer { font-size: 0.875rem; line-height: 1.5rem; }
+[data-deckseek-skin='terminal'] .user { font-size: 0.78125rem; line-height: 1.25rem; }
+[data-deckseek-skin='terminal'] .reasonText,
+[data-deckseek-skin='terminal'] .turnProcess,
+[data-deckseek-skin='terminal'] .unknown,
+[data-deckseek-skin='terminal'] .systemPrompt { font-size: 0.78125rem; line-height: 1.25rem; }
+[data-deckseek-skin='terminal'] .nativeToolSummary,
+[data-deckseek-skin='terminal'] .toolDelta,
+[data-deckseek-skin='terminal'] .toolState { font-size: 0.78125rem; line-height: 1.25rem; }
+[data-deckseek-skin='terminal'] .turnTail,
+[data-deckseek-skin='terminal'] .processMetaLine { font-size: 0.6875rem; line-height: 1.0625rem; }
 /* Paper — typographic flow. No containers at all: grouping is whitespace and
    the size gap between the answer and everything else. Only the closing stats
    line draws a rule, and only failures carry colour. */
@@ -463,7 +481,7 @@
   background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0;
 }
 [data-deckseek-skin='paper'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; font-size: 1.0625rem; line-height: 1.8; }
-[data-deckseek-skin='paper'] .turnTail { padding: 14px 0 0; border-top: 1px solid var(--dsw-alias-border-l1); }
+[data-deckseek-skin='paper'] .turnTail { background: transparent; border: 0; border-top: 1px solid var(--dsw-alias-border-l1); border-radius: 0; box-shadow: none; padding: 14px 0 0; }
 /* The user block becomes a labelled paragraph, not a bubble. */
 [data-deckseek-skin='paper'] .user { align-self: stretch; max-width: none; display: flex; gap: 14px; padding: 0; border-radius: 0; background: transparent; }
 [data-deckseek-skin='paper'] .userGlyph { display: none; }
@@ -473,7 +491,6 @@
 [data-deckseek-skin='paper'] .reasonCard { overflow: visible; }
 [data-deckseek-skin='paper'] .reasonHeading { padding: 0 0 4px; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='paper'] .reasonText { padding: 0 0 0 16px; border-left: 2px solid var(--dsw-alias-border-l2); margin-left: 2px; font-size: 0.8438rem; line-height: 1.85; color: var(--dsw-alias-label-tertiary); }
-[data-deckseek-skin='paper'] .toolActivity { border-top: 0; }
 /* Tools are plain monospace lines with a › lead; the primitive's tool icon is
    dropped inside our own wrapper, never the primitive's expand chevron. */
 [data-deckseek-skin='paper'] .toolLead > :first-child { display: none; }
