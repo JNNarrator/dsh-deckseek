@@ -183,5 +183,8 @@ export const MarkdownText = memo(function MarkdownText({ text, streaming = false
     }
     return streamRef.current.render(text)
   }, [text, streaming, codeLabels, fileMentions, renderText, renderAtom])
-  return <div className={css.markdown}>{children}</div>
+  // `data-markdown` is the skin layer's hook: a reading skin tunes the prose
+  // ladder and rhythm from Reader.module.css, and the class name is hashed per
+  // module, so a stable attribute is the only handle that reaches across files.
+  return <div className={css.markdown} data-markdown="">{children}</div>
 })

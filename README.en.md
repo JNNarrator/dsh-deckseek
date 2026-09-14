@@ -39,7 +39,7 @@ dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa22
 - **Generative MCP Apps (SEP-1865)**: any ````mcp-app```` code block in the final answer is auto-mounted as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, communicating with the host via JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, ...).
 - **Adaptive theme & height**: live dark/light sync with zero first-frame flash; container height smoothly follows content (60–2400px).
 - **Lossless fidelity**: native Markdown, syntax-highlighted code, math, tables, images, and tool facts render faithfully.
-- **137 unit and component tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / reading-position / skin-part / caret-hook interactions (happy-dom).
+- **140 unit and component tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / reading-position / skin-part / caret-hook / stylesheet-contract interactions (happy-dom).
 
 ## Installation & listings
 
@@ -65,4 +65,4 @@ Listed in:
 - Features and usage are also described in the upstream repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md)
 
-**v0.8.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
+**v0.9.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
