@@ -386,6 +386,11 @@
    right-aligned number column. Hairline row rules, no cards, no radii. Colour
    is reserved for state. */
 .toolGlyphState { display: none; }
+/* Decorations that only one skin reads. React always renders them — a skin
+   change must not change the component tree — so every skin that has no use for
+   one hides it here. The card skins keep the phase sentence and never show the
+   terminal's working verb, tabular clock, breathing glyph or window title. */
+.framePath, .statusGlyph, .statusVerb, .statusClock { display: none; }
 [data-deckseek-skin='terminal'] {
   --dx-radius-card: 0px;
   --dx-radius-panel: 3px;
@@ -409,6 +414,25 @@
      nothing in this skin, so no control needs its own override. */
   --dsh-reader-shadow-pop: none;
   --dsh-reader-shadow-float: none;
+  /* The three animated decorations this skin adds are declared as shorthand
+     tokens so the two motion switches can cancel all of them in one place
+     instead of repeating four long selectors each. `none` is a valid
+     substitution for the whole `animation` shorthand. */
+  --dx-caret-blink: caretBlink 1s linear infinite;
+  --dx-glyph-breathe: glyphBreathe 1.4s ease-in-out infinite;
+  --dx-star-breathe: starBreathe 2s ease-in-out infinite;
+}
+[data-deckseek-skin='terminal'][data-motion='off'] {
+  --dx-caret-blink: none;
+  --dx-glyph-breathe: none;
+  --dx-star-breathe: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-deckseek-skin='terminal'] {
+    --dx-caret-blink: none;
+    --dx-glyph-breathe: none;
+    --dx-star-breathe: none;
+  }
 }
 [data-deckseek-skin='terminal'] .toolActivity,
 [data-deckseek-skin='terminal'] .unknown,
@@ -501,6 +525,85 @@
 [data-deckseek-skin='terminal'] .toolDetails { position: relative; padding-left: 2ch; }
 [data-deckseek-skin='terminal'] .toolDetails::before { content: '⎿'; position: absolute; left: 0; top: 0; color: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='terminal'] .reasonHeading::before { content: '✻ '; color: var(--dsw-alias-label-caption); }
+/* Terminal v3 — the skin must read as a terminal, not only as a monospaced dark
+   column: a window title bar, a cursor on the live answer, a breathing spinner
+   beside a per-turn verb, a category colour on the tool marker, and one right
+   edge for the numbers. The reference for these is ccch1mneyyy/dsh-TUI; its
+   mist-blue palette is not, because this plugin's colours are host tokens only.
+   See docs/design/terminal-skin-v3.md. */
+
+/* Window title bar: the toolbar becomes the window's own bar — where the session
+   runs on the left, a hairline carrying the eye to the controls on the right. */
+[data-deckseek-skin='terminal'] .toolbar {
+  justify-content: flex-start;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: var(--dx-rule);
+}
+/* The reading hint is real copy, not decoration: keep it for assistive tech and
+   drop only its pixels. A title bar carries the workspace, not a sentence. */
+[data-deckseek-skin='terminal'] .toolbarTitle {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+[data-deckseek-skin='terminal'] .framePath {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+}
+[data-deckseek-skin='terminal'] .framePath::after { content: ''; flex: 1 1 auto; min-width: 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
+[data-deckseek-skin='terminal'] .frameCwd { color: var(--dsw-alias-label-caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Streaming cursor: the line the terminal is still writing carries a cursor.
+   Its host is the trailing text block itself — a paragraph, a heading, a quote,
+   the last item of a list, the last cell of a row — so it lands at the end of
+   the last line instead of on a line of its own. Only a live answer shows it. */
+@keyframes caretBlink { 0%, 49.99% { opacity: 1; } 50%, 100% { opacity: 0; } }
+[data-deckseek-skin='terminal'] .answer .blocks[data-streaming] .readingText > .markdown > :is(p, h1, h2, h3, h4, h5, h6, blockquote):last-child::after,
+[data-deckseek-skin='terminal'] .answer .blocks[data-streaming] .readingText > .markdown > :is(ul, ol):last-child > li:last-child::after,
+[data-deckseek-skin='terminal'] .answer .blocks[data-streaming] .readingText > .markdown > table:last-child tr:last-child > :last-child::after {
+  content: '▌';
+  margin-left: 1px;
+  color: var(--dsw-alias-label-secondary);
+  animation: var(--dx-caret-blink);
+}
+/* Status line: a breathing glyph, the turn's working verb, and the elapsed clock
+   in a slot of its own. The verb replaces the phase sentence while the model
+   works; the thinking phase keeps its sentence, because that signal IS the
+   phase and the reference TUI's verb would spend it on flavour. */
+@keyframes glyphBreathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+[data-deckseek-skin='terminal'] .statusText { align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+[data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph { display: inline-flex; align-items: center; }
+[data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph::before {
+  content: '●'; font-size: 0.5rem; line-height: 1; color: var(--dsw-alias-state-business-primary); animation: var(--dx-glyph-breathe);
+}
+[data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .think { display: none; }
+[data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusVerb { display: inline; color: var(--dsw-alias-label-secondary); }
+[data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusClock {
+  display: inline-block; min-width: 6ch; text-align: right; color: var(--dsw-alias-label-tertiary);
+}
+/* The clock is the first thing a narrow column drops: the verb is what says work
+   is happening, the number is only what it has cost so far. */
+@container (max-width: 480px) {
+  [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusClock { display: none; }
+}
+/* Tool marker colour: the category says what kind of thing is happening — amber
+   for a command, brand blue for a change, quiet neutrals for reading. Red stays
+   reserved for failure. Declared as an inherited token on the activity itself,
+   so a nested tool tree reads its own nearest declaration rather than whichever
+   ancestor a descendant selector happened to match. */
+[data-deckseek-skin='terminal'] .toolActivity { --dx-tool-dot: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='terminal'] .toolActivity[data-tool-category='terminal'] { --dx-tool-dot: var(--dsw-alias-state-warn-primary); }
+[data-deckseek-skin='terminal'] .toolActivity[data-tool-category='write'] { --dx-tool-dot: var(--dsw-alias-state-business-primary); }
+[data-deckseek-skin='terminal'] .toolLead::before { color: var(--dx-tool-dot); }
+/* Number column: every row's trailing state and ±count share one right edge —
+   the column the design spec promised and only `flex: none` stood in for. The
+   turn's closing readout lines up the same way. */
+[data-deckseek-skin='terminal'] .toolHeadingState { justify-content: flex-end; min-width: 7ch; }
+[data-deckseek-skin='terminal'] .toolDelta,
+[data-deckseek-skin='terminal'] .toolState { text-align: right; }
+[data-deckseek-skin='terminal'] .turnTail { text-align: right; font-variant-numeric: tabular-nums; }
+/* Thinking star: breathes while reasoning streams, still once it stops. The
+   period matches --think-shimmer (2s) so the skin's animations agree. */
+@keyframes starBreathe { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+[data-deckseek-skin='terminal'] .reasonCard[data-following='true'] .reasonHeading::before { animation: var(--dx-star-breathe); }
 /* Paper — typographic flow. No containers at all: grouping is whitespace and
    the size gap between the answer and everything else. Only the closing stats
    line draws a rule, and only failures carry colour. */

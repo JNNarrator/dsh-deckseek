@@ -74,6 +74,16 @@ export const zh = {
   'status.preparingReply': '正在准备回复',
   'status.processing': '正在处理',
   'status.steps': '{count} 个步骤',
+  // Working verbs for the terminal skin's status line — see status-verb.ts.
+  // They replace the working label only, never `status.thinkingName`.
+  'status.verb.reviewing': '梳理中',
+  'status.verb.analyzing': '推演中',
+  'status.verb.considering': '权衡中',
+  'status.verb.planning': '规划中',
+  'status.verb.checking': '核对中',
+  'status.verb.searching': '检索中',
+  'status.verb.building': '构建中',
+  'status.verb.summarizing': '归纳中',
   'terminal.stopped': '本轮已停止，已生成的内容仍保留。',
   'terminal.blocked': '本轮需要处理阻塞事项；请查看原对话与下方操作区。',
   'terminal.maxTokens': '输出达到本轮长度限制，内容可能尚未完整。',
@@ -356,6 +366,16 @@ export const en: Record<UiKey, string> = {
   'status.preparingReply': 'Preparing reply',
   'status.processing': 'Processing',
   'status.steps': '{count} steps',
+  // Working verbs for the terminal skin's status line — see status-verb.ts.
+  // They replace the working label only, never `status.thinkingName`.
+  'status.verb.reviewing': 'Reviewing',
+  'status.verb.analyzing': 'Analyzing',
+  'status.verb.considering': 'Considering',
+  'status.verb.planning': 'Planning',
+  'status.verb.checking': 'Checking',
+  'status.verb.searching': 'Searching',
+  'status.verb.building': 'Building',
+  'status.verb.summarizing': 'Summarizing',
   'terminal.stopped': 'This turn stopped; the generated content is preserved.',
   'terminal.blocked': 'This turn has blocked items; see the original chat and the actions below.',
   'terminal.maxTokens': 'Output reached this turn\'s length limit; content may be incomplete.',

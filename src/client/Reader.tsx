@@ -18,6 +18,8 @@ import { SearchPanel } from './SearchPanel.js';
 import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
+import { shortCwd } from './frame-path.js';
+import { pickStatusVerb } from './status-verb.js';
 import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
@@ -149,12 +151,18 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
   const ariaText = busy && (kind === 'thinking' || kind === 'delving')
     ? (kind === 'thinking' ? ui('status.thinkingName', { time: '' }) : ui('status.delving', { time: '' }))
     : text;
+  // The terminal skin reads a working verb and the elapsed clock in their own
+  // slots instead of the phase sentence, so the dock hands both over and CSS
+  // decides which the skin shows (see StatusText and status-verb.ts).
+  const turnStart = useChat(snapshot => group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn)?.start?.time);
   if (variant === 'dock') {
     if (kind !== 'delving') return null;
-    return <div className={css.statusDock} data-reader-status-dock><StatusText text={text} ariaText={ariaText} motion={motion} shimmer /></div>;
+    return <div className={css.statusDock} data-reader-status-dock>
+      <StatusText text={text} ariaText={ariaText} motion={motion} shimmer verb={pickStatusVerb(group.key)} clock={elapsedClock(turnStart, now)} swapKey={kind} />
+    </div>;
   }
   if (kind === 'delving') return null;
-  return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} />;
+  return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} swapKey={kind} />;
 }
 
 // Element-wise identity comparison for the per-node subscription: unrelated
@@ -245,6 +253,10 @@ export function Reader(props: ReaderProps) {
   const loading = props.useSession(snapshot => snapshot.openState === 'loading');
   const hasMore = props.useSession(snapshot => snapshot.hasMore);
   const loadingOlder = props.useSession(snapshot => snapshot.loadingOlder);
+  // Window title for the terminal skin: the workspace the session runs in.
+  // Always read (all skins render the node; CSS decides whether to show it).
+  const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
+  const framePath = shortCwd(cwd);
   const skin = props.useSkin();
   const motionPreference = props.useStore(state => state.motion);
   const motion = useMotionAllowed(motionPreference);
@@ -347,7 +359,12 @@ export function Reader(props: ReaderProps) {
     <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
       <div className={css.toolbar} role="toolbar" aria-label={ui('reader.toolbarAria')} data-ud-check="reader-toolbar">
-        <span title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
+        <span className={css.toolbarTitle} title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
+        {/* The terminal skin's title bar. Decoration, so it never reaches the
+            accessibility tree in any skin; the full path stays on hover. */}
+        <span className={css.framePath} aria-hidden="true" title={cwd ?? undefined}>{ui('reader.tab')}
+          {framePath && <span className={css.frameCwd}>{framePath}</span>}
+        </span>
         <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
         <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
         <button type="button" className={css.textButton} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>

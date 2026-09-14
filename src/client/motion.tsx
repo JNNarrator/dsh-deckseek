@@ -37,21 +37,41 @@ export function usePinnedSelection(root: RefObject<HTMLElement>, selector = '[da
   return keys;
 }
 
-export function StatusText({ text, ariaText, motion, shimmer = false }: { text: string; ariaText?: string; motion: boolean; shimmer?: boolean }) {
+/**
+ * The busy status line. `text` is the semantic phase label every skin reads;
+ * while a turn is open it also carries the elapsed clock inside it. The terminal
+ * skin instead reads the reference TUI's idiom — a breathing glyph, a per-turn
+ * working verb and a tabular clock in its own slot — so `verb` and `clock` are
+ * supplied as separate parts and the CSS picks which of the two the skin shows.
+ */
+export function StatusText({ text, ariaText, motion, shimmer = false, verb, clock, swapKey }: {
+  text: string; ariaText?: string; motion: boolean; shimmer?: boolean; verb?: string; clock?: string;
+  /**
+   * Identity for the swap animation, when it is not the label itself. A label
+   * that embeds a ticking clock changes every second, and swapping on the text
+   * then slides and blurs the whole sentence once a second; passing the phase
+   * instead keeps that animation on real phase changes and lets the digits
+   * change in place.
+   */
+  swapKey?: string;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [visible, setVisible] = useState(() => !document.hidden);
   const [forcedColors, setForcedColors] = useState(() => window.matchMedia('(forced-colors: active)').matches);
   const allowed = motion && visible && !forcedColors;
+  const key = swapKey ?? text;
   const [frame, setFrame] = useState<{
-    text: string; id: number; phase: 'idle' | 'start' | 'running';
+    key: string; text: string; id: number; phase: 'idle' | 'start' | 'running';
     outgoing: { text: string; id: number } | null;
-  }>({ text, id: 0, phase: 'idle', outgoing: null });
+  }>({ key, text, id: 0, phase: 'idle', outgoing: null });
   // Adjust before commit, so a new label cannot paint once before its entry state.
   // Reuse the previous incoming key: a rapid change exits from its current pose.
-  if (frame.text !== text) setFrame({
-    text, id: frame.id + 1, phase: allowed ? 'start' : 'idle',
+  if (frame.key !== key) setFrame({
+    key, text, id: frame.id + 1, phase: allowed ? 'start' : 'idle',
     outgoing: allowed ? { text: frame.text, id: frame.id } : null,
   });
+  // Same phase, new digits: update the painted string without re-animating it.
+  else if (frame.text !== text) setFrame({ ...frame, text });
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
     const query = window.matchMedia('(forced-colors: active)');
@@ -77,7 +97,10 @@ export function StatusText({ text, ariaText, motion, shimmer = false }: { text: 
   }, [frame.id, allowed]);
   const active = shimmer && allowed;
   const swapping = allowed && frame.outgoing !== null;
-  return <span className={css.statusText} data-reader-status data-reader-busy={shimmer} data-ud-check="reader-status">
+  return <span className={css.statusText} data-reader-status data-reader-busy={shimmer} data-reader-status-verb={verb !== undefined || undefined} data-ud-check="reader-status">
+    {/* Decoration only: the breathing glyph is the terminal skin's spinner and
+        the live region below carries the phase for assistive tech. */}
+    <span className={css.statusGlyph} aria-hidden="true" />
     <span className={css.think} aria-hidden="true" data-active={active} data-reader-status-phase={swapping ? frame.phase : 'idle'} data-ud-motion="reader-thinking-state">
       <span className={css.thinkSizer}>{text}</span>
       {swapping && <span key={frame.outgoing!.id} className={`${css.thinkText} ${frame.phase === 'running' ? css.isExit : ''}`}
@@ -85,6 +108,8 @@ export function StatusText({ text, ariaText, motion, shimmer = false }: { text: 
       <span key={frame.id} ref={ref} className={`${css.thinkText} ${swapping && frame.phase === 'start' ? css.isEnterStart : ''}`}
         data-reader-status-copy="current" data-reader-shimmer={active || undefined} data-text={text}>{text}</span>
     </span>
+    {verb !== undefined && <span className={css.statusVerb} aria-hidden="true">{verb}</span>}
+    {clock !== undefined && <span className={css.statusClock} data-reader-status-clock aria-hidden="true">{clock}</span>}
     <span className={css.srOnly} role="status" aria-live="polite" aria-atomic="true">{ariaText ?? text}</span>
   </span>;
 }

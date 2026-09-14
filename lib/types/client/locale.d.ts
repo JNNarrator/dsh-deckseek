@@ -69,6 +69,14 @@ export declare const zh: {
     readonly 'status.preparingReply': "正在准备回复";
     readonly 'status.processing': "正在处理";
     readonly 'status.steps': "{count} 个步骤";
+    readonly 'status.verb.reviewing': "梳理中";
+    readonly 'status.verb.analyzing': "推演中";
+    readonly 'status.verb.considering': "权衡中";
+    readonly 'status.verb.planning': "规划中";
+    readonly 'status.verb.checking': "核对中";
+    readonly 'status.verb.searching': "检索中";
+    readonly 'status.verb.building': "构建中";
+    readonly 'status.verb.summarizing': "归纳中";
     readonly 'terminal.stopped': "本轮已停止，已生成的内容仍保留。";
     readonly 'terminal.blocked': "本轮需要处理阻塞事项；请查看原对话与下方操作区。";
     readonly 'terminal.maxTokens': "输出达到本轮长度限制，内容可能尚未完整。";

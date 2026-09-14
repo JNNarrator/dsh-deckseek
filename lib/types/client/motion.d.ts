@@ -1,11 +1,28 @@
 import type { ReactNode, RefObject } from 'react';
 export declare function useMotionAllowed(enabled: boolean): boolean;
 export declare function usePinnedSelection(root: RefObject<HTMLElement>, selector?: string): readonly string[];
-export declare function StatusText({ text, ariaText, motion, shimmer }: {
+/**
+ * The busy status line. `text` is the semantic phase label every skin reads;
+ * while a turn is open it also carries the elapsed clock inside it. The terminal
+ * skin instead reads the reference TUI's idiom — a breathing glyph, a per-turn
+ * working verb and a tabular clock in its own slot — so `verb` and `clock` are
+ * supplied as separate parts and the CSS picks which of the two the skin shows.
+ */
+export declare function StatusText({ text, ariaText, motion, shimmer, verb, clock, swapKey }: {
     text: string;
     ariaText?: string;
     motion: boolean;
     shimmer?: boolean;
+    verb?: string;
+    clock?: string;
+    /**
+     * Identity for the swap animation, when it is not the label itself. A label
+     * that embeds a ticking clock changes every second, and swapping on the text
+     * then slides and blurs the whole sentence once a second; passing the phase
+     * instead keeps that animation on real phase changes and lets the digits
+     * change in place.
+     */
+    swapKey?: string;
 }): import("react").JSX.Element;
 export declare function Disclosure({ open, onChange, label, status, controls, buttonRef }: {
     open: boolean;
