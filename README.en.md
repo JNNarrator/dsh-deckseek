@@ -8,6 +8,8 @@
 
 dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display), independently maintained by [JNNarrator](https://github.com/JNNarrator) as a DeepSeek Harness display & interaction enhancement plugin (MIT).
 
+It adds an independent **DeckSeek reading tab** to DSH: the execution record folds away, the final answer stays in full, and three reading skins are available. It changes **presentation and interaction views only** — the native Chat / Trajectory tabs, composer, model selector, tools, and approvals all stay exactly as they are.
+
 ## Screenshots
 
 ![DeckSeek reading view](docs/screenshots/reading-view.png)
@@ -22,47 +24,99 @@ dsh-deckseek is a fork of [aa2246740/dsh-better-display](https://github.com/aa22
 | ![Execution process & tool rows](docs/screenshots/process-and-tools.png) | ![Unified failure cards](docs/screenshots/failure-cards.png) |
 | Write/edit rows show +N -M change stats and per-family state labels (Written / Found…); thinking cards scroll and expand | Failure reason, exit code, and an expandable raw record |
 
+## Three reading skins
+
+Switch from the dedicated **DeckSeek** page in DSH settings; it takes effect immediately, and **Soft** is the default.
+
+| Skin | Direction | Good for |
+|---|---|---|
+| **Soft** (default) | Cards: the answer card uses the host's own elevation (0.5px hairline stroke + soft glow), and the user card derives an identity colour from the brand accent | Everyday reading; clear separation between turns |
+| **Paper** | Typographic flow: no containers at all, only a heading hierarchy and article-scale prose rhythm; colour is reserved for failures | Long-form reading, export and print |
+| **Terminal** | Rows: monospace, a window frame with a title bar, hairline row rules, and state / tool-category colour as the only colour | TUI and Claude Code sensibilities |
+
+Skins express structure, density, type, and radii only; **every colour comes from a host theme token**, so dark and light themes adapt automatically and the plugin ships no palette of its own. Switching skins does not change the component tree — one DOM, a different stylesheet; see [docs/design/reading-skins.md](docs/design/reading-skins.md).
+
+The terminal skin adds a window title bar (workspace path plus a standing `N turns · last turn N steps` readout), a `▌` caret on the streaming answer, a breathing dot with a per-turn verb and a right-aligned clock in the status line, tool-category colour on the `⏺` marker, a right-aligned number column, a count of what a folded turn hides (`39 tool calls · 4 files · 2 failed`), a hanging hairline on the closing readout line, a full-width band for the user turn, and a braille dot-matrix mark on the idle screen. The reasoning behind each, with measured parameters, is in [docs/design/terminal-skin-v3.md](docs/design/terminal-skin-v3.md) and [terminal-skin-v4.md](docs/design/terminal-skin-v4.md).
+
 ## Features
 
-- **Reading view**: live native steps, thinking, and progress during execution; the process folds away on successful completion, leaving the final answer and interactive cards. An independent **DeckSeek** tab keeps the original Chat / Trajectory views, input box, model selector, tools, and approvals intact. Every known record kind (system prompts, turn processes, turn stats, …) is adapted; unknown kinds fall back to a copyable raw-record card — DSH is not stable yet, so the fallback stays. Failed tools / commands render as unified error cards: reason, exit code, and an expandable raw record.
-- **Answer cards**: the reply and its copy action sit in a card matching the reasoning/tool surfaces; the copy chip floats over the card's top-right corner on hover, keeping the answer at full density.
-- **Three reading skins**: Paper (typographic flow), Soft (cards), and Terminal (rows) — switch from the dedicated **DeckSeek** page in DSH settings and it takes effect immediately. Skins express structure, density, type, and radii only; colours always come from host theme tokens, so dark and light themes adapt automatically. Soft is the default.
-- **Message navigation rail**: a minimal right-edge rail of tiny pill marks — one per message you sent, editor-minimap style. It takes no layout space and the reading column stays truly centered; the mark at your reading position widens and highlights, hovering shows a styled "Turn N · title" info bubble, and clicking scrolls that message into view with a landing flash (at the document end the newest message owns the highlight; hidden on narrow widths). Marks compress to fit when turns pile up, so every mark stays visible.
-- **Conversation export** — one click in the reading-view toolbar exports the conversation as a Markdown file (your prompts + the assistant answers, in display order, process folded), filename auto-timestamped.
-- **Turn keyboard navigation** — Alt+Up / Alt+Down jump between your messages using the same landing logic as the rail highlight and flash (inactive while typing in an input).
-- **Status & follow**: the thinking card follows the latest lines and settles at the end; the open-turn status shows "BigFatFish is thinking… {time}" with a live clock, and tools show per-family start/done labels (Reading…/Read, Searching…/Found, Writing…/Written); scrolling up reveals a centered ⬇ back-to-latest button floating above the composer. Sending or steering a message returns the reader to the bottom (pinned follow takes over).
-- **In-view search**: live search across your questions and the model's answers; Cmd/Ctrl+F opens the panel; every match keeps a quiet tint with character-exact highlighting (CSS Custom Highlight API) and the active hit inverts; match counts, previous / next navigation, and jumps that scroll the exact hit into view with a flash highlight.
-- **Reading position memory**: reopening a session returns to your previous reading position with a brief notice; "Back to latest" jumps to the bottom anytime.
-- **Copy enhancements**: one-click code-block copy; every table shows a hover "Copy as CSV" action (RFC 4180 — quotes and newlines handled).
-- **Bilingual UI (i18n)**: all reading-view copy follows the DSH app language (Chinese / English) with no restart.
-- **Long-thinking follow**: thinking folds into a fading card that follows two lines; expanding pauses scrolling; resume anytime.
-- **Generative MCP Apps (SEP-1865)**: any ````mcp-app```` code block in the final answer is auto-mounted as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, communicating with the host via JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, ...).
-- **Adaptive theme & height**: live dark/light sync with zero first-frame flash; container height smoothly follows content (60–2400px).
-- **Lossless fidelity**: native Markdown, syntax-highlighted code, math, tables, images, and tool facts render faithfully.
-- **157 unit and component tests** covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / reading-position / skin-part / caret-hook / stylesheet-contract interactions (happy-dom).
+**Reading view**
 
-## Installation & listings
+- Live native steps, thinking, and progress during execution; the process folds away on successful completion, leaving the final answer and interactive cards.
+- Every known record kind (system prompts, turn processes, turn stats, …) is adapted; **unknown kinds fall back to a copyable raw-record card** — DSH is not stable yet, so the fallback stays.
+- Failed tools / commands render as unified error cards: reason, exit code, and an expandable raw record.
+- Long reasoning folds into a fading two-line card that follows along; expanding pauses the follow, which can be resumed.
+- **Lossless fidelity**: native Markdown, syntax highlighting, math, tables, images, and tool facts render exactly.
 
-Published on npm: [dsh-deckseek](https://www.npmjs.com/package/dsh-deckseek)
+**Navigation & search**
+
+- **Message navigation rail**: a minimal right-edge rail of tiny pill marks — one per message you sent, editor-minimap style. It takes no layout space and the reading column stays truly centered; the mark at your reading position widens and highlights, hovering shows a "Turn N · title" info bubble, and clicking scrolls that message into view with a landing flash. Marks compress to fit when turns pile up, so every mark stays visible (hidden on narrow widths).
+- **Turn keyboard navigation**: `Alt+↑` / `Alt+↓` jump between your messages using the same positioning logic as the rail.
+- **In-view search**: covers your questions and the model's answers; live match counts, previous / next navigation, precise scrolling to each hit with a flash; every match block is tinted, character-level hits are painted through the CSS Custom Highlight API, and the current hit is inverted for emphasis.
+- **Reading position memory**: reopening a session returns to where you stopped, with a brief notice; "Back to latest" jumps to the end at any time.
+
+**Export & copy**
+
+- **Session export**: one click in the reading toolbar downloads the session as Markdown (your questions plus the model's answers in display order, process folded), with a timestamped filename.
+- One-click copy on code blocks; hovering a table in an answer reveals "Copy as CSV" (RFC 4180, quotes and newlines handled).
+
+**Interaction & state**
+
+- **Status and follow**: the reasoning card follows the latest line and rests at the bottom when it ends; while thinking it shows a localized "thinking… {time}" label, and tools show per-family states; scrolling away from the bottom reveals a ⬇ button above the composer; sending or steering a message returns the view to the bottom.
+- **Motion can be turned off**: the toolbar toggle or the system's `prefers-reduced-motion` stops every animation from one place.
+- **Bilingual UI**: every reading-view string follows the DSH app language (Chinese / English) with no restart.
+- **Adaptive theme and type size**: dark / light syncs live with no flash; type follows browser zoom and the host's content font-size setting (skin line heights, leading slots, and block gaps follow it too).
+
+**Compatibility**
+
+- **Generative MCP Apps (SEP-1865)**: an ````mcp-app```` code block in a reply mounts as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, talking over JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, …), with the card height adapting between 60 and 2400px.
+- **157 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `Alt+↑` / `Alt+↓` | Jump between your messages (inactive while typing in a field) |
+| `Cmd/Ctrl+F` | Open / close in-view search |
+| `Enter` / `Shift+Enter` | In search: next / previous match |
+| `Esc` | Close search |
+| `←` `→` `Home` `End` | Switch tabs inside a tool card |
+
+## Installation
+
+There are two release channels and **they are not in sync**: npm currently carries **0.6.0**, while newer versions ship as GitHub Release tarballs (this repository is at **0.10.0**).
 
 ```sh
-dsh plugin add dsh-deckseek
+# From npm (0.6.0)
+dsh plugin --profile web add dsh-deckseek
+
+# Or install the newest release from its tarball
+dsh plugin --profile web add ./dsh-deckseek-0.10.0.tgz
 ```
+
+`--profile` takes `web`, `desktop`, or `headless` depending on the host you run. Restart the host after installing.
 
 Listed in:
 
-- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) (PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528) merged)
-- [awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins) / [deepseek1024.com](https://deepseek1024.com/) (PR [#367](https://github.com/imsai-sh/awesome-deepseek-harness-plugins/pull/367) merged; the entry upgrades to one-click install once the published npm package is detected)
+- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) (PR [#4528](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/4528), merged)
+- [awesome-deepseek-harness-plugins](https://github.com/imsai-sh/awesome-deepseek-harness-plugins) ([deepseek1024.com](https://deepseek1024.com/), PR [#367](https://github.com/imsai-sh/awesome-deepseek-harness-plugins/pull/367), merged; once the npm package is published the marketplace detects it and upgrades to one-click install)
 
 ## Development
 
-- **Dependencies come from a DSH checkout, not from npm**: dev dependencies are linked to a built Harness checkout via `node scripts/link-harness-dependencies.mjs <checkout>`; do not run `pnpm install` / `pnpm add` in this directory.
-- **`package-lock.json` is a best-effort artifact refreshed under `--legacy-peer-deps`**: the published `@deepseek-ai/dsh-client-ui-settings` declares a `^0.0.1-rc.1` peer on `@deepseek-ai/dsh-client-ui-primitives` that cannot intersect this plugin's 0.1.x range, so strict resolution always ERESOLVEs.
-- Therefore **do not run `npm ci` in this directory** — it will not reproduce a usable dependency tree.
+```sh
+npm test                                  # 157 tests (node --test + happy-dom)
+npx tsc -p tsconfig.json --noEmit         # type check
+DSHX_HARNESS=<DSH checkout> npm run build # build lib/ (client + host halves)
+```
+
+- **Dependencies come from a DSH checkout, not npm**: link development dependencies to a built Harness checkout with `node scripts/link-harness-dependencies.mjs <DSH checkout>`; do not run `pnpm install` / `pnpm add` in this directory.
+- **`package-lock.json` is a best-effort artifact under `--legacy-peer-deps` semantics**: the published `@deepseek-ai/dsh-client-ui-settings` declares a `^0.0.1-rc.1` peer on `@deepseek-ai/dsh-client-ui-primitives`, which cannot intersect this plugin's 0.1.x range, so strict resolution always ends in ERESOLVE.
+- Do **not** run `npm ci` here — it cannot reproduce a working dependency tree.
+- When verifying a new build locally: with a profile pointing at a tarball through `file:`, re-running `dsh plugin --profile web install` after rebuilding that tarball does **not** update it (it reports `Already up to date`). Remove `<profile>/node_modules/dsh-deckseek`, run `dsh plugin --profile web install --force`, then compare `lib/client.js` byte for byte.
 
 ## Other
 
-- Features and usage are also described in the upstream repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
-- Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md)
+- Features and usage are also documented by the original repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
+- Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md) · Design docs: [docs/design/](docs/design/)
 
 **v0.10.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
