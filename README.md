@@ -39,7 +39,7 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 - **生成式 MCP Apps（SEP-1865）**：模型在回答中输出 ````mcp-app```` 代码块即自动挂载为活体交互卡片，在 `sandbox="allow-scripts allow-forms"` 沙箱 iframe 中运行，通过 JSON-RPC `postMessage` 双向通信（`ui/initialize`、`ui/resize`、`ui/submit` 等）。
 - **自适应主题、高度与字号**：深浅色实时同步、零闪烁；容器高度 60–2400px 随内容平滑伸缩；全量 rem 字号跟随浏览器 / 宿主字号缩放。
 - **无损保真**：原生 Markdown、代码高亮、数学公式、表格、图片与工具事实 100% 忠实呈现。
-- **120 项单元与组件测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算、两行流式跟随，以及搜索定位、复制回执等界面交互（happy-dom）。
+- **137 项单元与组件测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算、两行流式跟随，以及搜索定位、复制回执、皮肤分片与光标钩子等界面交互（happy-dom）。
 
 ## 安装与收录
 
