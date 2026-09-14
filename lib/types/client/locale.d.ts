@@ -61,6 +61,7 @@ export declare const zh: {
     readonly 'turn.maxTokens': "已到达输出长度限制，回答尚未完整。";
     readonly 'turn.retryWaiting': "模型请求未成功，正在等待重试。";
     readonly 'turn.you': "你";
+    readonly 'turn.preamble': "会话起始记录";
     readonly 'turn.steering': "补充消息";
     readonly 'turn.process': "思考与过程";
     readonly 'turn.foldAriaCollapse': "收起思考与过程";

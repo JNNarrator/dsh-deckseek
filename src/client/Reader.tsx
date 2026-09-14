@@ -19,9 +19,9 @@ import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
 import { shortCwd } from './frame-path.js';
-import { collapsedSummary, frameMeterLabel, turnCounts } from './frame-meter.js';
+import { collapsedSummary, frameMeterLabel, railTurns, turnCounts } from './frame-meter.js';
 import { EMPTY_MARK } from './empty-mark.js';
-import { pickStatusVerb } from './status-verb.js';
+import { pickStatusVerb, preambleLabel } from './status-verb.js';
 import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
@@ -157,6 +157,13 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
   // slots instead of the phase sentence, so the dock hands both over and CSS
   // decides which the skin shows (see StatusText and status-verb.ts).
   const turnStart = useChat(snapshot => group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn)?.start?.time);
+  // A group with no turn behind it is the session preamble: it has no phase to
+  // report, so it takes the neutral label instead of a phase sentence. Placed
+  // before every phase branch, and the same string the live region reads.
+  const preamble = preambleLabel(group.turn);
+  if (preamble !== null) {
+    return variant === 'dock' ? null : <span className={css.statusText} data-reader-status-preamble>{preamble}</span>;
+  }
   if (variant === 'dock') {
     if (kind !== 'delving') return null;
     return <div className={css.statusDock} data-reader-status-dock>
@@ -214,6 +221,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   // twenty-call one without opening either. Counted only while folded — an open
   // turn already lists its calls, and the walk re-reads every call's arguments.
   const summary = useMemo(() => expanded ? null : collapsedSummary(turnCounts(flow)), [expanded, flow]);
+  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />;
   const terminal = terminalLabel(boundary.reason);
   // A failure card and the terminal line both point at the full record, so the
   // card carries that note only while no terminal line says it below.
@@ -223,9 +231,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton} summary={summary ?? undefined}
-      label={<GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
+      label={headerStatus} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
     {!hasProcess && boundary.status === 'open' && <div className={css.disclosure} data-reader-status-only>
-      <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />
+      {headerStatus}
     </div>}
     <div id={flowId} className={css.mainFlow} data-reader-flow>
       {flow.map(item => item.kind === 'node' ? <Fragment key={item.key}>
@@ -269,23 +277,20 @@ export function Reader(props: ReaderProps) {
   const motion = useMotionAllowed(motionPreference);
   const streamMotion = useMemo(() => ({ enabled: motion, activatedAt: activatedAt.current }), [motion]);
   const groups = useMemo(() => groupNodes(order, key => nodes.get(key)), [order, nodes, timeline]);
+  const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
   // Window-bar readout. Both numbers come off state the reader already holds —
-  // the turns it grouped, and the newest turn's step count — so nothing here
-  // needs a projection the plugin does not have. `hasMore` marks the turn count
-  // as a floor, because the session's older history is not loaded yet.
+  // the turns the rail anchors and the newest of their step counts — so nothing
+  // here needs a projection the plugin does not have. `hasMore` marks the turn
+  // count as a floor, because the session's older history is not loaded yet.
   //
-  // A turn is a group the projection resolved to a turn number. Measured on a
-  // real session: the records that precede a session's first message land in a
-  // turn-less group of their own, while the first turn's own group carries the
-  // system prompt ahead of its user message — so neither "every group" nor
-  // "groups that open with a user message" counts the turns the rail and the
-  // host's own footer count.
-  const turnGroups = useMemo(() => groups.filter(group => group.turn !== null), [groups]);
-  const latestSteps = useMemo(() => {
-    const newest = turnGroups.at(-1);
-    return newest?.turn == null ? 0 : timeline.turns.get(newest.turn)?.steps.length ?? 0;
-  }, [turnGroups, timeline]);
-  const frameMeter = frameMeterLabel(turnGroups.length, latestSteps, hasMore);
+  // The turn count is taken from the rail's own items rather than from the
+  // groups: the two are read side by side, and a turn whose user message the
+  // loaded window does not hold has no mark beside the number. Measured on a
+  // real session, the records that precede the first message form a turn-less
+  // group of their own — `railTurns` ignores those by construction.
+  const rail = useMemo(() => railTurns(railItems), [railItems]);
+  const latestSteps = rail.latest === null ? 0 : timeline.turns.get(rail.latest)?.steps.length ?? 0;
+  const frameMeter = frameMeterLabel(rail.count, latestSteps, hasMore);
   const scroll = useReadingScroll(root, motion);
   // A freshly sent message always returns the reader to the bottom: the
   // composer sits below the fold, so the reply would stream out of frame.
@@ -320,7 +325,6 @@ export function Reader(props: ReaderProps) {
     () => (searchOpen ? buildSearchIndex(order, key => nodes.get(key)) : []),
     [order, nodes, searchOpen],
   );
-  const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
   // Export builds on demand (click) rather than eagerly: like the search
   // index, it walks the whole session and streaming would redo it per chunk.
   const downloadExport = useCallback(() => {
@@ -382,6 +386,10 @@ export function Reader(props: ReaderProps) {
     {/* Real element (not ::before): the container query hiding the rail cannot target the container's own pseudo-element. */}
     <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
+      {/* The window bar and the search panel stick as one unit. A reader who
+          scrolls into a long answer still needs the readout and the controls,
+          and the panel opens under the bar it was invoked from. */}
+      <div className={css.topBar}>
       <div className={css.toolbar} role="toolbar" aria-label={ui('reader.toolbarAria')} data-ud-check="reader-toolbar">
         <span className={css.toolbarTitle} title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
         {/* The terminal skin's title bar. Decoration, so it never reaches the
@@ -398,6 +406,7 @@ export function Reader(props: ReaderProps) {
         <button type="button" className={css.textButton} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
       </div>
       {searchOpen && <SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} />}
+      </div>
       {positionNotice && <div className={css.notice} role="status" data-reader-position-restored>{ui('reader.positionRestored')}</div>}
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
         setHistoryError(false);

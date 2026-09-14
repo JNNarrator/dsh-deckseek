@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { collapsedSummary, frameMeterLabel, turnCounts } from '../src/client/frame-meter.ts';
+import { collapsedSummary, frameMeterLabel, railTurns, turnCounts } from '../src/client/frame-meter.ts';
 import type { ReaderFlowEntry } from '../src/client/tool-activity.ts';
 
 function settled(name: string, args: Record<string, unknown>, isError = false): ToolCallBlock {
@@ -51,4 +51,23 @@ test('the window bar reports loaded turns and the newest turn’s steps', () => 
 
 test('unloaded history is marked as a floor, not a total', () => {
   assert.equal(frameMeterLabel(12, 5, true), '12+ 轮 · 最新一轮 5 步');
+});
+
+test('the turn count comes off the marks the rail can draw', () => {
+  // Measured in the host after paging: the first user message was outside the
+  // loaded window, so the rail drew 3 marks while the bar — counting turn
+  // groups — said 4. The number beside the rail counts what the rail holds.
+  const items = [{ turn: 2 }, { turn: 3 }, { turn: 4 }];
+  assert.deepEqual(railTurns(items), { count: 3, latest: 4 });
+});
+
+test('the rail turn count is distinct turns and follows the newest anchor', () => {
+  // A steering message shares its turn, so two marks in one turn stay one turn.
+  assert.deepEqual(railTurns([{ turn: 1 }, { turn: 1 }, { turn: 2 }]), { count: 2, latest: 2 });
+  // A message with no turn behind it draws a mark but is not a turn.
+  assert.deepEqual(railTurns([{ turn: null }, { turn: 5 }]), { count: 1, latest: 5 });
+  assert.deepEqual(railTurns([]), { count: 0, latest: null });
+  assert.deepEqual(railTurns([{ turn: null }]), { count: 0, latest: null });
+  // Turn numbers arrive in display order, but the newest is the largest.
+  assert.deepEqual(railTurns([{ turn: 9 }, { turn: 2 }]), { count: 2, latest: 9 });
 });

@@ -28,6 +28,21 @@
      Terminal deliberately keeps `--dx-gap-block` fixed: its rhythm is a
      monospace line and its line heights are already rem. */
   --dx-font-delta: var(--dsh-content-font-delta, 0px);
+  /* Dim text, held to one bar in both themes. The host's own tertiary/caption
+     sit below AA for body-sized text on the LIGHT background (measured: #81858c
+     = 3.70:1, #adb2b8 = 2.9:1 on #fff), while secondary clears it in both
+     (#cfd3d6 = 12.11:1 dark, #61666b = 5.80:1 light). Shapes that only need the
+     3:1 non-text bar — the rail marks, icon strokes, the terminal's glyph
+     vocabulary — still take the host's dimmer tokens directly. */
+  --dx-ink-dim: var(--dsw-alias-label-secondary);
+  /* One layer for every floating piece of plugin chrome. The host's own content
+     chrome sticks at the top of the same scrollport — a code block's header is
+     `position: sticky; top: 0; z-index: 6` — so anything below 7 is painted
+     under the code it is supposed to float above; measured live, the reading
+     bar was half covered by a code block's "Copy code" header. The host's own
+     chrome sits above this (composer seat 7, width handles 8, panels 10+), and
+     the bar and the composer never share a row. */
+  --dx-layer-chrome: 7;
   /* Focus, per skin: the card skins ring, the terminal draws a hairline. Read
      by the content-level focus rule near the end of this file, which never
      replaces the global outline for controls outside content — a ring is a
@@ -89,9 +104,15 @@
 .railItem[data-active] .railDash { transform: none; background: var(--dsw-alias-state-business-primary); }
 /* Landing flash on the jumped-to message; also reused as the hover bubble. */
 .markFlash { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 12px; }
-.railTip { position: absolute; right: calc(100% + 12px); transform: translateY(-50%); width: max-content; max-width: 320px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font-size: 0.75rem; line-height: 1.125rem; text-align: left; overflow-wrap: anywhere; box-shadow: var(--dsh-reader-shadow-pop); pointer-events: none; z-index: 3; animation: railTipIn 140ms ease 350ms backwards; }
+.railTip { position: absolute; right: calc(100% + 12px); transform: translateY(-50%); width: max-content; max-width: 320px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font-size: 0.75rem; line-height: 1.125rem; text-align: left; overflow-wrap: anywhere; box-shadow: var(--dsh-reader-shadow-pop); pointer-events: none; z-index: var(--dx-layer-chrome); animation: railTipIn 140ms ease 350ms backwards; }
 @keyframes railTipIn { from { opacity: 0; } to { opacity: 1; } }
-.toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--dsw-alias-label-tertiary); font-size: 0.75rem; line-height: 1.25rem; }
+/* Toolbar + search panel stick as one bar: the reading toolbar carries the
+   window-bar readout and the three controls, and the terminal skin's frame
+   title went with it — scrolling it away left the reading view with neither a
+   readout nor a way back to search. The bar needs the page's own background,
+   or scrolling text shows through it. */
+.topBar { position: sticky; top: 0; z-index: var(--dx-layer-chrome); background: var(--dsw-alias-bg-base); }
+.toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--dx-ink-dim); font-size: 0.75rem; line-height: 1.25rem; }
 .textButton, .historyButton, .iconButton, .jump, .disclosureButton, .imageOpen, .dialogClose { font: inherit; cursor: pointer; }
 .textButton { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
 .textButton:hover, .iconButton:hover, .disclosureButton:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -121,9 +142,9 @@
 .blocks > :last-child { margin-bottom: 0; }
 .blocks :global(.md-table-wide) { max-width: 100%; }
 .disclosure { min-width: 0; }
-.disclosureButton { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: calc(32px + var(--dx-font-delta)); border: 0; background: transparent; border-radius: 7px; color: var(--dsw-alias-label-tertiary); font-size: 0.875rem; line-height: 1.5rem; font-weight: 400; padding: 4px 6px; margin-left: -6px; text-align: left; }
+.disclosureButton { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: calc(32px + var(--dx-font-delta)); border: 0; background: transparent; border-radius: 7px; color: var(--dx-ink-dim); font-size: 0.875rem; line-height: 1.5rem; font-weight: 400; padding: 4px 6px; margin-left: -6px; text-align: left; }
 .disclosure[data-reader-status-only] { display: flex; align-items: center; min-height: calc(32px + var(--dx-font-delta)); }
-.statusText { display: inline-flex; min-width: 0; max-width: 100%; font-size: 0.875rem; line-height: 1.5rem; font-weight: 400; color: var(--dsw-alias-label-tertiary); }
+.statusText { display: inline-flex; min-width: 0; max-width: 100%; font-size: 0.875rem; line-height: 1.5rem; font-weight: 400; color: var(--dx-ink-dim); }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 /* Transitions.dev — Thinking states, supplied by the user. Native DSH colors;
    the hidden sizer shares this font and the short phases share a left edge. */
@@ -171,7 +192,7 @@
 .processMeta { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 260ms cubic-bezier(.22,1,.36,1), opacity 160ms ease-out; }
 .processMeta[data-open=true] { grid-template-rows: 1fr; opacity: 1; }
 .processMetaInner { min-height: 0; overflow: hidden; }
-.processMetaLine { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; padding: 8px 0 0 16px; color: var(--dsw-alias-label-tertiary); font-size: 0.6875rem; line-height: 1.125rem; font-variant-numeric: tabular-nums; }
+.processMetaLine { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; padding: 8px 0 0 16px; color: var(--dx-ink-dim); font-size: 0.6875rem; line-height: 1.125rem; font-variant-numeric: tabular-nums; }
 .processMetaLine .meta { color: inherit; }
 .chevron { flex: none; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 260ms cubic-bezier(.22,1,.36,1); }
 .chevron[data-open=true] { transform: rotate(90deg); }
@@ -182,7 +203,7 @@
 .toolActivity { min-width: 0; color: var(--dsw-alias-label-secondary); background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); padding: calc(8px + var(--dx-font-delta)) 12px; }
 .nativeToolRow { min-width: 0; }
 .rowSeparator { flex: none; width: 2px; height: 2px; margin: 0 8px; border-radius: 1px; background: var(--dsw-alias-label-caption); }
-.nativeToolSummary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-tertiary); font-size: 0.875rem; line-height: 1.5rem; }
+.nativeToolSummary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dx-ink-dim); font-size: 0.875rem; line-height: 1.5rem; }
 .toolDelta { flex: none; color: var(--dsw-alias-label-secondary); font-size: 0.75rem; line-height: 1.5rem; font-variant-numeric: tabular-nums; }
 /* In-progress tool states pulse like the native rows; done states stay still. */
 .toolState[data-phase="preparing"], .toolState[data-phase="running"] { animation: toolStatePulse 1.5s ease-in-out infinite; }
@@ -286,13 +307,13 @@
 @media (prefers-reduced-motion: reduce) { .reasonTrack { transition: none !important; transform: none !important; will-change: auto !important; } }
 @media (forced-colors: active) { .reasonViewport { -webkit-mask-image: none !important; mask-image: none !important; } }
 .processItem, .tool { margin: 0 0 18px; min-width: 0; }
-.processLabel { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; color: var(--dsw-alias-label-tertiary); font-size: 0.75rem; line-height: 1.25rem; }
-.processFootnote { color: var(--dsw-alias-label-tertiary); margin: 14px 0 0; font-size: 0.75rem; line-height: 1.25rem; }
+.processLabel { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; color: var(--dx-ink-dim); font-size: 0.75rem; line-height: 1.25rem; }
+.processFootnote { color: var(--dx-ink-dim); margin: 14px 0 0; font-size: 0.75rem; line-height: 1.25rem; }
 .detail { font-size: 0.8125rem; line-height: 1.375rem; color: var(--dsw-alias-label-secondary); }
 .detail > summary { cursor: pointer; padding: 3px 0; }
 .detail[open] > summary { margin-bottom: 8px; }
 .tool > .tool { margin: 10px 0 0 12px; }
-.meta { font-size: 0.75rem; line-height: 1.25rem; color: var(--dsw-alias-label-tertiary); }
+.meta { font-size: 0.75rem; line-height: 1.25rem; color: var(--dx-ink-dim); }
 .stopped { align-self: flex-start; border-radius: 6px; padding: 0 6px; background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-secondary); font-size: 0.75rem; line-height: 1.125rem; margin-top: 12px; }
 .notice, .error, .attention { border-radius: var(--dx-radius-card); padding: 10px 14px; font-size: 0.8125rem; line-height: 1.5rem; overflow-wrap: anywhere; }
 .notice { background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dx-border-hairline); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); color: var(--dsw-alias-label-secondary); }
@@ -302,17 +323,17 @@
 .attention span { color: var(--dsw-alias-label-secondary); }
 .unknown { background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); padding: 8px 12px; font-size: 0.8125rem; line-height: 1.375rem; }
 .unknown p { margin: 0 0 6px; }
-.unknownKind { margin-left: 6px; font-size: 0.75rem; color: var(--dsw-alias-label-tertiary); }
+.unknownKind { margin-left: 6px; font-size: 0.75rem; color: var(--dx-ink-dim); }
 .unknownPreview { margin: 0 0 8px; padding: 8px 10px; max-height: var(--dsh-reader-code-max-height); overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-base); border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-panel); font-size: 0.75rem; line-height: 1.125rem; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); color: var(--dsw-alias-label-secondary); }
-.unknownSummary { margin: 0 0 8px; font-size: 0.75rem; line-height: 1.25rem; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
+.unknownSummary { margin: 0 0 8px; font-size: 0.75rem; line-height: 1.25rem; color: var(--dx-ink-dim); overflow-wrap: anywhere; }
 .unknownActions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 2px; }
 .unknownActions > * { margin: 0; }
 .systemPrompt { background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); padding: 8px 12px; font-size: 0.8125rem; line-height: 1.375rem; color: var(--dsw-alias-label-secondary); }
 .systemPrompt > summary { cursor: pointer; padding: 3px 0; user-select: none; }
 .systemPrompt[open] > summary { margin-bottom: 8px; }
 .systemPromptBody { margin: 0; padding: 8px 10px; max-height: 141px; /* Figma-anchored geometry, intentionally below --dsh-reader-code-max-height */ overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-base); border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-panel); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.75rem; line-height: 1.125rem; color: var(--dsw-alias-label-secondary); }
-.turnProcess { margin: 0; padding: 8px 12px; background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); font-size: 0.75rem; line-height: 1.25rem; color: var(--dsw-alias-label-tertiary); }
-.turnTail { margin: 14px 0 0; padding: 8px 12px; background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.6875rem; line-height: 1.25rem; color: var(--dsw-alias-label-tertiary); }
+.turnProcess { margin: 0; padding: 8px 12px; background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); font-size: 0.75rem; line-height: 1.25rem; color: var(--dx-ink-dim); }
+.turnTail { margin: 14px 0 0; padding: 8px 12px; background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.6875rem; line-height: 1.25rem; color: var(--dx-ink-dim); }
 .failure { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; border-radius: var(--dx-radius-card); padding: 10px 14px; font-size: 0.8125rem; line-height: 1.5rem; overflow-wrap: anywhere; background: var(--dx-surface-danger); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-danger); color: var(--dsw-alias-label-primary); }
 .failureHead { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
 .failureHead strong { color: var(--dsw-alias-state-error-primary); }
@@ -324,9 +345,9 @@
 .failure .failureNote { font-family: inherit; color: var(--dsw-alias-label-secondary); }
 .failure > details { margin-top: 2px; }
 .rawJson { margin: 8px 0 0; padding: 8px 10px; max-height: 240px; /* wider JSON dump: intentionally above --dsh-reader-code-max-height */ overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-base); border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-panel); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.75rem; line-height: 1.125rem; color: var(--dsw-alias-label-secondary); }
-.searchRow { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; margin: 0 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); }
+.searchRow { position: static; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; margin: 0 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-module-platform); }
 .searchInput { flex: 1; min-width: 140px; background: transparent; border: 0; outline: none; color: var(--dsw-alias-label-primary); font: inherit; font-size: 0.8125rem; }
-.searchMeta { font-size: 0.75rem; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
+.searchMeta { font-size: 0.75rem; color: var(--dx-ink-dim); white-space: nowrap; }
 .textButton:disabled { opacity: .5; cursor: default; }
 /* Character-exact search highlighting through the CSS Custom Highlight API:
    every occurrence gets a quiet tint, the active one inverts to the
@@ -343,11 +364,11 @@
 @media (prefers-reduced-motion: reduce) { .historySkeleton span { animation: none; } }
 .historyButton:disabled { opacity: .55; cursor: default; }
 .olderTurns { display: flex; justify-content: center; padding: 6px 0 2px; }
-.empty { padding: 40px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
+.empty { padding: 40px 0; color: var(--dx-ink-dim); text-align: center; }
 .emptyState { margin: auto 0; padding: 64px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .emptyBrand { margin: 0 0 6px; font-size: 1.375rem; line-height: 1.875rem; font-weight: 600; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); }
 .emptyTitle { margin: 0; font-size: 0.875rem; line-height: 1.5rem; color: var(--dsw-alias-label-primary); }
-.emptyHint { margin: 0; max-width: 420px; font-size: 0.75rem; line-height: 1.25rem; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
+.emptyHint { margin: 0; max-width: 420px; font-size: 0.75rem; line-height: 1.25rem; color: var(--dx-ink-dim); overflow-wrap: anywhere; }
 /* The copy action floats over the card's top-right corner instead of taking
    a row: hidden at rest so the answer keeps full density, revealed on card
    hover with its own chip so overlaid text stays legible. */
@@ -362,16 +383,24 @@
 .imageOpen { border: 0; padding: 0; position: absolute; inset: 0; background: transparent; display: flex; width: 100%; height: 100%; }
 .imageOpen img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 200ms cubic-bezier(.4,0,.2,1); }
 .imageOpen img[data-ready=true] { opacity: 1; }
-.imagePlaceholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--dsw-alias-label-tertiary); font-size: 0.8125rem; pointer-events: none; }
+.imagePlaceholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--dx-ink-dim); font-size: 0.8125rem; pointer-events: none; }
 .imagePlaceholder button { pointer-events: auto; }
-.imageFigure figcaption { color: var(--dsw-alias-label-tertiary); font-size: 0.75rem; line-height: 1.25rem; margin-top: 6px; overflow-wrap: anywhere; }
+.imageFigure figcaption { color: var(--dx-ink-dim); font-size: 0.75rem; line-height: 1.25rem; margin-top: 6px; overflow-wrap: anywhere; }
 .imageDialog { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; border: 1px solid var(--dsw-alias-border-l2); padding: 12px 16px 16px; border-radius: 16px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); max-width: 90vw; max-height: 90vh; }
 .imageDialog::backdrop { background: var(--dsw-alias-bg-mask-photo); }
 .imageDialog img { max-width: 82vw; max-height: 75vh; display: block; object-fit: contain; }
 .dialogClose { border: 0; background: transparent; color: inherit; width: 32px; height: 32px; border-radius: 8px; font-size: 1.5rem; }
 /* The host scroller runs behind the floating composer, so the dock must
    offset by the composer region height, not the raw scrollport edge. */
-.jumpDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 4px); align-self: center; height: 0; z-index: 2; }
+/* The jump button is an overlay, so wherever it floats it is over something.
+   Right-aligning it takes it off the middle of a line, and a container with
+   room to spare pushes it clear of the text column entirely: measured in the
+   host, the column's inner right edge sits 13px inside the window frame, which
+   no usable button fits in — 28px of margin still covered the last 12px of a
+   full line, 46px clears it and leaves the control over the gutter instead.
+   Below 900px of container there is no gutter left to use. */
+.jumpDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 4px); align-self: flex-end; height: 0; z-index: var(--dx-layer-chrome); }
+@container (min-width: 900px) { .jumpDock { margin-right: -46px; } }
 .jump { transform: translateY(-100%); display: flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 0.75rem; line-height: 1.25rem; padding: 0; box-shadow: var(--dsh-reader-shadow-float); }
 .jump:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .jump svg { flex: none; }
@@ -605,6 +634,14 @@
   padding-bottom: 7px;
   border-bottom: var(--dx-rule);
 }
+/* The frame's inset lives on the column, so a bar stuck to the viewport would
+   leave the frame's own top strip and side gutters open for content to slide
+   through. Bleed the bar out to the frame's inner edges and pad the difference
+   back, so the toolbar keeps its place while the bar covers the full width. */
+[data-deckseek-skin='terminal'] .topBar {
+  margin: -10px calc(-1 * var(--dx-frame-pad-x)) 0;
+  padding: 10px var(--dx-frame-pad-x) 0;
+}
 /* The reading hint is real copy, not decoration: keep it for assistive tech and
    drop only its pixels. A title bar carries the workspace, not a sentence. */
 [data-deckseek-skin='terminal'] .toolbarTitle {
@@ -615,7 +652,7 @@
   color: var(--dsw-alias-label-secondary);
 }
 [data-deckseek-skin='terminal'] .framePath::after { content: ''; flex: 1 1 auto; min-width: 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-deckseek-skin='terminal'] .frameCwd { color: var(--dsw-alias-label-caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-deckseek-skin='terminal'] .frameCwd { color: var(--dx-ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Streaming cursor: the line the terminal is still writing carries a cursor.
    Its host is the trailing text block itself — a paragraph, a heading, a quote,
    the last item of a list, the last cell of a row — so it lands at the end of
@@ -642,7 +679,7 @@
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .think { display: none; }
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusVerb { display: inline; color: var(--dsw-alias-label-secondary); }
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusClock {
-  display: inline-block; min-width: 6ch; text-align: right; color: var(--dsw-alias-label-tertiary);
+  display: inline-block; min-width: 6ch; text-align: right; color: var(--dx-ink-dim);
 }
 /* The clock is the first thing a narrow column drops: the verb is what says work
    is happening, the number is only what it has cost so far. */
@@ -680,6 +717,10 @@
 
 /* The idle mark: a deck of records in braille. Line-height is held near 1 so the
    2x4 dot cells tile into one glyph instead of reading as six rows of noise. */
+/* The rail's marks sat 8px outside the window frame, which read as belonging
+   to the pane rather than to this window; half the gap keeps them adjacent. */
+[data-deckseek-skin='terminal'] .railSpacer { margin-right: 4px; }
+[data-deckseek-skin='terminal'] .rail { margin-left: 4px; }
 [data-deckseek-skin='terminal'] .emptyMark {
   display: block;
   margin: 0 0 12px;
@@ -694,14 +735,14 @@
 [data-deckseek-skin='terminal'] .emptyTitle::before { content: '> '; color: var(--dsw-alias-label-secondary); }
 [data-deckseek-skin='terminal'] .emptyBrand { font-size: 0.875rem; line-height: 1.5rem; font-weight: 500; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
 [data-deckseek-skin='terminal'] .emptyHint { max-width: 46ch; }
-[data-deckseek-skin='terminal'] .emptyHintLabel { display: inline; margin-right: 6px; color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='terminal'] .emptyHintLabel { display: inline; margin-right: 6px; color: var(--dx-ink-dim); }
 /* Window-bar readout: the right group of the bar, before the controls. */
 [data-deckseek-skin='terminal'] .frameMeter {
   display: inline-flex;
   align-items: center;
   flex: none;
   gap: 6px;
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--dx-ink-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -715,7 +756,7 @@
 [data-deckseek-skin='terminal'] .disclosureButton { gap: 10px; }
 [data-deckseek-skin='terminal'] .frameCounts {
   position: static; width: auto; height: auto; overflow: visible; clip-path: none;
-  color: var(--dsw-alias-label-caption);
+  color: var(--dx-ink-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -743,7 +784,7 @@
   border-radius: 0;
   background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent);
   border-left: 0;
-  padding: 3px 8px;
+  padding: 3px var(--dx-frame-pad-x);
   margin: 0 calc(-1 * var(--dx-frame-pad-x)) calc(4px + var(--dx-font-delta));
   gap: 8px;
 }
@@ -838,7 +879,7 @@
    margin. Hung on the heading instead it would trail after the count. */
 [data-deckseek-skin='paper'] .reasonLabel { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; }
 [data-deckseek-skin='paper'] .reasonLabel::after { content: ''; flex: 1 1 auto; border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-deckseek-skin='paper'] .reasonText { padding: 0; border-left: 0; margin-left: 0; font-size: 0.8438rem; line-height: 1.9; color: var(--dsw-alias-label-tertiary); }
+[data-deckseek-skin='paper'] .reasonText { padding: 0; border-left: 0; margin-left: 0; font-size: 0.8438rem; line-height: 1.9; color: var(--dx-ink-dim); }
 /* Tools are plain monospace lines with a › lead; the primitive's tool icon is
    dropped inside our own wrapper, never the primitive's expand chevron. */
 [data-deckseek-skin='paper'] .toolLead > :first-child { display: none; }
@@ -861,7 +902,7 @@
 [data-deckseek-skin='paper'] .searchRow,
 [data-deckseek-skin='paper'] .historyButton,
 [data-deckseek-skin='paper'] .answerActions { border-radius: var(--dx-radius-chip); }
-[data-deckseek-skin='paper'] .toolbar { color: var(--dsw-alias-label-caption); }
+[data-deckseek-skin='paper'] .toolbar { color: var(--dx-ink-dim); }
 [data-deckseek-skin='paper'] .emptyBrand { letter-spacing: 0.04em; }
 /* Focus inside content reads as the skin's own ring rather than the app's 2px
    outline. Only these four controls take it: a ring is a shadow, and an ancestor

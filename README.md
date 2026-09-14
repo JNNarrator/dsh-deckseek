@@ -84,14 +84,14 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 
 ## 安装
 
-发布渠道有两处，**版本不同步**：npm 上当前是 **0.6.0**，更新的版本以 GitHub Releases 的 tarball 为准（本仓库最新 **0.10.0**）。
+发布渠道有两处，**版本不同步**：npm 上当前是 **0.6.0**，更新的版本以 GitHub Releases 的 tarball 为准（本仓库最新 **0.10.1**）。
 
 ```sh
 # 从 npm 安装（0.6.0）
 dsh plugin --profile web add dsh-deckseek
 
 # 或从 Releases 下载 tarball 后安装最新版
-dsh plugin --profile web add ./dsh-deckseek-0.10.0.tgz
+dsh plugin --profile web add ./dsh-deckseek-0.10.1.tgz
 ```
 
 `--profile` 取 `web` / `desktop` / `headless`，按你实际使用的宿主形态选择。装好后重启宿主。
@@ -119,4 +119,4 @@ DSHX_HARNESS=<DSH 检出路径> npm run build  # 构建 lib/（client + host 两
 - 功能与使用说明亦可参考原仓库：[aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - 第三方声明：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · 变更记录：[CHANGELOG.md](CHANGELOG.md) · 设计契约：[DESIGN.md](DESIGN.md) · 设计文档：[docs/design/](docs/design/)
 
-**v0.10.0 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**
+**v0.10.1 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**

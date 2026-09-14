@@ -19,4 +19,14 @@ export declare const STATUS_VERB_IDS: readonly ["reviewing", "analyzing", "consi
 export type StatusVerbId = (typeof STATUS_VERB_IDS)[number];
 /** The verb one turn shows, with the trailing ellipsis the status line reads with. */
 export declare function pickStatusVerb(turnKey: string, lang?: UiLang): string;
+/**
+ * The header label for a group the projection could not tie to a turn: the
+ * session preamble — the system prompt, injected context, command records.
+ *
+ * That group has no phase to report, so a phase sentence must not be used for
+ * it: on a finished session the status line read "In progress" on the first
+ * line of the page, and the live region announced the same claim. Returns
+ * `null` for a turn-backed group, whose label the phase logic owns.
+ */
+export declare function preambleLabel(turn: number | null, lang?: UiLang): string | null;
 //# sourceMappingURL=status-verb.d.ts.map

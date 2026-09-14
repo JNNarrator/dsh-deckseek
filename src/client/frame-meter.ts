@@ -63,6 +63,25 @@ export function collapsedSummary(counts: TurnCounts, lang: UiLang = currentLocal
 }
 
 /**
+ * The turns the rail can anchor, and the newest of them.
+ *
+ * The rail draws one mark per loaded user/steering message, so a turn whose
+ * message sits outside the loaded window has no mark to click. Counting turn
+ * groups instead would print a number with nothing beside it on screen —
+ * measured on a session where the host's paging had dropped the first user
+ * message: the bar read 4 turns while the rail drew 3 marks. The bar sits next
+ * to the rail, so it counts what the rail holds; `hasMore` still marks the
+ * total as a floor.
+ */
+export function railTurns(items: readonly { readonly turn: number | null }[]): { count: number; latest: number | null } {
+  const turns = new Set<number>();
+  for (const item of items) if (item.turn !== null) turns.add(item.turn);
+  let latest: number | null = null;
+  for (const turn of turns) if (latest === null || turn > latest) latest = turn;
+  return { count: turns.size, latest };
+}
+
+/**
  * Window-bar readout: how much the reading view is holding, and how long the
  * newest turn ran. `more` marks history the session has not loaded yet, so the
  * count reads as a floor rather than a total.

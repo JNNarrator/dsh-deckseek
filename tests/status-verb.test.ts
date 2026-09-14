@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATUS_VERB_IDS, pickStatusVerb } from '../src/client/status-verb.js';
+import { STATUS_VERB_IDS, pickStatusVerb, preambleLabel } from '../src/client/status-verb.js';
 import { en, zh } from '../src/client/locale.js';
 import type { UiKey } from '../src/client/locale.js';
 
@@ -44,5 +44,24 @@ test('the working verbs never collide with the phase labels they stand in for', 
     for (const lang of [zh, en]) {
       assert.ok(!phase.includes(`${lang[verbKey(id)]}…`), `verb ${id} duplicates a phase label`);
     }
+  }
+});
+
+test('a turn-less group is labelled as the preamble, never with a phase', () => {
+  // Measured in the host: on a finished session the first line of the reading
+  // page read "In progress", because the preamble group fell through the phase
+  // logic to its fallback.
+  assert.equal(preambleLabel(null, 'zh'), '会话起始记录');
+  assert.equal(preambleLabel(null, 'en'), 'Session preamble');
+  for (const turn of [0, 1, 7]) assert.equal(preambleLabel(turn, 'zh'), null, 'a turn-backed group owns its own label');
+});
+
+test('the preamble label claims no phase in either language', () => {
+  const phase = [
+    zh['status.process'], zh['status.delving'], zh['status.thinkingName'], zh['status.waiting'],
+    en['status.process'], en['status.delving'], en['status.thinkingName'], en['status.waiting'],
+  ];
+  for (const lang of ['zh', 'en'] as const) {
+    assert.ok(!phase.includes(preambleLabel(null, lang)!), `${lang} preamble label reads as a phase`);
   }
 });

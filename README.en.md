@@ -84,14 +84,14 @@ The terminal skin adds a window title bar (workspace path plus a standing `N tur
 
 ## Installation
 
-There are two release channels and **they are not in sync**: npm currently carries **0.6.0**, while newer versions ship as GitHub Release tarballs (this repository is at **0.10.0**).
+There are two release channels and **they are not in sync**: npm currently carries **0.6.0**, while newer versions ship as GitHub Release tarballs (this repository is at **0.10.1**).
 
 ```sh
 # From npm (0.6.0)
 dsh plugin --profile web add dsh-deckseek
 
 # Or install the newest release from its tarball
-dsh plugin --profile web add ./dsh-deckseek-0.10.0.tgz
+dsh plugin --profile web add ./dsh-deckseek-0.10.1.tgz
 ```
 
 `--profile` takes `web`, `desktop`, or `headless` depending on the host you run. Restart the host after installing.
@@ -119,4 +119,4 @@ DSHX_HARNESS=<DSH checkout> npm run build # build lib/ (client + host halves)
 - Features and usage are also documented by the original repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md) · Design docs: [docs/design/](docs/design/)
 
-**v0.10.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
+**v0.10.1 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**

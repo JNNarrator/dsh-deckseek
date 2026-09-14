@@ -29,3 +29,26 @@ test('splitAnnouncement falls back to a hard cut when no boundary fits', () => {
   assert.equal(chunks.join(''), text);
   assert.ok(chunks.every(chunk => chunk.length <= 20));
 });
+
+test('splitAnnouncement backs off to a word break before cutting a word', () => {
+  // Heard through a screen reader, the old hard cut produced
+  // "byte-level pass-\nthrough for sam\ne-family proto" — half words.
+  const chunks = splitAnnouncement('abcdefghij klmnopqrst uvwxyz', 15);
+  assert.deepEqual(chunks, ['abcdefghij ', 'klmnopqrst ', 'uvwxyz']);
+});
+
+test('splitAnnouncement refuses a word break so early the chunk becomes a fragment', () => {
+  // The only break sits near the start; ending there would hand the reader two
+  // characters at a time, so the limit wins.
+  const text = `a ${'b'.repeat(60)}`;
+  const chunks = splitAnnouncement(text, 20);
+  assert.equal(chunks[0], text.slice(0, 20));
+  assert.equal(chunks.join(''), text);
+});
+
+test('splitAnnouncement has no word break to use in unspaced scripts', () => {
+  const text = '中'.repeat(45);
+  const chunks = splitAnnouncement(text, 20);
+  assert.deepEqual(chunks.map(chunk => chunk.length), [20, 20, 5]);
+  assert.equal(chunks.join(''), text);
+});
