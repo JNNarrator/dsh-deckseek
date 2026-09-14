@@ -14,7 +14,11 @@ It adds an independent **DeckSeek reading tab** to DSH: the execution record fol
 
 ![DeckSeek reading view](docs/screenshots/reading-view.png)
 
-**The DeckSeek reading view**: the execution record folds away and the final answer renders in full; the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
+**The DeckSeek reading view** (Soft skin, the default): the execution record folds away and the final answer renders in full — headings, tables, code, formulas and quotes in one column; the toolbar stays pinned at the top (readout plus search / motion / export); the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
+
+![The Terminal skin](docs/screenshots/terminal-skin.png)
+
+**The Terminal skin**: a pinned window bar carrying the readout (`3 turns · last turn 1 step`), a full-width band for your own message behind a `> ` prompt, one glyph vocabulary for the whole skin (`⏺ ⎿ ✻`), a per-turn working verb and a breathing dot. Three skins (**Paper** typographic flow / **Soft** cards / **Terminal** rows) share one DOM and change only structure, density and type; colours always come from host theme tokens, so light and dark adapt on their own.
 
 | Message navigation rail | In-view search |
 |---|---|
@@ -22,7 +26,7 @@ It adds an independent **DeckSeek reading tab** to DSH: the execution record fol
 | Hovering a mark shows a "Turn N · title" info bubble; clicking scrolls the message into view with a landing flash | Live match counts with previous / next navigation; hits scroll precisely into view with a flash |
 | **Execution process & tool rows** | **Unified failure cards** |
 | ![Execution process & tool rows](docs/screenshots/process-and-tools.png) | ![Unified failure cards](docs/screenshots/failure-cards.png) |
-| Write/edit rows show +N -M change stats and per-family state labels (Written / Found…); thinking cards scroll and expand | Failure reason, exit code, and an expandable raw record |
+| A folded turn states what it hides (`3 tool calls · 1 failed`), and expanding it labels each row by family (Ran / Failed…); thinking cards expand | Failure reason, exit code and stderr summary, plus an expandable raw record |
 
 ## Three reading skins
 

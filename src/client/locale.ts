@@ -53,8 +53,12 @@ export const zh = {
   // Window-title bar readout (terminal skin). Counts only what the reader
   // already holds: turns grouped from the live session and their steps.
   'meter.turns': '{count} 轮',
+  // Chinese does not inflect: these repeat the plural string so both
+  // dictionaries keep the same key set (same shape as the fold counts).
+  'meter.turnsOne': '{count} 轮',
   'meter.turnsMore': '{count}+ 轮',
   'meter.steps': '最新一轮 {count} 步',
+  'meter.stepsOne': '最新一轮 {count} 步',
   // Collapsed-process summary (terminal skin), counted off the turn's own flow.
   'frame.tools': '{count} 次工具调用',
   'frame.files': '{count} 个文件',
@@ -360,8 +364,10 @@ export const en: Record<UiKey, string> = {
   'empty.hint': 'The reading view folds the process and keeps the final answer; in-view search and the message rail are always available.',
   'empty.hintLabel': '[hint]',
   'meter.turns': '{count} turns',
+  'meter.turnsOne': '{count} turn',
   'meter.turnsMore': '{count}+ turns',
   'meter.steps': 'last turn {count} steps',
+  'meter.stepsOne': 'last turn {count} step',
   'frame.tools': '{count} tool calls',
   'frame.files': '{count} files',
   'frame.toolsOne': '{count} tool call',

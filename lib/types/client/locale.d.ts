@@ -45,8 +45,10 @@ export declare const zh: {
     readonly 'empty.hint': "阅读视图会自动折叠执行过程、保留最终回答；页内查找与消息导航随时可用。";
     readonly 'empty.hintLabel': "[提示]";
     readonly 'meter.turns': "{count} 轮";
+    readonly 'meter.turnsOne': "{count} 轮";
     readonly 'meter.turnsMore': "{count}+ 轮";
     readonly 'meter.steps': "最新一轮 {count} 步";
+    readonly 'meter.stepsOne': "最新一轮 {count} 步";
     readonly 'frame.tools': "{count} 次工具调用";
     readonly 'frame.files': "{count} 个文件";
     readonly 'frame.toolsOne': "{count} 次工具调用";

@@ -84,11 +84,15 @@ export function railTurns(items: readonly { readonly turn: number | null }[]): {
 /**
  * Window-bar readout: how much the reading view is holding, and how long the
  * newest turn ran. `more` marks history the session has not loaded yet, so the
- * count reads as a floor rather than a total.
+ * count reads as a floor rather than a total. English inflects, and the meter
+ * is read by a single-turn session's author as often as by a long one's — a
+ * real session measured `1 turns · last turn 2 steps` before the singular
+ * strings existed.
  */
 export function frameMeterLabel(turns: number, steps: number, more: boolean, lang: UiLang = currentLocale()): string | null {
   if (turns <= 0) return null;
-  const parts = [uiIn(lang, more ? 'meter.turnsMore' : 'meter.turns', { count: turns })];
-  if (steps > 0) parts.push(uiIn(lang, 'meter.steps', { count: steps }));
+  const turnsKey = more ? 'meter.turnsMore' : turns === 1 ? 'meter.turnsOne' : 'meter.turns';
+  const parts = [uiIn(lang, turnsKey, { count: turns })];
+  if (steps > 0) parts.push(uiIn(lang, steps === 1 ? 'meter.stepsOne' : 'meter.steps', { count: steps }));
   return parts.join(' · ');
 }

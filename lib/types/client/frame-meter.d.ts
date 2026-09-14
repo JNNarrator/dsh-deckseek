@@ -45,7 +45,10 @@ export declare function railTurns(items: readonly {
 /**
  * Window-bar readout: how much the reading view is holding, and how long the
  * newest turn ran. `more` marks history the session has not loaded yet, so the
- * count reads as a floor rather than a total.
+ * count reads as a floor rather than a total. English inflects, and the meter
+ * is read by a single-turn session's author as often as by a long one's — a
+ * real session measured `1 turns · last turn 2 steps` before the singular
+ * strings existed.
  */
 export declare function frameMeterLabel(turns: number, steps: number, more: boolean, lang?: UiLang): string | null;
 //# sourceMappingURL=frame-meter.d.ts.map

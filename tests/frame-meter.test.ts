@@ -53,6 +53,16 @@ test('unloaded history is marked as a floor, not a total', () => {
   assert.equal(frameMeterLabel(12, 5, true), '12+ 轮 · 最新一轮 5 步');
 });
 
+test('English counts one turn and one step in the singular', () => {
+  // A real session's window bar read "1 turns · last turn 2 steps".
+  assert.equal(frameMeterLabel(1, 2, false, 'en'), '1 turn · last turn 2 steps');
+  assert.equal(frameMeterLabel(1, 1, false, 'en'), '1 turn · last turn 1 step');
+  assert.equal(frameMeterLabel(3, 1, false, 'en'), '3 turns · last turn 1 step');
+  // `1+` already means more than one loaded turn, so it keeps the plural.
+  assert.equal(frameMeterLabel(1, 1, true, 'en'), '1+ turns · last turn 1 step');
+  assert.equal(frameMeterLabel(1, 1, false, 'zh'), '1 轮 · 最新一轮 1 步');
+});
+
 test('the turn count comes off the marks the rail can draw', () => {
   // Measured in the host after paging: the first user message was outside the
   // loaded window, so the rail drew 3 marks while the bar — counting turn
