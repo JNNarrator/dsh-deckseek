@@ -182,7 +182,8 @@ ctx.slots.inject('settings.section', () => ctx.slots.register({
 
 ## 测试与验收
 
-- **单元**：皮肤解析纯函数（合法三值、未知值回退默认、缺失回退默认）；设置页组件渲染（三个磁贴、选中态、点击调用 `scope.set`）；终端 v3 新增纯函数与分片渲染（`shortCwd`、`pickStatusVerb`、`StatusText` 的活区/装饰件分片）。现有测试保持通过（当前基线 **136 项**，见 `npm test`；新增 locale 键会触发中英键集一致性测试，需同步）。
+- **单元**：皮肤解析纯函数（合法三值、未知值回退默认、缺失回退默认）；设置页组件渲染（三个磁贴、选中态、点击调用 `scope.set`）；终端 v3 新增纯函数与分片渲染（`shortCwd`、`pickStatusVerb`、`StatusText` 的活区/装饰件分片），以及 keyframes 引用规则的静态检查（见下）。现有测试保持通过（当前基线 **137 项**，见 `npm test`；新增 locale 键会触发中英键集一致性测试，需同步）。
+- **动效的写法约束（0.8.0 教训）**：CSS Modules 会哈希 `@keyframes` 的名字，但不会改写自定义属性值里的名字——动画简写整个塞进 token 会让动效在真实构建里静默失效（测试的假 CSS loader 看不见）。**动画名一律写在 `animation` 简写里，token 只装计时**，`tests/skin-css.test.ts` 守着这条规则。
 - **类型**：`npm run typecheck` 零错误。
 - **构建**：`DSHX_HARNESS=<带 tools/dshx 的检出> npm run build` 成功；装进 `web` profile 后启动无错。
 - **视觉（人工验收，写进 PR 说明）**：三皮肤 × 亮暗共 6 组，各过一眼；重点看亮色下"回答卡与记录卡是否还分得开"（亮色没有背景阶梯，这是最容易糊的地方）。

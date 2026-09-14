@@ -10,8 +10,9 @@
   - **右对齐数字列**：工具行第三列与结尾读数共享一条右缘——设计稿承诺过、此前只有 `flex: none` 顶替的那一列。
   - **推理 `✻` 呼吸**：推理跟随中做 2s 呼吸（与 `--think-shimmer` 同周期），结束后静止。
 - **修忙碌状态行每秒抖一次**：`status.delving` 把耗时嵌在句子里，句子每秒变化，而 `StatusText` 的换字动画以字符串是否相等判断——于是每秒把整串滑 8px 并模糊一次。现在换字动画按**相位**判断（`swapKey`），秒数原地跳动，只有工作 ↔ 思考 ↔ 结束这类真实相位变化才播动画。三套皮肤都受益。
-- 三处新增动效（光标 / 呼吸点 / 推理星）收敛到一组 `--dx-*-animation` token，`data-motion=off` 与 `prefers-reduced-motion` 各一处即可全部关掉；两处新装饰件（窗口标题、状态行动词与耗时）仍是「始终渲染 + `aria-hidden` + CSS 按皮肤显隐」，React 里没有皮肤分支。
-- 测试 120 → **136 项**：新增 `shortCwd`、`pickStatusVerb`（确定性、词池覆盖、不与相位标签撞词）、`StatusText` 分片（恰好一个活区、装饰件不进可访问树、秒数不重播动画）、流式光标的 DOM 前提（Markdown 末块是文本元素、`.blocks[data-streaming]` 钩子）。
+- 三处新增动效（光标 / 呼吸点 / 推理星）共享一组计时 token，`data-motion=off` 与 `prefers-reduced-motion` 各一处即可全部停下；两处新装饰件（窗口标题、状态行动词与耗时）仍是「始终渲染 + `aria-hidden` + CSS 按皮肤显隐」，React 里没有皮肤分支。
+- **动画名必须写在 `animation` 简写里（教训入册）**：CSS Modules 会把 `@keyframes` 的名字哈希掉（`caretBlink` → `_073RcW_caretBlink`），但**不会**改写自定义属性值里的名字。最初把三处动画的简写整个塞进 `--dx-*-animation` token，构建产物里 `animation: var(--dx-caret-blink)` 引用的仍是未哈希的 `caretBlink`——三处动效会在真实构建里静默不动，而测试用的假 CSS loader（Proxy）恰好掩盖了这一点。现在 token 只装**计时**（`1s linear infinite`；停止态用合法的 `1s linear 0`——0 次迭代，动效不播但元素保持静态可见），动画名一律写字面量，并加了一条静态测试守住这条规则。
+- 测试 120 → **137 项**：新增 `shortCwd`、`pickStatusVerb`（确定性、词池覆盖、不与相位标签撞词）、`StatusText` 分片（恰好一个活区、装饰件不进可访问树、秒数不重播动画）、流式光标的 DOM 前提（Markdown 末块是文本元素、`.blocks[data-streaming]` 钩子）、以及上面那条 keyframes 引用规则的静态检查。
 
 ## 0.7.4 - 2026-09-11
 

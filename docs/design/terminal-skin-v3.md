@@ -18,8 +18,9 @@
 2. **新增了计划外的一处修复：`StatusText` 的 `swapKey`。** 计划把"耗时嵌在句子里导致换字动画每秒触发"记为 T3 的顺带项，实做时发现它影响**所有皮肤**（软卡/纸面同样每秒滑一次 8px + 模糊），所以做成相位判据 `swapKey`：秒数原地跳动，只有相位变化（工作 ↔ 思考 ↔ 结束）才播换字动画。计划里"要单独过目软卡/纸面"的提醒因此不适用——两套皮肤的可视文案一个字节没变。
 3. **`.processMetaLine` 没有右对齐。** 计划写的是"`.turnTail` / `.processMetaLine` 终端下改右对齐读数行"，实做只做了 `.turnTail`：`.processMetaLine` 是"执行过程 · N 个步骤"这样的标签对，右对齐后读成错位而不是读数。右对齐留给真正的数字行。
 4. **光标宿主用显式标签清单**（`:is(p, h1–h6, blockquote)` / 列表末项 / 表格末格）。若流式回答的最后一块是代码块或自定义 slot，就不显示光标——这是有意的取舍，不是遗漏；测试钉住的是它的前提（Markdown 的末块是文本元素）。
+5. **动效的开关只能走计时 token，动画名必须写字面量。** 原计划把三处动画的简写整个放进 `--dx-*-animation` token，好让两个动效开关各写一处。实测构建产物才发现：CSS Modules 会把 `@keyframes` 的名字哈希掉（`caretBlink` → `_073RcW_caretBlink`），**却不会改写自定义属性值里的名字**，于是 `animation: var(--dx-caret-blink)` 引用的是不存在的 `caretBlink`，三处动效在真实构建里静默不动——而测试用的假 CSS loader（Proxy）让源码级测试完全看不见。终稿：token 只装计时（`1s linear infinite`；停止态用合法的 `1s linear 0`，0 次迭代），动画名一律写字面量（与既有 `animation: thinkShimmer var(--think-shimmer) …` 同形），并加 `tests/skin-css.test.ts` 守住这条规则。**这条不限于本计划：以后往皮肤里加动效都适用。**
 
-顺带的事实更新：`reading-skins.md` 里"现有 101 项测试"已过期，当前基线 **136 项**。
+顺带的事实更新：`reading-skins.md` 里"现有 101 项测试"已过期，当前基线 **137 项**。
 
 ---
 
@@ -36,7 +37,7 @@ dsh-TUI 的观感由这几个机制构成。**它的 Gentle Mist Blue 雾蓝色�
 
 | dsh-TUI 机制 | 它的实现参数（源码实测） | 我们的映射 |
 |---|---|---|
-| 呼吸点 spinner | 帧 `['·','•','●','•']`，140ms/帧（`time/140`），固定 2 列宽保证文字不跳；reduced-motion 退化为静态 `●`，2s 一亮一暗 | 状态行前导字形，CSS `steps()` 逐帧 |
+| 呼吸点 spinner | 帧 `['·','•','●','•']`，140ms/帧（`time/140`），固定 2 列宽保证文字不跳；reduced-motion 退化为静态 `●`，2s 一亮一暗 | 状态行前导字形。**实做只取一个 `●` 做呼吸**，没有逐帧轮转：轮转需要一个固定 1ch 的裁剪窗口，而 `●` 在 CJK 度量的等宽字体里是宽字，会被裁掉一半——正是 0.7.4 刚修掉的 `⏺` 半圆问题（详见「实施记录」1） |
 | 按轮随机动词 | 18 个英文动词，每轮挂载抽一次（`useState(() => sample(...))`） | 按 turn key **确定性**取词（见 T3：同一轮的 header/dock 是两个实例，随机 state 会让两处显示不同的词） |
 | 滑动高光 glimmer | 4 格三角高光扫过文字，周期 1600ms（请求中）/ 2200ms（其他），方向随阶段反向 | 复用已有的 `thinkShimmer`（2s 线性扫过，`--think-shimmer`） |
 | 思考状态 | 流式推理中显示 `thinking`，结束后 `thought for Ns`，且**至少显示 2s** 避免抖动（`THINKING_DELAY_MS 2800` / `THINKING_PULSE_MS 1800`） | 已有语义标签「深度求索中 / 思考中」，不动 |

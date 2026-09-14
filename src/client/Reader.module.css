@@ -414,24 +414,28 @@
      nothing in this skin, so no control needs its own override. */
   --dsh-reader-shadow-pop: none;
   --dsh-reader-shadow-float: none;
-  /* The three animated decorations this skin adds are declared as shorthand
-     tokens so the two motion switches can cancel all of them in one place
-     instead of repeating four long selectors each. `none` is a valid
-     substitution for the whole `animation` shorthand. */
-  --dx-caret-blink: caretBlink 1s linear infinite;
-  --dx-glyph-breathe: glyphBreathe 1.4s ease-in-out infinite;
-  --dx-star-breathe: starBreathe 2s ease-in-out infinite;
+  /* The three animated decorations this skin adds share one timing token each so
+     the two motion switches can stop all of them in one place instead of
+     repeating four long selectors. The tokens carry **timing only**: CSS Modules
+     rewrites a keyframe name it finds in an `animation` shorthand and does not
+     rewrite the inside of a custom property, so a name hidden in a token would
+     never resolve against the hashed `@keyframes`. The stopped value is a valid
+     but inert timing (`0` iterations) rather than `none`, which keeps the
+     declarations valid and leaves each decoration in its static state. */
+  --dx-blink-timing: 1s linear infinite;
+  --dx-breathe-timing: 1.4s ease-in-out infinite;
+  --dx-star-timing: 2s ease-in-out infinite;
 }
 [data-deckseek-skin='terminal'][data-motion='off'] {
-  --dx-caret-blink: none;
-  --dx-glyph-breathe: none;
-  --dx-star-breathe: none;
+  --dx-blink-timing: 1s linear 0;
+  --dx-breathe-timing: 1.4s ease-in-out 0;
+  --dx-star-timing: 2s ease-in-out 0;
 }
 @media (prefers-reduced-motion: reduce) {
   [data-deckseek-skin='terminal'] {
-    --dx-caret-blink: none;
-    --dx-glyph-breathe: none;
-    --dx-star-breathe: none;
+    --dx-blink-timing: 1s linear 0;
+    --dx-breathe-timing: 1.4s ease-in-out 0;
+    --dx-star-timing: 2s ease-in-out 0;
   }
 }
 [data-deckseek-skin='terminal'] .toolActivity,
@@ -562,7 +566,7 @@
   content: '▌';
   margin-left: 1px;
   color: var(--dsw-alias-label-secondary);
-  animation: var(--dx-caret-blink);
+  animation: caretBlink var(--dx-blink-timing);
 }
 /* Status line: a breathing glyph, the turn's working verb, and the elapsed clock
    in a slot of its own. The verb replaces the phase sentence while the model
@@ -572,7 +576,7 @@
 [data-deckseek-skin='terminal'] .statusText { align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
 [data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph { display: inline-flex; align-items: center; }
 [data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph::before {
-  content: '●'; font-size: 0.5rem; line-height: 1; color: var(--dsw-alias-state-business-primary); animation: var(--dx-glyph-breathe);
+  content: '●'; font-size: 0.5rem; line-height: 1; color: var(--dsw-alias-state-business-primary); animation: glyphBreathe var(--dx-breathe-timing);
 }
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .think { display: none; }
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusVerb { display: inline; color: var(--dsw-alias-label-secondary); }
@@ -592,7 +596,7 @@
 [data-deckseek-skin='terminal'] .toolActivity { --dx-tool-dot: var(--dsw-alias-label-caption); }
 [data-deckseek-skin='terminal'] .toolActivity[data-tool-category='terminal'] { --dx-tool-dot: var(--dsw-alias-state-warn-primary); }
 [data-deckseek-skin='terminal'] .toolActivity[data-tool-category='write'] { --dx-tool-dot: var(--dsw-alias-state-business-primary); }
-[data-deckseek-skin='terminal'] .toolLead::before { color: var(--dx-tool-dot); }
+[data-deckseek-skin='terminal'] .toolLead::before { color: var(--dx-tool-dot, var(--dsw-alias-label-caption)); }
 /* Number column: every row's trailing state and ±count share one right edge —
    the column the design spec promised and only `flex: none` stood in for. The
    turn's closing readout lines up the same way. */
@@ -603,7 +607,7 @@
 /* Thinking star: breathes while reasoning streams, still once it stops. The
    period matches --think-shimmer (2s) so the skin's animations agree. */
 @keyframes starBreathe { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
-[data-deckseek-skin='terminal'] .reasonCard[data-following='true'] .reasonHeading::before { animation: var(--dx-star-breathe); }
+[data-deckseek-skin='terminal'] .reasonCard[data-following='true'] .reasonHeading::before { animation: starBreathe var(--dx-star-timing); }
 /* Paper — typographic flow. No containers at all: grouping is whitespace and
    the size gap between the answer and everything else. Only the closing stats
    line draws a rule, and only failures carry colour. */
