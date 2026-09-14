@@ -126,3 +126,68 @@ test('every skin declares its own focus ring', () => {
     );
   }
 });
+
+/** Every `content:` value, as written. */
+function contents(css: string): string[] {
+  return [...stripComments(css).matchAll(/content:\s*'([^']*)'/g)].map(match => match[1]!);
+}
+
+/**
+ * A glyph that measures two cells throws off every column it sits in: the tool
+ * marker's fixed slot clipped a wide one into a half-disc, and a frame-rotating
+ * spinner was rejected for the same reason (see the terminal v3 record). The
+ * whole vocabulary is single-cell punctuation, so the rule is checkable — one
+ * character, no variation selector, and no glyph from a wide or emoji block.
+ */
+test('every drawn glyph is one narrow cell', () => {
+  const wide = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F000}-\u{1FAFF}\uFE0F]/u;
+  for (const value of contents(reader.css)) {
+    if (value === '') continue; // a rule that draws a box, not a glyph
+    const [glyph, ...rest] = [...value];
+    assert.equal([...value].length - rest.length, 1, `'${value}' is more than one glyph`);
+    assert.ok(rest.every(char => char === ' '), `'${value}' pads with something other than a space`);
+    assert.doesNotMatch(glyph!, wide, `'${value}' can measure two cells wide`);
+  }
+});
+
+/**
+ * Colour is never the only signal: each tool phase draws its own glyph in the
+ * same declaration that colours it, phases that read the same share both, and
+ * red stays reserved for failure. Codewhale's accessibility contract states the
+ * rule; this is the half of it a sheet can be held to.
+ */
+test('tool phases pair a glyph with their colour, and red means failure', () => {
+  const rules = [...stripComments(reader.css).matchAll(/([^{}]*toolGlyphState\[data-phase=[^{}]*)\{([^}]*)\}/g)];
+  const byPhase = new Map<string, { content: string; color: string }>();
+  for (const rule of rules) {
+    const phases = [...rule[1]!.matchAll(/data-phase='([a-z]+)'/g)].map(match => match[1]!);
+    const content = /content:\s*'([^']*)'/.exec(rule[2]!)?.[1];
+    const color = /color:\s*([^;]+)/.exec(rule[2]!)?.[1]?.trim();
+    for (const phase of phases) {
+      assert.ok(content !== undefined, `${phase} has no glyph`);
+      assert.ok(color !== undefined, `${phase} has no colour`);
+      byPhase.set(phase, { content: content!, color: color! });
+    }
+  }
+  assert.deepEqual([...byPhase.keys()].sort(),
+    ['failed', 'interrupted', 'preparing', 'returned', 'running', 'succeeded'],
+    'every tool phase must draw a glyph');
+  const glyphs = new Map<string, Set<string>>();
+  for (const [phase, { content }] of byPhase) {
+    const seen = glyphs.get(content) ?? new Set<string>();
+    seen.add(phase);
+    glyphs.set(content, seen);
+  }
+  // Three glyphs for six phases: the pairs differ in wording elsewhere, not here.
+  assert.equal(glyphs.size, 3, 'each distinct reading needs its own glyph');
+  for (const [content, phases] of glyphs) {
+    const colors = new Set([...phases].map(phase => byPhase.get(phase)!.color));
+    assert.equal(colors.size, 1, `phases sharing '${content}' must share one colour`);
+  }
+  const failed = byPhase.get('failed')!.color;
+  assert.match(failed, /--dsw-alias-state-error-primary/, 'failure must use the host error token');
+  for (const [phase, { color }] of byPhase) {
+    if (phase === 'failed' || phase === 'interrupted') continue;
+    assert.notEqual(color, failed, `${phase} must not wear the failure colour`);
+  }
+});

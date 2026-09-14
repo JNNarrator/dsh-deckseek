@@ -440,8 +440,12 @@
 /* Decorations that only one skin reads. React always renders them — a skin
    change must not change the component tree — so every skin that has no use for
    one hides it here. The card skins keep the phase sentence and never show the
-   terminal's working verb, tabular clock, breathing glyph or window title. */
-.framePath, .statusGlyph, .statusVerb, .statusClock { display: none; }
+   terminal's working verb, tabular clock, breathing glyph, window title or
+   window-bar readout. */
+.framePath, .statusGlyph, .statusVerb, .statusClock, .frameMeter, .emptyMark, .emptyHintLabel { display: none; }
+/* The fold count is the one exception: it is information, not decoration, so the
+   skins that do not draw it keep it for assistive tech instead of dropping it. */
+.frameCounts { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 [data-deckseek-skin='terminal'] {
   --dx-radius-card: 0px;
   --dx-radius-panel: 3px;
@@ -479,6 +483,9 @@
   /* A terminal draws hairlines, not halos — but the ring is still a ring, not
      the 2px UI outline it would otherwise inherit. */
   --dx-focus-ring: 0 0 0 1px var(--dsw-alias-state-business-primary);
+  /* The frame's inner padding, named because the skin needs it twice: once for
+     the column, once for the user band's bleed. */
+  --dx-frame-pad-x: 12px;
 }
 [data-deckseek-skin='terminal'][data-motion='off'] {
   --dx-blink-timing: 1s linear 0;
@@ -570,7 +577,7 @@
   gap: var(--dx-gap-block);
   font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   border: 1px solid var(--dsw-alias-border-l2);
-  padding: 10px 12px;
+  padding: 10px var(--dx-frame-pad-x);
 }
 [data-deckseek-skin='terminal'] .turn { gap: 4px; }
 [data-deckseek-skin='terminal'] .turn + .turn { margin-top: var(--dx-gap-block); }
@@ -662,6 +669,84 @@
    period matches --think-shimmer (2s) so the skin's animations agree. */
 @keyframes starBreathe { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
 [data-deckseek-skin='terminal'] .reasonCard[data-following='true'] .reasonHeading::before { animation: starBreathe var(--dx-star-timing); }
+/* Terminal v4 — the skin gains the two things every reference TUI has and this
+   one lacked: something with an identity on the idle screen, and a window bar
+   that carries a readout at rest instead of going blank between turns. Plus two
+   row-level devices: a folded turn states what it is hiding, and a closing line
+   hangs its numbers off the right margin. Sources are Codewhale's idle mark and
+   top bar, grok-build's braille welcome logo and 1/8-cell gauges, pi's tinted
+   full-bleed user row, herdr's ruled quota line. Mechanisms only — every colour
+   stays a host token. See docs/design/terminal-skin-v3.md. */
+
+/* The idle mark: a deck of records in braille. Line-height is held near 1 so the
+   2x4 dot cells tile into one glyph instead of reading as six rows of noise. */
+[data-deckseek-skin='terminal'] .emptyMark {
+  display: block;
+  margin: 0 0 12px;
+  font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 0.875rem;
+  line-height: 1.05;
+  color: var(--dsw-alias-label-caption);
+}
+/* The idle copy keeps its own type scale; only the terminal's furniture is added
+   — a prompt in front of the opening line, a section label on the hint. */
+[data-deckseek-skin='terminal'] .emptyTitle { font-size: 0.78125rem; line-height: 1.5rem; }
+[data-deckseek-skin='terminal'] .emptyTitle::before { content: '> '; color: var(--dsw-alias-label-secondary); }
+[data-deckseek-skin='terminal'] .emptyBrand { font-size: 0.875rem; line-height: 1.5rem; font-weight: 500; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
+[data-deckseek-skin='terminal'] .emptyHint { max-width: 46ch; }
+[data-deckseek-skin='terminal'] .emptyHintLabel { display: inline; margin-right: 6px; color: var(--dsw-alias-label-caption); }
+/* Window-bar readout: the right group of the bar, before the controls. */
+[data-deckseek-skin='terminal'] .frameMeter {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 6px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The readout is the first thing the bar sheds: the path is where the session
+   runs, the counts are only how much of it is on screen. */
+@container (max-width: 520px) {
+  [data-deckseek-skin='terminal'] .frameMeter { display: none; }
+}
+/* Folded turn: the header states what the fold hides, in calls. It leaves the
+   line when the turn opens — the calls are listed there themselves. */
+[data-deckseek-skin='terminal'] .disclosureButton { gap: 10px; }
+[data-deckseek-skin='terminal'] .frameCounts {
+  position: static; width: auto; height: auto; overflow: visible; clip-path: none;
+  color: var(--dsw-alias-label-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+[data-deckseek-skin='terminal'] .disclosure[data-expanded='true'] .frameCounts { display: none; }
+/* Closing line: the numbers hang off the right margin on a hairline, the way a
+   ruled readout does in the reference TUIs. */
+[data-deckseek-skin='terminal'] .turnTail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+[data-deckseek-skin='terminal'] .turnTail::before { content: ''; flex: 1 1 auto; min-width: 16px; border-top: 1px solid var(--dsw-alias-border-l1); }
+/* The input line is a band, not a bubble: it spans the frame's inner width so a
+   turn's opening message reads as one row of the log. `label-primary` at 5% is
+   the neutral that survives both themes — the host's own surface ladder is flat
+   in the light theme, where a raised fill would be invisible. The base rule
+   right-aligns the block at 84% width, which is a bubble's geometry: a band has
+   to reach both margins. */
+[data-deckseek-skin='terminal'] .user {
+  align-self: stretch;
+  max-width: none;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent);
+  border-left: 0;
+  padding: 3px 8px;
+  margin: 0 calc(-1 * var(--dx-frame-pad-x)) calc(4px + var(--dx-font-delta));
+  gap: 8px;
+}
 /* Paper — typographic flow. No containers at all: grouping is whitespace and
    the size gap between the answer and everything else. Only the closing stats
    line draws a rule, and only failures carry colour. */

@@ -24,10 +24,11 @@ export declare function StatusText({ text, ariaText, motion, shimmer, verb, cloc
      */
     swapKey?: string;
 }): import("react").JSX.Element;
-export declare function Disclosure({ open, onChange, label, status, controls, buttonRef }: {
+export declare function Disclosure({ open, onChange, label, summary, status, controls, buttonRef }: {
     open: boolean;
     onChange: (value: boolean) => void;
     label: ReactNode;
+    summary?: string;
     status?: string;
     controls: string;
     buttonRef: RefObject<HTMLButtonElement>;

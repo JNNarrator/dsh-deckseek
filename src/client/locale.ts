@@ -47,6 +47,20 @@ export const zh = {
   'export.assistant': '求索',
   'empty.title': '在下方发送消息，开始一场对话',
   'empty.hint': '阅读视图会自动折叠执行过程、保留最终回答；页内查找与消息导航随时可用。',
+  // The terminal skin labels the idle hint like a manual section, the way the
+  // reference TUIs label their own idle blocks.
+  'empty.hintLabel': '[提示]',
+  // Window-title bar readout (terminal skin). Counts only what the reader
+  // already holds: turns grouped from the live session and their steps.
+  'meter.turns': '{count} 轮',
+  'meter.turnsMore': '{count}+ 轮',
+  'meter.steps': '最新一轮 {count} 步',
+  // Collapsed-process summary (terminal skin), counted off the turn's own flow.
+  'frame.tools': '{count} 次工具调用',
+  'frame.files': '{count} 个文件',
+  'frame.toolsOne': '{count} 次工具调用',
+  'frame.filesOne': '{count} 个文件',
+  'frame.failed': '{count} 次失败',
   'rail.label': '消息导航',
   'rail.jump': '跳到第 {turn} 轮',
   'rail.turn': '第 {turn} 轮',
@@ -340,6 +354,15 @@ export const en: Record<UiKey, string> = {
   'export.assistant': 'DeepSeek',
   'empty.title': 'Send a message below to start a conversation',
   'empty.hint': 'The reading view folds the process and keeps the final answer; in-view search and the message rail are always available.',
+  'empty.hintLabel': '[hint]',
+  'meter.turns': '{count} turns',
+  'meter.turnsMore': '{count}+ turns',
+  'meter.steps': 'last turn {count} steps',
+  'frame.tools': '{count} tool calls',
+  'frame.files': '{count} files',
+  'frame.toolsOne': '{count} tool call',
+  'frame.filesOne': '{count} file',
+  'frame.failed': '{count} failed',
   'rail.label': 'Message navigation',
   'rail.jump': 'Jump to turn {turn}',
   'rail.turn': 'Turn {turn}',

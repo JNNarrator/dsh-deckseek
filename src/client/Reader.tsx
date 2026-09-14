@@ -19,6 +19,8 @@ import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
 import { shortCwd } from './frame-path.js';
+import { collapsedSummary, frameMeterLabel, turnCounts } from './frame-meter.js';
+import { EMPTY_MARK } from './empty-mark.js';
 import { pickStatusVerb } from './status-verb.js';
 import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
@@ -207,6 +209,11 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   // focusing or scrolling the live card does not create a permanent override.
   const holdingSelection = flow.some(item => selectedProcessKeys.includes(item.key));
   const expanded = holdingSelection || processExpanded(expansionChoice, boundary);
+  // What the fold is hiding, in calls rather than in prose: the reference TUIs
+  // put a count on a collapsed block so a reader can tell a one-call turn from a
+  // twenty-call one without opening either. Counted only while folded — an open
+  // turn already lists its calls, and the walk re-reads every call's arguments.
+  const summary = useMemo(() => expanded ? null : collapsedSummary(turnCounts(flow)), [expanded, flow]);
   const terminal = terminalLabel(boundary.reason);
   // A failure card and the terminal line both point at the full record, so the
   // card carries that note only while no terminal line says it below.
@@ -215,7 +222,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   const shared = { useChat: props.useChat, renderSlotChain: props.renderSlotChain, loadImage: props.loadImage, cwd, failureNote };
   return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
-    {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton}
+    {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton} summary={summary ?? undefined}
       label={<GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
     {!hasProcess && boundary.status === 'open' && <div className={css.disclosure} data-reader-status-only>
       <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />
@@ -233,7 +240,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
       </Fragment>)}
     </div>
     {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="dock" />}
-{terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
+    {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section>;
 });
 
@@ -262,6 +269,23 @@ export function Reader(props: ReaderProps) {
   const motion = useMotionAllowed(motionPreference);
   const streamMotion = useMemo(() => ({ enabled: motion, activatedAt: activatedAt.current }), [motion]);
   const groups = useMemo(() => groupNodes(order, key => nodes.get(key)), [order, nodes, timeline]);
+  // Window-bar readout. Both numbers come off state the reader already holds —
+  // the turns it grouped, and the newest turn's step count — so nothing here
+  // needs a projection the plugin does not have. `hasMore` marks the turn count
+  // as a floor, because the session's older history is not loaded yet.
+  //
+  // A turn is a group the projection resolved to a turn number. Measured on a
+  // real session: the records that precede a session's first message land in a
+  // turn-less group of their own, while the first turn's own group carries the
+  // system prompt ahead of its user message — so neither "every group" nor
+  // "groups that open with a user message" counts the turns the rail and the
+  // host's own footer count.
+  const turnGroups = useMemo(() => groups.filter(group => group.turn !== null), [groups]);
+  const latestSteps = useMemo(() => {
+    const newest = turnGroups.at(-1);
+    return newest?.turn == null ? 0 : timeline.turns.get(newest.turn)?.steps.length ?? 0;
+  }, [turnGroups, timeline]);
+  const frameMeter = frameMeterLabel(turnGroups.length, latestSteps, hasMore);
   const scroll = useReadingScroll(root, motion);
   // A freshly sent message always returns the reader to the bottom: the
   // composer sits below the fold, so the reply would stream out of frame.
@@ -365,6 +389,10 @@ export function Reader(props: ReaderProps) {
         <span className={css.framePath} aria-hidden="true" title={cwd ?? undefined}>{ui('reader.tab')}
           {framePath && <span className={css.frameCwd}>{framePath}</span>}
         </span>
+        {/* The window bar's readout, in the slot the reference TUIs give their
+            status segments. Decoration like the path beside it: the same counts
+            are reachable through the rail and the search panel. */}
+        {frameMeter && <span className={css.frameMeter} aria-hidden="true" data-reader-frame-meter>{frameMeter}</span>}
         <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
         <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
         <button type="button" className={css.textButton} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
@@ -386,9 +414,13 @@ export function Reader(props: ReaderProps) {
       {openError && <div className={css.error} role="alert">{ui('reader.openFailed')}{openError.message}</div>}
       {loading && groups.length === 0 && <p className={css.empty} role="status">{ui('reader.loading')}</p>}
       {!loading && !openError && groups.length === 0 && <div className={css.emptyState} role="status" data-reader-empty>
+        {/* The idle screen's mark. Drawn for every skin: the terminal skin shows
+            it, the card skins keep their typographic opening. Decoration, so it
+            never reaches the accessibility tree. */}
+        <pre className={css.emptyMark} aria-hidden="true">{EMPTY_MARK}</pre>
         <p className={css.emptyBrand}>DeckSeek</p>
         <p className={css.emptyTitle}>{ui('empty.title')}</p>
-        <p className={css.emptyHint}>{ui('empty.hint')}</p>
+        <p className={css.emptyHint}><span className={css.emptyHintLabel}>{ui('empty.hintLabel')}</span>{ui('empty.hint')}</p>
       </div>}
       {hiddenCount > 0 && <div ref={olderRef} className={css.olderTurns} data-reader-older>
         <button type="button" className={css.textButton} onClick={() => expandTurns(groups.length)}>

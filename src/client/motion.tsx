@@ -114,13 +114,16 @@ export function StatusText({ text, ariaText, motion, shimmer = false, verb, cloc
   </span>;
 }
 
-export function Disclosure({ open, onChange, label, status, controls, buttonRef }: {
-  open: boolean; onChange: (value: boolean) => void; label: ReactNode;
+export function Disclosure({ open, onChange, label, summary, status, controls, buttonRef }: {
+  open: boolean; onChange: (value: boolean) => void; label: ReactNode; summary?: string;
   status?: string; controls: string; buttonRef: RefObject<HTMLButtonElement>;
 }) {
   return <div className={css.disclosure} data-reader-disclosure data-expanded={open}>
     <button ref={buttonRef} type="button" className={css.disclosureButton} aria-label={open ? ui('turn.foldAriaCollapse') : ui('turn.foldAriaExpand')} aria-expanded={open} aria-controls={controls} onClick={() => onChange(!open)}>
       {label}
+      {/* What the fold hides. Rendered for every skin — the terminal skin draws
+          it, the others hide its pixels and keep the count for assistive tech. */}
+      {summary !== undefined && <span className={css.frameCounts} data-reader-fold-summary>{summary}</span>}
       <svg className={css.chevron} data-open={open} viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="m6 4 4 4-4 4" /></svg>
     </button>
     <div className={css.processMeta} data-reader-process-meta data-open={open} aria-hidden={!open}>
