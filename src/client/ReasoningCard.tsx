@@ -45,6 +45,10 @@ export function ReasoningCard({ children, step, active, history = false, motion,
   }, [selected]);
 
   useLayoutEffect(() => {
+    // A collapsed card is its heading line: it has no viewport to size, so the
+    // observer has nothing to keep in sync. On a long conversation every
+    // collapsed card was still fitting itself on each host resize.
+    if (!expanded) return;
     const port = viewport.current;
     const host = port?.closest<HTMLElement>('[data-conversation-scroll]');
     if (!port || !host) return;
@@ -60,9 +64,7 @@ export function ReasoningCard({ children, step, active, history = false, motion,
     };
     fit();
     const observer = new ResizeObserver(fit); observer.observe(host);
-    const attributes = new MutationObserver(fit);
-    attributes.observe(host, { attributes: true, attributeFilter: ['style'] });
-    return () => { observer.disconnect(); attributes.disconnect(); };
+    return () => { observer.disconnect(); };
   }, [expanded]);
 
   useLayoutEffect(() => {

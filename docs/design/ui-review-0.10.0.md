@@ -142,3 +142,5 @@ P1-2 修完后栏位确实吸住了，但**一半被内容盖掉**：宿主的�
 - 复核里标注**未覆盖**的区域仍待补：中断（Stop）与插话、MCP App 卡片、未知记录卡片、回答里的图片、查找面板、中文文案、320px 级极窄列、`prefers-reduced-motion` / forced-colors。
 
 5. **hover 才出现的元素，截图前要先逼一次重绘**：给导轨刻度做悬浮气泡截图时，DOM 侧一切正常（`getBoundingClientRect()` 是 880×104×342×50、`opacity: 1`、`getAnimations()` 为空、祖先链无裁剪），但连拍三张都没有气泡。把该元素的内联样式动一下（或把滚动容器 ±1px）再拍，气泡就在了。**判定：这是宿主 webview 的合成器没有为"纯 CSS hover 出现的新元素"刷新绘制，不是插件缺陷**——旧的 README 截图里同一个气泡是画出来的，真人也看得见。**规矩：hover / focus / 动画类的元素，截图前先做一次无害的重绘（滚动 ±1px 或改写一个无关内联样式），并且不要因为"DOM 对但图上没有"就去改产品代码。**
+
+6. **`getComputedStyle` 会读到过期值，尤其刚改完皮肤属性**：量压缩条胶囊底色时，`getComputedStyle(pill).backgroundColor` 在软卡皮肤下一直报 `rgba(0,0,0,0)`，连**写死的内联 `background: #353638`** 也照样报透明——而同一元素的 `radius` / `padding` / `border` 都正确反映了皮肤规则。截图一放，软卡下胶囊是**有底的**。结论：这个 webview 的样式/合成管线是懒的（和陷阱 5 同源），**"刚改过样式/刚切皮肤"之后不要相信 `getComputedStyle` 的读数，用截图判定画成什么样**；反过来，位置类判定仍以 `getBoundingClientRect()` 为准（它没有出现过这种滞后）。

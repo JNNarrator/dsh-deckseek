@@ -97,9 +97,14 @@ export declare const zh: {
     readonly 'command.failedTitle': "命令执行失败";
     readonly 'command.fallback': "查看原对话中的命令记录";
     readonly 'compaction.failedTitle': "上下文压缩失败";
-    readonly 'compaction.summary': "上下文已整理，查看记录";
-    readonly 'compaction.done': "上下文已整理，原始记录仍保留。";
     readonly 'compaction.running': "正在整理上下文…";
+    readonly 'compaction.divider': "历史上下文已精简优化";
+    readonly 'compaction.dividerItems': "已精简 {count} 条历史消息";
+    readonly 'compaction.dividerTokens': "历史记忆已整理 · 释放约 {tokens} tokens";
+    readonly 'compaction.dividerItemsTokens': "已精简 {count} 条历史消息 · 释放约 {tokens} tokens";
+    readonly 'compaction.memoShow': "查看备忘";
+    readonly 'compaction.memoHide': "收起备忘";
+    readonly 'compaction.memoHeader': "前期对话要点备忘";
     readonly systemPrompt: "系统提示词";
     readonly 'turnProcess.prefix': "执行过程 · ";
     readonly 'turnProcess.thought': "已思考";

@@ -199,6 +199,36 @@
 .disclosureBody { overflow: hidden; height: 0; }
 .processContents { display: flow-root; border-left: 2px solid var(--dsw-alias-border-l2); padding: 3px 0 2px 17px; margin: 0 0 0 6px; color: var(--dsw-alias-label-secondary); font-size: 0.875rem; line-height: 1.5rem; }
 .processContents > :last-child { margin-bottom: 0; }
+/* Step commentary: the sentence a turn writes between two tool calls. It is
+   part of the process, so it sits inside the fold with the calls around it,
+   marked by a rule rather than by a card surface. */
+.processCommentary { margin: 4px 0 8px 6px; padding-left: 12px; border-left: 2px solid var(--dsw-alias-border-l2); color: var(--dx-ink-dim); font-size: 0.875rem; line-height: 1.5rem; }
+.processCommentary > :last-child { margin-bottom: 0; }
+
+/* Memory divider — where the session's earlier context was compacted. A rule
+   across the column with a pill in it, and the memo it left behind below.
+   `--dx-layer-*` free: it is in flow, not chrome. */
+.compactionRow { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 4px 0; width: 100%; min-width: 0; }
+.compactionLine { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; }
+.compactionLine::before, .compactionLine::after { content: ''; flex: 1 1 auto; min-width: 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.compactionPill { display: inline-flex; align-items: center; gap: 6px; flex: none; max-width: 100%; padding: 2px 10px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-module-platform); color: var(--dx-ink-dim); font: inherit; font-size: 0.75rem; line-height: 1.125rem; overflow-wrap: anywhere; }
+.compactionButton { cursor: pointer; transition: color 140ms ease, border-color 140ms ease, background 140ms ease; }
+.compactionButton:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); background: var(--dsw-alias-interactive-bg-hover); }
+.compactionIcon { flex: none; width: 12px; height: 12px; }
+.compactionToggle { flex: none; color: var(--dsw-alias-label-secondary); }
+.compactionChevron { flex: none; display: inline-flex; transition: transform 220ms cubic-bezier(.22,1,.36,1); }
+.compactionChevron svg { width: 12px; height: 12px; }
+.compactionChevron[data-open='true'] { transform: rotate(180deg); }
+.compactionSummaryBox { width: 100%; min-width: 0; padding: 12px 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-card); background: var(--dx-surface-record); font-size: 0.75rem; line-height: 1.25rem; color: var(--dx-ink-dim); }
+.compactionSummaryHeader { margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary); font-size: 0.75rem; font-weight: 500; }
+[data-motion=off] .compactionChevron, [data-motion=off] .compactionButton { transition: none; }
+@media (prefers-reduced-motion: reduce) { .compactionChevron, .compactionButton { transition: none; } }
+/* Paper reads as type, not as cards: the memo becomes an indented note. */
+[data-deckseek-skin='paper'] .compactionPill { border: 0; background: transparent; padding: 0 4px; }
+[data-deckseek-skin='paper'] .compactionSummaryBox { padding: 0 0 0 12px; border: 0; border-left: 2px solid var(--dsw-alias-border-l2); border-radius: 0; background: transparent; }
+/* Terminal: square chrome, and the memo keeps the skin's own hairline. */
+[data-deckseek-skin='terminal'] .compactionPill { border-radius: 0; background: transparent; }
+[data-deckseek-skin='terminal'] .compactionSummaryBox { border-radius: 0; background: transparent; border-bottom: var(--dx-rule); }
 .processFrame { min-width: 0; }
 .toolActivity { min-width: 0; color: var(--dsw-alias-label-secondary); background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); padding: calc(8px + var(--dx-font-delta)) 12px; }
 .nativeToolRow { min-width: 0; }
@@ -531,6 +561,7 @@
 [data-deckseek-skin='terminal'] .toolActivity,
 [data-deckseek-skin='terminal'] .unknown,
 [data-deckseek-skin='terminal'] .systemPrompt,
+[data-deckseek-skin='terminal'] .processCommentary,
 [data-deckseek-skin='terminal'] .turnProcess,
 [data-deckseek-skin='terminal'] .turnTail,
 [data-deckseek-skin='terminal'] .reasonCard {
@@ -591,6 +622,7 @@
 [data-deckseek-skin='terminal'] .answer { font-size: 0.875rem; line-height: 1.5rem; }
 [data-deckseek-skin='terminal'] .user { font-size: 0.78125rem; line-height: 1.25rem; }
 [data-deckseek-skin='terminal'] .reasonText,
+[data-deckseek-skin='terminal'] .processCommentary,
 [data-deckseek-skin='terminal'] .turnProcess,
 [data-deckseek-skin='terminal'] .unknown,
 [data-deckseek-skin='terminal'] .systemPrompt { font-size: 0.78125rem; line-height: 1.25rem; }
@@ -807,6 +839,7 @@
 [data-deckseek-skin='paper'] .column { gap: calc(26px + var(--dx-font-delta)); }
 [data-deckseek-skin='paper'] .toolActivity,
 [data-deckseek-skin='paper'] .unknown,
+[data-deckseek-skin='paper'] .processCommentary,
 [data-deckseek-skin='paper'] .systemPrompt,
 [data-deckseek-skin='paper'] .turnProcess,
 [data-deckseek-skin='paper'] .reasonCard {

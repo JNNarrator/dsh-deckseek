@@ -10,6 +10,7 @@ import { SystemPromptRow, TurnProcessMeta, TurnTailStats } from './TurnRecords.j
 import { FailureCard } from './FailureCard.js';
 import type { TurnProcessData, TurnTailData } from './locale.js';
 import { ui } from './locale.js';
+import { compactionFacts } from './compaction.js';
 import { readerFlow } from './tool-activity.js';
 import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingPosition, useReadingScroll } from './motion.js';
 import { buildSearchIndex } from './search-index.js';
@@ -57,6 +58,13 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
   const data = node.data;
   const parts = assistantSegments(data.blocks);
   const earlier = isEarlierNarration(data, boundary);
+  // A step's own words — the sentence written between two tool calls — belong to
+  // the process, not to the answer. Rendered as an answer card they read as if
+  // the turn had already concluded, and in the terminal skin they took the
+  // answer's 14px monospace weight. Text from a step that called tools, or from
+  // any step before the turn's last one, is commentary.
+  const hasToolCalls = data.blocks.some(block => block.kind === 'tool-call');
+  const isProcessStep = earlier || hasToolCalls || (boundary.latestStep > 0 && data.step < boundary.latestStep);
   const body = data.blocks.filter(block => block.kind !== 'reasoning' && block.kind !== 'tool-call');
   return <>{parts.map((part, index) => part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
@@ -65,13 +73,54 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
           holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
       </ReasoningCard>
     </ProcessFragment>
+    : isProcessStep && hasVisibleBody(part.blocks) ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey}>
+      <article className={css.processCommentary}>
+        <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running'} holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
+      </article>
+    </ProcessFragment>
     : hasVisibleBody(part.blocks) && <RetiringContent key={part.start} visible={pinned || processOpen || !earlier}>
-      <article className={css.answer} data-reader-answer data-reader-anchor data-reader-key={nodeKey} data-reader-source-start={part.start} data-answer-status={data.status} data-answer-phase={earlier ? 'process' : 'body'}>
+      <article className={css.answer} data-reader-answer data-reader-anchor data-reader-key={nodeKey} data-reader-source-start={part.start} data-answer-status={data.status} data-answer-phase="body">
         <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running'} holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
         {index === parts.length - 1 && data.status === 'interrupted' && <span className={css.stopped}>{ui('turn.stopped')}</span>}
         {index === parts.length - 1 && !earlier && data.status !== 'running' && boundary.status === 'closed' && <CopyAnswer blocks={body} />}
       </article>
     </RetiringContent>)}</>;
+});
+
+/**
+ * Where the session's earlier context was compacted: a memory divider across the
+ * column, stating what the compaction cost, with the memo it left behind one
+ * click away. The raw record used to render as a JSON dump — the one record a
+ * reader is most likely to meet mid-conversation was also the least readable.
+ * Ported from upstream `7049304`, with its copy moved into the dictionaries.
+ */
+const CompactionDivider = memo(function CompactionDivider({ data }: { data: unknown }) {
+  const [open, setOpen] = useState(false);
+  const { label, summary } = compactionFacts(data);
+  const pill = <>
+    <svg className={css.compactionIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+      <path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2z" strokeWidth="1.2" />
+      <path d="M8 5v3.2l2 1.8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    <span>{label}</span>
+  </>;
+  return <div className={css.compactionRow} data-reader-compaction>
+    <div className={css.compactionLine}>
+      {summary === null ? <span className={css.compactionPill}>{pill}</span>
+        : <button type="button" className={`${css.compactionPill} ${css.compactionButton}`} aria-expanded={open} data-ud-check="compaction-memo"
+          title={ui(open ? 'compaction.memoHide' : 'compaction.memoShow')} onClick={() => setOpen(value => !value)}>
+          {pill}
+          <span className={css.compactionToggle}>{ui(open ? 'compaction.memoHide' : 'compaction.memoShow')}</span>
+          <span className={css.compactionChevron} aria-hidden="true" data-open={open}>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="m4 6 4 4 4-4" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </span>
+        </button>}
+    </div>
+    {open && summary !== null && <div className={css.compactionSummaryBox} data-reader-anchor>
+      <div className={css.compactionSummaryHeader}>{ui('compaction.memoHeader')}</div>
+      <MarkdownText text={summary} labels={markdownLabels} />
+    </div>}
+  </div>;
 });
 
 const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, processOpen = false, failureNote, ...render }: SeatProps) {
@@ -97,9 +146,9 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
   }
   if (isNode(node, 'manual-compaction')) {
     if (node.data.command.outcome?.kind === 'error') return <FailureCard title={ui('compaction.failedTitle')} message={node.data.command.outcome.text} note={failureNote} />;
-    return node.data.compaction ? <p className={css.meta}>{ui('compaction.done')}</p> : <p className={css.meta}>{ui('compaction.running')}</p>;
+    return node.data.compaction ? <CompactionDivider data={node.data.compaction} /> : <p className={css.meta}>{ui('compaction.running')}</p>;
   }
-  if (node.kind === 'compaction') return <details className={css.detail}><summary>{ui('compaction.summary')}</summary><pre className={css.rawJson}>{JSON.stringify(node.data, null, 2)}</pre></details>;
+  if (node.kind === 'compaction') return <CompactionDivider data={node.data} />;
   if (node.kind === 'context') return null;
   if (node.kind === 'system-prompt') return <SystemPromptRow text={String((node.data as { text?: unknown }).text ?? '')} />;
   if (node.kind === 'turn-process') return <TurnProcessMeta data={node.data as TurnProcessData} />;
