@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 import type { ContextMessageNode, KnownContextForm } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { JsonBlock } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import { truncatedJsonLabel, unknownBlockLabel } from '../primitive-labels.js'
 import css from './ContextBody.module.css'
 
 /** Model-facing text stays bounded at the disclosure, not at the producer. */
@@ -58,10 +59,10 @@ function unknownBlocks(content: ContextMessageNode['content']): unknown[] {
 }
 
 /** The model-facing text, truncated to the display bound. */
-function boundedText(text: string, t: Translate): string {
-  return text.length > MAX_CHARS
-    ? `${text.slice(0, MAX_CHARS)}\n${t('json.truncated', { total: text.length })}`
-    : text
+function boundedText(text: string, t?: Translate): string {
+  if (text.length <= MAX_CHARS) return text
+  const note = t ? t('json.truncated', { total: text.length }) : truncatedJsonLabel(text.length)
+  return `${text.slice(0, MAX_CHARS)}\n${note}`
 }
 
 /**
@@ -137,7 +138,7 @@ function UnknownBlocks({ blocks, t }: { blocks: readonly unknown[]; t: Translate
  */
 function ModelFacingContent({ content, t }: {
   content: ContextMessageNode['content']
-  t: Translate
+  t?: Translate
 }): ReactNode {
   return (
     <>
@@ -148,9 +149,9 @@ function ModelFacingContent({ content, t }: {
         : (
           <JsonBlock
             key={index}
-            label={t('message.unknownBlock')}
+            label={t ? t('message.unknownBlock') : unknownBlockLabel()}
             payload={run.block}
-            truncatedLabel={total => t('json.truncated', { total })}
+            truncatedLabel={t ? total => t('json.truncated', { total }) : truncatedJsonLabel}
           />
         )))}
     </>
@@ -420,7 +421,12 @@ export function SnapshotBody({ content, source, t }: {
 export function NoticeBody({ content, t }: {
   content: ContextMessageNode['content']
   source: unknown
-  t: Translate
+  /**
+   * Host locale seat. Optional because the reading view's non-process seats
+   * (`MainNode`) are not given one; the two labels this body needs then come
+   * from the plugin's own dictionary instead.
+   */
+  t?: Translate
 }): ReactNode {
   return <ModelFacingContent content={content} t={t} />
 }

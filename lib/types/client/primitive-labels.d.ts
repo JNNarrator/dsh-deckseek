@@ -7,4 +7,6 @@ export declare const searchBlockLabels: SearchBlockLabels;
 export declare const webBlockLabels: WebBlockLabels;
 export declare const jsonTreeLabels: JsonTreeLabels;
 export declare const truncatedJsonLabel: (total: number) => string;
+/** Label for a block the renderer does not recognize, shown instead of dropping it. */
+export declare const unknownBlockLabel: () => string;
 //# sourceMappingURL=primitive-labels.d.ts.map

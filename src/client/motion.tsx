@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactNode, RefObject } from 'react';
+import type { ComponentType, ReactNode, RefObject } from 'react';
 import css from './Reader.module.css';
 import { StreamMotionContext } from './streaming.js';
 import { jumpLock } from './jump-lock.js';
@@ -44,8 +44,14 @@ export function usePinnedSelection(root: RefObject<HTMLElement>, selector = '[da
  * working verb and a tabular clock in its own slot — so `verb` and `clock` are
  * supplied as separate parts and the CSS picks which of the two the skin shows.
  */
-export function StatusText({ text, ariaText, motion, shimmer = false, verb, clock, swapKey }: {
+export function StatusText({ text, ariaText, motion, shimmer = false, verb, clock, swapKey, detail }: {
   text: string; ariaText?: string; motion: boolean; shimmer?: boolean; verb?: string; clock?: string;
+  /**
+   * What the live turn is doing right now — the running command, path, or
+   * query — shown beside the phase label when the reader's work-details level
+   * asks for live detail. Decoration only: the live region keeps the phase.
+   */
+  detail?: string;
   /**
    * Identity for the swap animation, when it is not the label itself. A label
    * that embeds a ticking clock changes every second, and swapping on the text
@@ -109,20 +115,31 @@ export function StatusText({ text, ariaText, motion, shimmer = false, verb, cloc
         data-reader-status-copy="current" data-reader-shimmer={active || undefined} data-text={text}>{text}</span>
     </span>
     {verb !== undefined && <span className={css.statusVerb} aria-hidden="true">{verb}</span>}
+    {detail !== undefined && <span className={css.statusDetail} data-reader-status-detail aria-hidden="true">{detail}</span>}
     {clock !== undefined && <span className={css.statusClock} data-reader-status-clock aria-hidden="true">{clock}</span>}
     <span className={css.srOnly} role="status" aria-live="polite" aria-atomic="true">{ariaText ?? text}</span>
   </span>;
 }
 
-export function Disclosure({ open, onChange, label, summary, status, controls, buttonRef }: {
-  open: boolean; onChange: (value: boolean) => void; label: ReactNode; summary?: string;
+export function Disclosure({ open, onChange, label, activity, summary, status, controls, buttonRef }: {
+  open: boolean; onChange: (value: boolean) => void; label: ReactNode;
+  /** The ranked action phrase and its family glyph: what a fold hides, in words. */
+  activity?: { phrase: string; glyph: ComponentType<{ className?: string }> };
+  summary?: string;
   status?: string; controls: string; buttonRef: RefObject<HTMLButtonElement>;
 }) {
+  const ActivityGlyph = activity?.glyph;
   return <div className={css.disclosure} data-reader-disclosure data-expanded={open}>
     <button ref={buttonRef} type="button" className={css.disclosureButton} aria-label={open ? ui('turn.foldAriaCollapse') : ui('turn.foldAriaExpand')} aria-expanded={open} aria-controls={controls} onClick={() => onChange(!open)}>
       {label}
-      {/* What the fold hides. Rendered for every skin — the terminal skin draws
-          it, the others hide its pixels and keep the count for assistive tech. */}
+      {/* What the fold hides, in the order a reader wants it: the family that did
+          the work and what it did, then the raw counts. Rendered for every skin —
+          the terminal skin draws them, the others hide the pixels and keep the
+          text for assistive tech. */}
+      {activity !== undefined && <span className={css.foldActivity} data-reader-fold-activity data-activity={activity.phrase}>
+        {ActivityGlyph && <ActivityGlyph className={css.foldActivityGlyph} />}
+        <span className={css.foldActivityPhrase}>{activity.phrase}</span>
+      </span>}
       {summary !== undefined && <span className={css.frameCounts} data-reader-fold-summary>{summary}</span>}
       <svg className={css.chevron} data-open={open} viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="m6 4 4 4-4 4" /></svg>
     </button>

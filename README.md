@@ -74,7 +74,7 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 **兼容**
 
 - **生成式 MCP Apps（SEP-1865）**：模型在回答中输出 ````mcp-app```` 代码块即自动挂载为活体交互卡片，在 `sandbox="allow-scripts allow-forms"` 沙箱 iframe 中运行，通过 JSON-RPC `postMessage` 双向通信（`ui/initialize`、`ui/resize`、`ui/submit` 等），卡片高度随内容在 60–2400px 之间自适应。
-- **157 项单元与组件测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算、两行流式跟随，以及搜索定位、复制回执、皮肤分片、光标钩子、样式表契约（颜色只取宿主 token、token 引用可解析、字形一格宽）等界面交互（happy-dom）。
+- **252 项单元与组件测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算、两行流式跟随，以及搜索定位、复制回执、皮肤分片、光标钩子、样式表契约（颜色只取宿主 token、token 引用可解析、字形一格宽）等界面交互（happy-dom）。
 
 ## 快捷键
 
@@ -88,14 +88,16 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 
 ## 安装
 
-发布渠道有两处，**版本不同步**：npm 上当前是 **0.6.0**，更新的版本以 GitHub Releases 的 tarball 为准（本仓库最新 **0.10.1**）。
+发布渠道有两处，**版本不同步**：npm 上当前是 **0.6.0**，更新的版本以 GitHub Releases 的 tarball 为准（本仓库最新 **0.11.0**）。
+
+> **0.11.0 起只支持 DSH ≥ 0.1.7-rc.1**：peer 范围收窄为 `>=0.1.7-rc.1 <0.2.0-0`，**不再兼容 0.1.3**；装在更旧的宿主上会被 peer 校验判为不兼容，需 `dsh plugin allow-version` 放行。升级到 0.11.0 还有一处破坏性变更：设置命名空间由 `deckseek` 改为 `dsh-deckseek`，旧文档里的 `deckseek.skin` 不再被读取（皮肤会落回默认软卡），改名即可保留原选择。详见 [CHANGELOG](CHANGELOG.md)。
 
 ```sh
 # 从 npm 安装（0.6.0）
 dsh plugin --profile web add dsh-deckseek
 
 # 或从 Releases 下载 tarball 后安装最新版
-dsh plugin --profile web add ./dsh-deckseek-0.10.1.tgz
+dsh plugin --profile web add ./dsh-deckseek-0.11.0.tgz
 ```
 
 `--profile` 取 `web` / `desktop` / `headless`，按你实际使用的宿主形态选择。装好后重启宿主。
@@ -108,10 +110,12 @@ dsh plugin --profile web add ./dsh-deckseek-0.10.1.tgz
 ## 开发
 
 ```sh
-npm test                                  # 157 项（node --test + happy-dom）
+npm test                                  # 252 项（node --test + happy-dom）
 npx tsc -p tsconfig.json --noEmit         # 类型检查
 DSHX_HARNESS=<DSH 检出路径> npm run build  # 构建 lib/（client + host 两半）
 ```
+
+> 构建若报 `Set DSHX_HARNESS to the checkout used for this build.` 或 `DSHX externalClientBundle adapter is missing`，说明 devkit（`tools/dshx`）不在 `DSHX_HARNESS` 指向的检出里——用 `DSHX_DEVKIT=<带 tools/dshx 的检出> DSHX_HARNESS=<目标检出> npm run build` 分别指。
 
 - **依赖来自 DSH 检出，而非 npm**：开发依赖通过 `node scripts/link-harness-dependencies.mjs <DSH 检出路径>` 以符号链接接入一个已构建的 Harness 检出，不要在本目录执行 `pnpm install` / `pnpm add`。
 - **`package-lock.json` 是 `--legacy-peer-deps` 语义下的尽力而为产物**：已发布的 `@deepseek-ai/dsh-client-ui-settings` 对 `@deepseek-ai/dsh-client-ui-primitives` 声明了 `^0.0.1-rc.1` peer，与本插件 0.1.x 区间无法相交，严格解析必然 ERESOLVE。
@@ -123,4 +127,4 @@ DSHX_HARNESS=<DSH 检出路径> npm run build  # 构建 lib/（client + host 两
 - 功能与使用说明亦可参考原仓库：[aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - 第三方声明：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · 变更记录：[CHANGELOG.md](CHANGELOG.md) · 设计契约：[DESIGN.md](DESIGN.md) · 设计文档：[docs/design/](docs/design/)
 
-**v0.10.1 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**
+**v0.11.0 · 非官方 DSH 展示与交互增强插件。只改展示与交互视图，不改 Agent 核心执行逻辑、SDK 或模型凭据。**

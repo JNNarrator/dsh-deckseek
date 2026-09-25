@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react'
-import {
-  IconBrowseOutline16, IconFolderClose16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+import { BrowseGlyph, FolderGlyph } from '../icons.js'
 
 /** Reference domains with distinct composer and transcript glyphs. */
 export type ReferenceIconKind = 'session' | 'file' | 'folder'
@@ -29,7 +27,7 @@ export function ReferenceIcon({ kind, size = 16, className }: ReferenceIconProps
           />
         </svg>
       )
-    case 'file': return <IconBrowseOutline16 size={size} className={className} />
-    case 'folder': return <IconFolderClose16 size={size} className={className} />
+    case 'file': return <BrowseGlyph size={size} className={className} />
+    case 'folder': return <FolderGlyph size={size} className={className} />
   }
 }

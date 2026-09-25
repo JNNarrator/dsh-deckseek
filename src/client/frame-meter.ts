@@ -4,15 +4,36 @@
  * Everything here is counted off data the reading view already holds — the turns
  * it grouped from the live session, their steps, and the tool calls inside a
  * turn's own flow. The reference TUIs all print tokens, cost and context
- * occupancy in those slots; this plugin has no such projection and does not add
- * one, so the bar reports volume instead of spend. See
+ * occupancy in those slots; those slots belong to the host, and the host still
+ * fills them — its `StatsPills` and `ContextMeter` live in the composer dock,
+ * which this view does not replace (docs/design/compat-0.1.7.md §11.3) — so this
+ * module measures volume: what the fold hides, not what the session cost. See
  * docs/design/terminal-skin-v3.md.
  */
 
-import { activityPhase, activitySummary, type ReaderFlowEntry } from './tool-activity.js';
+import { activityPhase, activitySummary, liveToolEntry, type ReaderFlowEntry, type ToolCategory } from './tool-activity.js';
 import { currentLocale, uiIn, type UiLang } from './locale.js';
 
 export interface TurnCounts { tools: number; files: number; failed: number }
+
+/**
+ * The families in the order ties break, and how many a phrase names.
+ *
+ * Ordered by how much a reader wants to know a fold is hiding, most first:
+ * a command that ran, a file that changed, a file that was read, a search.
+ * `other` last because an unrecognised call is the least informative to name.
+ */
+const CATEGORY_ORDER: readonly ToolCategory[] = ['terminal', 'write', 'read', 'search', 'web', 'other'];
+/**
+ * How many families a folded header names before it stops naming them.
+ *
+ * Three is the host's own limit (`processTitle` slices `counts` to 3), and it is
+ * the point past which the phrase stops being a summary: a reader scanning a
+ * folded turn wants to know what kind of work happened, not an inventory. Past
+ * three the header switches to the `{title}等` form, which says "these and the
+ * rest" in one character rather than listing a fourth family.
+ */
+const MAX_PHRASE_FAMILIES = 3;
 
 /** Tool, file and failure counts for one turn's flow. */
 export function turnCounts(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): TurnCounts {
@@ -95,4 +116,114 @@ export function frameMeterLabel(turns: number, steps: number, more: boolean, lan
   const parts = [uiIn(lang, turnsKey, { count: turns })];
   if (steps > 0) parts.push(uiIn(lang, steps === 1 ? 'meter.stepsOne' : 'meter.steps', { count: steps }));
   return parts.join(' · ');
+}
+
+/** One activity family's share of a folded turn, in the order the header prints them. */
+export interface ActivityRank { category: ToolCategory; count: number }
+
+/**
+ * Which families of work a turn did, most-used first.
+ *
+ * The native chat heads a folded group with an action phrase ranked by family
+ * ("read files and searched code"), not with raw counts. Ranking reads the same
+ * `activitySummary` the rows use, so a call that renders as a read also counts
+ * as a read here. `other` is kept: an unrecognised call is still work the reader
+ * would otherwise not know the fold is hiding. Ties keep `CATEGORY_ORDER`, so
+ * the phrase is stable across re-renders rather than following hash order.
+ */
+export function activityRanks(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): ActivityRank[] {
+  const counts = new Map<ToolCategory, number>();
+  for (const entry of flow) {
+    if (entry.kind !== 'tool') continue;
+    const { category } = summaryOf(entry, lang);
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+  }
+  return CATEGORY_ORDER.filter(category => counts.has(category))
+    .map(category => ({ category, count: counts.get(category) ?? 0 }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/** The family that did the most of a turn's work, for the header's own glyph. */
+export function dominantCategory(ranks: readonly ActivityRank[]): ToolCategory | null {
+  return ranks[0]?.category ?? null;
+}
+
+/**
+ * The phrase a folded turn is summarised by: "read files and searched code".
+ *
+ * The top three families joined the way each language joins a list. Past three
+ * the header appends `{title}等` rather than naming a fourth — three is where a
+ * summary stops being a summary. A single family stands alone, and a turn with
+ * no tool calls returns `null` so a body-only turn carries no header line.
+ *
+ * The host's `processTitle` carries two further refinements that are deliberately
+ * **not** copied here, because neither can fire against this plugin's own
+ * vocabulary (verified, not assumed — see the comment on the label keys):
+ *
+ * - its Chinese labels are `已X`, so it elides a shared `已` from later items;
+ *   this plugin's are `X了Y` (`运行了命令`) and share no leading word;
+ * - its English labels are sentence-cased, so it lowercases later items; this
+ *   plugin's are already lowercase phrases (`ran commands`).
+ *
+ * Copying them would add two branches that no input can reach — the same shape
+ * of dead code as a guard whose condition its own caller has already excluded.
+ */
+export function activityPhrase(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): string | null {
+  const ranks = activityRanks(flow, lang);
+  if (ranks.length === 0) return null;
+  const labels = ranks.slice(0, MAX_PHRASE_FAMILIES).map(rank => uiIn(lang, `frame.activity.${rank.category}`));
+  const first = labels[0];
+  if (first === undefined) return null;
+  const second = labels[1];
+  if (second === undefined) return first;
+  if (labels.length === 2) return uiIn(lang, 'frame.activity.join', { first, second });
+  const title = labels.join(uiIn(lang, 'frame.activity.comma'));
+  return ranks.length > MAX_PHRASE_FAMILIES ? uiIn(lang, 'frame.activity.more', { title }) : title;
+}
+
+/**
+ * Which of the three live phases a group is in, and for which family.
+ *
+ * The harness names a live group three ways and only the last is a settled
+ * phrase: `preparing` while a call's arguments have not arrived, the bare
+ * present tense while it runs, and `done.*` once it returns. The plugin's
+ * `frame.activity.*` keys are the settled tense, so a group that has only
+ * emitted a call header — the model is still writing its arguments — needs its
+ * own copy. Without it the label would name work that has not started, which is
+ * the one thing a reader watching a stalled group must be able to tell apart
+ * from a running one.
+ */
+export type LivePhase = 'prepare' | 'running';
+
+/**
+ * The phase and family of the call a live group is currently on.
+ *
+ * Reads the newest unfinished call, the same one the header's detail line names,
+ * so the verb and the detail beside it describe one call rather than two. The
+ * phase comes from `activityPhase` rather than from a second reading of the
+ * entry, because the two live states are told apart by the block's own shape: a
+ * call whose arguments have not arrived carries no block at all, while one that
+ * has started carries a block with no `kind` — its own streamed head — where a
+ * settled result carries the frozen call. A flow with nothing unfinished returns
+ * `null`, and the caller falls back to its phase sentence.
+ */
+export function liveFramePhase(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): { phase: LivePhase; category: ToolCategory } | null {
+  const entry = liveToolEntry(flow);
+  if (entry === undefined) return null;
+  const phase = activityPhase(entry);
+  if (phase !== 'preparing' && phase !== 'running') return null;
+  return { phase: phase === 'preparing' ? 'prepare' : 'running', category: summaryOf(entry, lang).category };
+}
+
+/**
+ * The live label for a group's header, or `null` when nothing is in flight.
+ *
+ * `tools` is the fallback family: a call in flight whose summary cannot be read
+ * as any known family is still a tool call, and saying so beats staying silent
+ * while the reader waits.
+ */
+export function liveFrameLabel(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): string | null {
+  const live = liveFramePhase(flow, lang);
+  if (live === null) return null;
+  return uiIn(lang, `frame.${live.phase}.${live.category}`);
 }

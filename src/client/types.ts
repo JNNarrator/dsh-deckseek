@@ -4,7 +4,7 @@ import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@d
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type {} from '@deepseek-ai/dsh-client-ui-session/client';
-import type { SkinId } from '../skin.js';
+import type { SkinId, WorkDetailId } from '../skin.js';
 import type { createReaderStore } from './store.js';
 
 export interface ReaderBlockOwner {
@@ -23,8 +23,19 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export interface ReaderInjected {
   loadOlder: () => Promise<void>;
   loadImage: (attachment: ImageAttachmentRef) => Promise<{ data: Uint8Array; mediaType: string }>;
+  /**
+   * Fork this session at an event seq and open the child.
+   *
+   * The reading view cannot receive the host's `forkAt` (it is delivered with
+   * `ChatNodeOwnerProps`, which this seat never holds), so the capability is
+   * rebuilt here from the two services the host's own implementation uses:
+   * `sessions.fork` and `uiWorkspace.openSession`.
+   */
+  forkAt: (seq: number) => void;
   /** Current reading skin, reactive to the Host settings document. */
   useSkin: () => SkinId;
+  /** Current work-details level, reactive to the Host settings document. */
+  useWorkDetail: () => WorkDetailId;
 }
 export type ReaderProps = PropsRuntime<'conversation.view'>
   & PropsLocale<'chat'>
@@ -48,4 +59,8 @@ export interface DeckSeekSectionInjected {
   useWritable: () => boolean;
   /** Persist one skin choice. */
   setSkin: (next: SkinId) => void;
+  /** Current work-details level, reactive to the Host settings document. */
+  useWorkDetail: () => WorkDetailId;
+  /** Persist one work-details choice. */
+  setWorkDetail: (next: WorkDetailId) => void;
 }

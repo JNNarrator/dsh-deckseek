@@ -217,7 +217,11 @@ function deriveBody(variant: ToolRowVariant, argsRaw: string): string | null {
 export function toolRowModel(toolName: string, block: ToolCallBlock, cwd?: string, home?: string): ToolRowModel {
   const variant = classifyTool(toolName)
   const done = 'kind' in block
-  const argsRaw = (done ? block.call?.argsRaw : block.argsRaw) ?? ''
+  // 0.1.7 splits an in-flight call into a preparing stage (the name is known,
+  // the arguments are still streaming) and a start stage (arguments complete).
+  // Only the start stage carries the raw text, so a preparing call has no
+  // arguments to summarize yet and falls back to the call id.
+  const argsRaw = done ? block.call?.argsRaw ?? '' : 'argsRaw' in block ? block.argsRaw : ''
   const state: ToolRowState = !done ? 'running'
     : block.error?.code === 'interrupted' ? 'stopped'
       : block.isError ? 'error' : 'ok'

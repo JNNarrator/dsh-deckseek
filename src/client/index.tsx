@@ -5,7 +5,11 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client';
-import { DEFAULT_SKIN, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, parseSkin, type SkinId } from '../skin.js';
+import type {} from '@deepseek-ai/dsh-client-ui-workspace/client';
+import {
+  DEFAULT_SKIN, DEFAULT_WORK_DETAIL, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, WORK_DETAIL_FIELD,
+  parseSkin, parseWorkDetail, type SkinId, type WorkDetailId,
+} from '../skin.js';
 import type { DeckSeekSettings } from '../skin-settings.js';
 import { DeckSeekSection } from './DeckSeekSection.js';
 import { Reader } from './Reader.js';
@@ -17,24 +21,33 @@ import type { DeckSeekSectionInjected, ReaderInjected } from './types.js';
 export type { ReaderBlockOwner } from './types.js';
 export { McpAppFrame } from './McpAppFrame.js';
 export const name = 'dsh-deckseek-client';
-export const inject = ['slots', 'sessions', 'settingsScope'];
+export const inject = ['slots', 'sessions', 'configForms'];
 
 export function apply(ctx: Context): void {
   const store = createReaderStore();
-  const scope = ctx.settingsScope.bind<DeckSeekSettings>({ namespace: DECKSEEK_SETTINGS_NAMESPACE });
+  // 0.1.7 replaced `ctx.settingsScope.bind({ namespace })` with the shared
+  // config-form service, keyed by the Host plugin entry id — which is exactly
+  // the settings namespace the entry's own Config schema declares.
+  const form = ctx.configForms.get<DeckSeekSettings>(DECKSEEK_SETTINGS_NAMESPACE);
   // One hook instance shared by the reader view and the settings page, so both
   // read the same mirror and re-render on the same notification.
   const useSkin = (): SkinId => useSyncExternalStore(
-    listener => scope.subscribe(listener),
-    () => parseSkin(scope.getSnapshot().value?.skin),
+    listener => form.subscribe(listener),
+    () => parseSkin(form.getSnapshot().value?.skin),
     () => DEFAULT_SKIN,
   );
   const useWritable = (): boolean => useSyncExternalStore(
-    listener => scope.subscribe(listener),
-    () => scope.getSnapshot().writable,
+    listener => form.subscribe(listener),
+    () => form.getSnapshot().writable,
     () => false,
   );
-  const setSkin = (next: SkinId): void => { void scope.set(SKIN_FIELD, next); };
+  const useWorkDetail = (): WorkDetailId => useSyncExternalStore(
+    listener => form.subscribe(listener),
+    () => parseWorkDetail(form.getSnapshot().value?.workDetail),
+    () => DEFAULT_WORK_DETAIL,
+  );
+  const setSkin = (next: SkinId): void => { void form.set(SKIN_FIELD, next); };
+  const setWorkDetail = (next: WorkDetailId): void => { void form.set(WORK_DETAIL_FIELD, next); };
   const faces = new Map<SessionId, ReaderInjected>();
   ctx.effect(() => () => { faces.clear(); });
   ctx.slots.inject('conversation.view', () => ctx.slots.register({
@@ -60,7 +73,26 @@ export function apply(ctx: Context): void {
           if (!receipt.ok) throw new Error(receipt.error.message);
           return { data: Uint8Array.from(receipt.value.data), mediaType: receipt.value.attachment.mediaType };
         },
+        // The host's own `forkAt` (`ui-chat/src/client/apply.ts`) is exactly this
+        // pair of calls plus a trailing `increaseTitle: true`. It is rebuilt
+        // rather than received because the host delivers it with
+        // `ChatNodeOwnerProps`, and the reading view's seat
+        // (`ConvViewOwnerProps`) never holds one — every prop this seat receives
+        // is owned by the conversation view, which has no chat nodes to hand
+        // down. Both services are already reachable from here: `sessions` is
+        // declared in this plugin's `inject` list, and `uiWorkspace` is resolved
+        // lazily so a deployment without a workspace browser degrades to a no-op
+        // rather than refusing to load the plugin.
+        forkAt: (seq: number) => {
+          void ctx.sessions
+            .fork({ sessionId, atSeq: seq, increaseTitle: true })
+            .then(childId => { ctx.get('uiWorkspace')?.openSession(childId); })
+            // A failed fork leaves the source view untouched, matching the host:
+            // the session stays open and the reader keeps their place.
+            .catch(() => {});
+        },
         useSkin,
+        useWorkDetail,
       };
       faces.set(sessionId, face);
       return face;
@@ -71,7 +103,7 @@ export function apply(ctx: Context): void {
     id: 'deckseek',
     order: 30,
     label: () => ui('settings.nav'),
-    inject: (): DeckSeekSectionInjected => ({ useSkin, useWritable, setSkin }),
+    inject: (): DeckSeekSectionInjected => ({ useSkin, useWritable, setSkin, useWorkDetail, setWorkDetail }),
   }, DeckSeekSection));
   installReaderEntry(ctx);
 }

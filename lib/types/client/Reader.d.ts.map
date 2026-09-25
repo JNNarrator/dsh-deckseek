@@ -1,1 +1,1 @@
-{"version":3,"file":"Reader.d.ts","sourceRoot":"","sources":["../../../src/client/Reader.tsx"],"names":[],"mappings":"AA4BA,OAAO,KAAK,EAAoB,WAAW,EAAkB,MAAM,YAAY,CAAC;AAwRhF,wBAAgB,MAAM,CAAC,KAAK,EAAE,WAAW,+BAgMxC"}
+{"version":3,"file":"Reader.d.ts","sourceRoot":"","sources":["../../../src/client/Reader.tsx"],"names":[],"mappings":"AAoCA,OAAO,KAAK,EAAoC,WAAW,EAAkB,MAAM,YAAY,CAAC;AA+WhG,wBAAgB,MAAM,CAAC,KAAK,EAAE,WAAW,+BAgMxC"}

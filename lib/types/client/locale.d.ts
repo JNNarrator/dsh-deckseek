@@ -7,7 +7,7 @@
  * zh when no browser context exists (unit tests, SSR), matching the plugin's
  * default authoring language.
  */
-import type { SkinId } from '../skin.js';
+import type { SkinId, WorkDetailId } from '../skin.js';
 export type UiLang = 'zh' | 'en';
 export declare const zh: {
     readonly 'reader.tab': "DeckSeek";
@@ -54,17 +54,50 @@ export declare const zh: {
     readonly 'frame.toolsOne': "{count} 次工具调用";
     readonly 'frame.filesOne': "{count} 个文件";
     readonly 'frame.failed': "{count} 次失败";
+    readonly 'frame.activity.terminal': "运行了命令";
+    readonly 'frame.activity.write': "修改了文件";
+    readonly 'frame.activity.read': "读取了文件";
+    readonly 'frame.activity.search': "搜索了代码";
+    readonly 'frame.activity.web': "查询了网络";
+    readonly 'frame.activity.other': "调用了工具";
+    readonly 'frame.activity.join': "{first}并{second}";
+    readonly 'frame.activity.comma': "，";
+    readonly 'frame.activity.more': "{title}等";
+    readonly 'frame.prepare.terminal': "准备运行命令";
+    readonly 'frame.prepare.write': "准备修改文件";
+    readonly 'frame.prepare.read': "准备读取文件";
+    readonly 'frame.prepare.search': "准备搜索代码";
+    readonly 'frame.prepare.web': "准备查询网络";
+    readonly 'frame.prepare.other': "准备调用工具";
+    readonly 'frame.prepare.tools': "准备调用工具";
+    readonly 'frame.running.terminal': "正在运行命令";
+    readonly 'frame.running.write': "正在修改文件";
+    readonly 'frame.running.read': "正在读取文件";
+    readonly 'frame.running.search': "正在搜索代码";
+    readonly 'frame.running.web': "正在查询网络";
+    readonly 'frame.running.other': "正在调用工具";
+    readonly 'frame.running.tools': "正在调用工具";
     readonly 'rail.label': "消息导航";
     readonly 'rail.jump': "跳到第 {turn} 轮";
     readonly 'rail.turn': "第 {turn} 轮";
     readonly 'rail.message': "消息";
     readonly 'turn.stopped': "已停止";
     readonly 'turn.errorTitle': "本轮出现错误";
+    readonly 'retry.scheduled': "等待重试";
+    readonly 'retry.started': "已开始重试";
+    readonly 'retry.cancelled': "重试已取消";
+    readonly 'retry.status': "{label}：第 {retry}/{max} 次，约 {seconds} 秒后";
+    readonly 'retry.delay': "等待";
+    readonly 'retry.failure': "失败原因";
+    readonly 'retry.provider': "供应方";
+    readonly 'retry.auth': "凭据无效或已过期，重试不会成功。";
     readonly 'turn.maxTokens': "已到达输出长度限制，回答尚未完整。";
     readonly 'turn.retryWaiting': "模型请求未成功，正在等待重试。";
     readonly 'turn.you': "你";
     readonly 'turn.preamble': "会话起始记录";
     readonly 'turn.steering': "补充消息";
+    readonly 'turn.references': "引用：{labels}";
+    readonly 'turn.referenceSeparator': "、";
     readonly 'turn.process': "思考与过程";
     readonly 'turn.foldAriaCollapse': "收起思考与过程";
     readonly 'turn.foldAriaExpand': "展开思考与过程";
@@ -116,8 +149,31 @@ export declare const zh: {
     readonly 'turnProcess.subagents.other': "{count} 个 subagent";
     readonly 'turnProcess.separator': " · ";
     readonly 'turnTail.tokens': "约 {tokens} tokens";
-    readonly 'turnTail.tokPerSec': "{value} tok/s";
-    readonly 'turnTail.ttft': "首字 {seconds}s";
+    readonly 'turnTail.cacheHit': "缓存命中 {percent}%";
+    readonly 'turnTail.total': "总量 {tokens} tok";
+    readonly 'trigger.request': "收到执行请求";
+    readonly 'trigger.goal': "继续执行目标";
+    readonly 'trigger.agent': "收到任务消息";
+    readonly 'trigger.team': "收到团队消息";
+    readonly 'trigger.subagent': "子任务状态更新";
+    readonly 'trigger.github': "收到 GitHub 事件";
+    readonly 'trigger.webhook': "收到外部事件";
+    readonly 'trigger.schedule': "定时任务";
+    readonly 'trigger.job': "后台任务状态更新";
+    readonly 'trigger.plugin': "插件状态更新";
+    readonly 'trigger.explanation': "这条通知触发了本轮回复。";
+    readonly 'trigger.source': "来源";
+    readonly 'turnTail.uncachedInput': "未缓存输入 {tokens} tok";
+    readonly 'turnTail.cacheRead': "缓存读取 {tokens} tok";
+    readonly 'turnTail.cacheWrite': "缓存写入 {tokens} tok";
+    readonly 'turnTail.output': "输出 {tokens} tok";
+    readonly 'turnTail.reasoningDetail': "其中推理 {tokens} tok";
+    readonly 'turnTail.routes': "路由 {routes}";
+    readonly 'turnTail.reasoning': "其中推理 {tokens} tok";
+    readonly 'branch.action': "在新对话中分支";
+    readonly 'branch.unavailable': "仅可从已完成轮次的最后一条消息分支";
+    readonly 'clock.md': "{m}月{d}日";
+    readonly 'clock.ymd': "{y}年{m}月{d}日";
     readonly 'failure.note': "详情保留在执行记录中。";
     readonly 'failure.toolTitle': "工具执行失败";
     readonly 'failure.exitCode': "退出码 {code}";
@@ -149,6 +205,9 @@ export declare const zh: {
     readonly 'code.copy': "复制";
     readonly 'code.copied': "已复制";
     readonly 'code.copyCode': "复制代码";
+    readonly 'code.block': "代码块";
+    readonly 'code.wrap': "自动换行";
+    readonly 'code.unwrap': "取消自动换行";
     readonly 'table.copyCsv': "复制为 CSV";
     readonly footnotes: "脚注";
     readonly 'tool.prepareWrite': "正在生成文件内容";
@@ -170,13 +229,13 @@ export declare const zh: {
     readonly 'read.expand': "展开其余 {hidden} 行";
     readonly 'terminal.signal': "信号 {signal}";
     readonly 'terminal.exitCode': "退出码 {code}";
+    readonly 'terminal.noExitCode': "未正常退出";
     readonly 'terminal.running': "执行中";
     readonly 'terminal.failed': "失败";
     readonly 'terminal.done': "已完成";
     readonly 'terminal.noOutput': "没有输出";
     readonly 'terminal.collapseAria': "收起命令输出";
     readonly 'diff.collapseAria': "收起差异";
-    readonly 'diff.files': "{count} 个文件";
     readonly 'search.pathsSummary': "{shown} / {total} 个路径{truncated}";
     readonly 'search.matchesSummary': "{shown} / {total} 处匹配 · {files} 个文件{truncated}";
     readonly 'search.truncated': "（结果已截断）";
@@ -195,6 +254,7 @@ export declare const zh: {
     readonly 'json.collapseNode': "收起节点";
     readonly 'json.expandNode': "展开节点";
     readonly 'truncate.label': "内容过长，已截断（共 {count} 个字符）";
+    readonly 'block.unknown': "未知内容块";
     readonly 'reasoning.label': "思考";
     readonly 'reasoning.step': "步骤 {step}";
     readonly 'reasoning.regionAria': "步骤 {step} 的思考";
@@ -298,6 +358,16 @@ export declare const zh: {
     readonly 'settings.skin.soft.hint': "卡片承载，留白多、字号大，适合久读。";
     readonly 'settings.skin.terminal': "终端";
     readonly 'settings.skin.terminal.hint': "行列对齐，等宽高密度，适合盯执行过程。";
+    readonly 'settings.workDetail': "过程细节";
+    readonly 'settings.workDetail.hint': "决定一轮的过程默认折起多少。与宿主对话视图同名同义。";
+    readonly 'settings.workDetail.compact': "精简";
+    readonly 'settings.workDetail.compact.hint': "折起整轮过程，折叠标题不显示实时命令，思考只留标题。";
+    readonly 'settings.workDetail.standard': "标准";
+    readonly 'settings.workDetail.standard.hint': "折起整轮过程，运行中标题显示命令，思考带首行预览。";
+    readonly 'settings.workDetail.detailed': "详细";
+    readonly 'settings.workDetail.detailed.hint': "当前轮过程展开，历史轮才折起。";
+    readonly 'settings.workDetail.verbose': "全部展开";
+    readonly 'settings.workDetail.verbose.hint': "不折起任何一轮，过程与正文一样直接铺开。";
 };
 export type UiKey = keyof typeof zh;
 export declare const en: Record<UiKey, string>;
@@ -317,20 +387,104 @@ export interface TurnProcessData {
 export declare function turnProcessLabelIn(lang: UiLang, data: TurnProcessData): string;
 /** One-line turn-process summary for the current app language. */
 export declare function turnProcessLabel(data: TurnProcessData): string;
-/** Structural subset of the native turn-tail node payload. */
-export interface TurnTailData {
-    readonly tokenUsage?: {
-        readonly totalTokens: number;
-    } | null;
-    readonly tokensPerSecond?: number;
-    readonly ttftMs?: number;
+/**
+ * Structural subset of the native turn-tail node payload.
+ *
+ * 0.1.7 replaced the per-turn rate fields. OLD's `turn-tail.ts` carried
+ * `ttftMs` / `tokensPerSecond` from `deriveTurnMetrics`, and that whole
+ * function is gone — per-turn speed and first-token latency no longer exist at
+ * this granularity. Reading them silently produced no text at all, which is why
+ * they are deleted here rather than kept as optional fields that never arrive.
+ *
+ * What replaced them is exact provider-reported accounting for the turn:
+ * `deriveTurnTokenUsage`. Only totals are unconditional; the cache, reasoning
+ * and route buckets are present only when every billed attempt reported them,
+ * so a mixed-attribution turn reports no `routes` rather than a partial list.
+ */
+export interface TurnTokenUsageRoute {
+    readonly provider: string;
+    readonly model: string;
 }
-/** Compact token count, e.g. 1234 -> "1.2k". */
+export interface TurnTokenUsage {
+    readonly uncachedInputTokens: number;
+    readonly outputTokens: number;
+    readonly totalTokens: number;
+    readonly cacheReadTokens?: number;
+    readonly cacheWriteTokens?: number;
+    readonly reasoningTokens?: number;
+    readonly routes?: readonly TurnTokenUsageRoute[];
+}
+/**
+ * The turn-tail node's payload, as `ui-chat` publishes it.
+ *
+ * `closing` is the last content-bearing answer in the turn, and it is the only
+ * place the turn's end time survives: the tail's own `time` is the tail node's
+ * arrival, which for a turn that was retried or resumed is not when the answer
+ * landed. `branchUnavailable` says the engine already knows this turn cannot be
+ * forked, so a reader never has to be told "no" by a control.
+ */
+export interface TurnTailData {
+    readonly turn?: number;
+    readonly seq?: number;
+    readonly time?: number;
+    readonly closing?: {
+        readonly time?: number;
+    } | null;
+    readonly branchUnavailable?: boolean;
+    readonly tokenUsage?: TurnTokenUsage | null;
+}
+/**
+ * Compact token count, e.g. 1234 -> "1.2k".
+ *
+ * Kept in sync with the host's own `formatTokens` (`ui-chat`'s `token-format`),
+ * which the plugin cannot import: `ui-chat` is not a platform module, so
+ * reaching into it would bundle a second copy of the chat. The host groups
+ * thousands with the locale's separator at the M boundary; the reading view
+ * prints its footer inline and so stays with the unseparated M form.
+ */
 export declare function formatTokens(value: number): string;
+/**
+ * The turn's cache hit rate, as a whole percent, or null when the turn reported
+ * no cache buckets.
+ *
+ * `uncachedInputTokens` is the provider's own uncached prompt count, so the
+ * denominator is the prompt the provider saw: cached plus uncached. A turn that
+ * reported cached reads but no uncached input still has a rate — 100%.
+ */
+export declare function cacheHitRate(usage: TurnTokenUsage): number | null;
+/**
+ * The wall-clock time a message landed, e.g. "14:03", or "8月3日 14:03" for a
+ * day that is not today.
+ *
+ * Mirrors the host's `formatMessageClock` (`ui-chat`'s `message-chrome`), which
+ * the plugin cannot import for the same reason as `formatTokens`. The date is
+ * added only when the stamp is not from today, because on the turn a reader is
+ * reading right now the date is noise.
+ *
+ * @param time - Unix epoch milliseconds.
+ * @param lang - reading language.
+ * @param now - clock to compare against; injected so the day boundary is testable.
+ * @returns the formatted stamp.
+ */
+export declare function messageClock(time: number, lang: UiLang, now?: number): string;
 /** Compact one-line turn stats for one language; null when nothing measurable. */
 export declare function turnTailStatsIn(lang: UiLang, data: TurnTailData): string | null;
+/**
+ * The full accounting behind the one-line footer: every bucket the turn
+ * reported, plus the routes that billed it.
+ *
+ * The footer can only carry a couple of numbers before it stops being a footer,
+ * so the rest hangs off the row's title. That is also the only place a reader
+ * can see which provider/model served the turn, which is exactly the kind of
+ * thing a reader only wants when something looks wrong with the numbers.
+ * Unreported buckets are left out rather than shown as zero: a turn that never
+ * told us its cache write count has no cache write count.
+ */
+export declare function turnTailDetailIn(lang: UiLang, data: TurnTailData): string | null;
 /** Compact one-line turn stats for the current app language. */
 export declare function turnTailStats(data: TurnTailData): string | null;
+/** Full accounting behind the footer, for the current app language. */
+export declare function turnTailDetail(data: TurnTailData): string | null;
 /** Friendly label for a record kind, for one language. */
 export declare function unknownKindLabelIn(lang: UiLang, kind: string): string;
 /** Friendly label for a record kind, for the current app language. */
@@ -339,4 +493,8 @@ export declare function unknownKindLabel(kind: string): string;
 export declare function skinName(id: SkinId): string;
 /** One-line description for one reading skin. */
 export declare function skinHint(id: SkinId): string;
+/** Settings-page name for one work-details level. */
+export declare function workDetailName(id: WorkDetailId): string;
+/** One-line description for one work-details level. */
+export declare function workDetailHint(id: WorkDetailId): string;
 //# sourceMappingURL=locale.d.ts.map

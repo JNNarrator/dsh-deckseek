@@ -1,6 +1,215 @@
 # Changelog
 
-## 未发布 · 上游修复回搬（`port/upstream-fixes` 分支）
+## 0.11.0 - 2026-09-25
+
+本版把插件迁到宿主 0.1.7-rc.1（含一处设置面板完全不可用的修复，见下），并回搬一批上游修复。
+
+宿主 0.1.7 引入**强制的 peer 版本校验**（`evaluatePluginCompatibility`，semver 带
+`includePrerelease`），只校验 `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` 这些 peer；判为不兼容时
+插件行变 `disabled`，要用 `dsh plugin allow-version` 放行。
+本版把 peer 范围收到 `>=0.1.7-rc.1 <0.2.0-0`，只支持 0.1.7 及以后，**不再兼容 0.1.3-alpha.2**。
+**注意（2026-09-23 复核更正）**：收窄范围是**收紧声明**，不是「解除拒载的修复」——实测
+`includePrerelease: true` 下旧范围 `^0.1.3-alpha.2` 本来就会放行 `0.1.7-rc.1`（解析为
+`>=0.1.3-alpha.2 <0.2.0-0`），把 manifest 改回旧范围喂给真正的闸门返回的是「兼容」。
+本行此前写成「旧 peer 范围会被直接拒载」，夸大了。闸门本身确实存在且确实会拒
+（`0.1.6` / `0.1.7-rc.0` / `0.2.0-rc.1` 都被拒），只是不会拒绝我们原来的范围。详见 §7。
+完整审计与逐条缺口见 [docs/design/compat-0.1.7.md](docs/design/compat-0.1.7.md)。
+
+**⚠️ 破坏性变更：设置命名空间从 `deckseek` 变成 `dsh-deckseek`。**
+
+0.1.7 的设置命名空间取**profile 条目 id**，我们的条目 id 就是 `dsh-deckseek`。老配置里存的
+`deckseek.skin` 不会再被读到，皮肤会**静默回落到默认的软卡**。要保留原来的选择，把文档里的
+`deckseek` 键改名成 `dsh-deckseek`（字段名 `skin` 不变）。
+
+- **图标换成新的字重体系**（§1）：0.1.7 把图标名从"尺寸"改成"字重"（`*Regular` 1px 描边 /
+  `*Medium` 1.3px，尺寸交给 `size` 属性），旧的 `IconUserOutline16`、`IconApiOutline14`、
+  `IconBrowseOutline16`、`IconEditOutline16`、`IconSearchOutline16`、`IconSkillOutline16`、
+  `IconFolderClose16`、`IconSparkle16` 全部消失。新增 `src/client/icons.ts` 收口 9 个字形，
+  一律用 `Regular`（没有任何调用点需要用 `Medium`）。
+- **新增「过程细节」档位**（§11.1）：与宿主同名同义的 `compact` / `standard` / `detailed` /
+  `verbose`，默认 `standard`，老值 `normal` → standard、`expanded` → detailed。UI 在
+  设置 → DeckSeek。路由器只读布尔，不比较枚举。`verbose` 是唯一不折起任何一轮的档位。
+- 修掉 17 处因上游 API 变更产生的类型错误（§3–§6）：`RunningToolCall` 拆成
+  `PreparingToolCall | StartedToolCall`（只有后者带 `argsRaw`）、`ContextMessageNode`
+  的 `provenance` → `producer`、`DiffBlockLabels.files` 被删、`ReadBlockLabels` /
+  `DiffBlockLabels` 改为继承 `CodeToolbarLabels`、每会话 pending-interaction 钩子并入统一的
+  Session 状态快照、`Config` 改为导出 schema。
+- **修掉导出 `Config` 漏标 `.volatile()` 导致设置面板整个失效**（用户报的「插件崩了、设置面板
+  点不了」）：上面那条把 `Config` 改成导出 schema 时，直接复用了持久的 `DeckSeekSettingsSchema`。
+  但 0.1.7 的设置系统**不再照单全收注册进来的 schema**——`describe()` 自己用
+  `volatileForm(schema)` 派生要下发的表单，而这个函数**只保留带 `meta.volatile` 的字段**：
+  对象里一个都没有时它返回 `undefined`，`describe()` 便把这整条条目当成「没有设置」丢掉。
+  后果是 `dsh-deckseek` 命名空间**根本不下发到浏览器**，客户端的
+  `ctx.configForms.get('dsh-deckseek')` 永远停在 `status:'loading'` / `value:undefined` /
+  `writable:false`，设置节于是把每个磁贴都渲染成 `disabled` 并显示只读提示（=「设置面板点不了」）；
+  真有写入到达宿主则抛 `Plugin entry "dsh-deckseek" has no volatile fields`（=「插件崩了」）。
+  **旧的 `ctx.settings.register(ns, schema)` 路径不要求 volatile 标记**，所以这是迁移引入的回归，
+  且 `tsc` 看不见它——volatility 是运行时元数据，类型系统无从表达。
+  修法照抄宿主 `ui-theme` 自己的双 schema 分工：`DeckSeekSettingsSchema` 保持纯净（它同时是
+  浏览器校验用的线上信封），另立 volatile 孪生 `DeckSeekConfigSchema`（同字段、同默认值、
+  保留 `.loose()`）由条目导出为 `Config`；`.volatile()` 会改变 schema 的 Mode 类型参数，
+  所以不能直接加在原来那个上。
+  验证：对**构建产物** `lib/dsh-deckseek.js` 跑 `volatileForm` 由 `undefined` 变为
+  `["skin","workDetail"]`（该命名空间从「被丢弃」变为「被下发」）；新增 5 项守卫，
+  其中 2 项专门钉 volatility。变异验证：把 `Config` 改回持久 schema，失败的**恰好是这 2 项**，
+  另外 5 项行为断言仍全绿——正说明原测试面对这类缺陷是结构性盲的。测试 247 → 252。
+- **折叠头改成一句话说清「折了什么」**（§11.6）：原来只有 `N 次工具调用 · M 个文件 · K 次失败`，
+  现在前面是「家族字形 + 按工作量排名的动作短语」——`运行了命令并读取了文件` /
+  `ran commands and read files`。排名同级按固定次序拆解，所以重渲染不会让短语换顺序；
+  只取前两个家族，单一家族独立成句；认不出的调用归 `other` 并仍然出现在短语里而不是消失。
+- **实时详情行**（§11.1 `liveProcessDetail`）：standard/detailed 档下，运行中的标题后跟着
+  当前在飞的命令/路径/查询，窄栏先丢它、再丢计时。
+- **修掉逐轮用量的静默丢字**（§11.3）：`TurnTailData` 以前读 `tokensPerSecond` / `ttftMs`，
+  0.1.7 已删除这两个字段——读它们**不报错、不降级**，只是少两段文字。现在改读真实的
+  `tokenUsage` 分桶：单行是「总量 + 缓存命中率 + 推理占比」（命中率的分母用 provider 自己
+  报的 `uncachedInputTokens + cacheReadTokens`，即它实际看到的 prompt），完整分桶
+  （未缓存输入 / 缓存读取 / 缓存写入 / 输出 / 推理 / 路由 `provider/model`）挂在行的
+  `title` 上——那里也是一轮由哪些 provider/model 服务的唯一可见处。**未上报的分桶不显示**，
+  而不是显示 0。逐轮 TPS/TTFT 不再补：0.1.7 把它们降到会话级，逐轮粒度已不存在。
+- **`turn-trigger` 不再显示原始 JSON**（§11.2）：0.1.7 把聊天节点从 15 种加到 16 种，
+  新增的 `turn-trigger`（定时任务 / webhook / 子任务结算 / 插件唤醒的一轮）在插件里是**零覆盖**，
+  落进 `UnknownRecord` 渲染成一坨 JSON。新增 `native/TurnTriggerRow.tsx`：10 个来源家族各有
+  标题与字形（`github` 事件与普通 webhook 分开，因为读起来完全不同），未知/畸形 `source`
+  归到中性的 `request` 而**不是丢行**（「这轮自己开始的」比「无归属」更糟）。展开后是宿主的
+  解释句 + `NoticeBody`。两处有意与上游不同：插件把它算作 process 内容（折叠只折**能被摘要的**
+  证据，触发通知摘要不出来），标题走插件自己的字典（`ui-chat` 不在 `PLATFORM_MODULES`，
+  拿不到宿主的翻译座位）。
+- **模型重试不再显示原始 JSON**（§11.5）：`model-retry` 以前整块落到 `JsonBlock`，把「这轮卡住了」
+  这件事渲染成一坨 JSON。现在出状态句（`等待重试：第 2/5 次，约 4 秒后`）+ 等待/失败原因/供应方三行
+  明细；`AUTH` 换成可行动的「凭据无效或已过期，重试不会成功」，而不是留个状态码让人自己猜。
+  `mode: 'always'` 的上限显示 `∞`（那个模式没有上限，印数字等于声称一个不存在的限制）。
+  等待中实时倒数（250ms tick，归 1 即停），`started`/`cancelled` 后停在原始等待时长，
+  免得一份早已结束的记录继续跳秒——倒数的 deadline 锚在**本浏览器首次渲染**，不是事件的 `time`。
+- **修掉一处静默失效：新增的触发行和重试行写在了不会被走到的渲染路径上**（§11.12）。
+  `Reader.tsx` 有两个节点座位——`ProcessNode`（折叠区里的过程条目）和 `MainNode`（分组首节点
+  及其他所有节点）。`turn-trigger` 和 `model-retry` 的分支被放进了 `ProcessNode`，而这两类节点
+  实际都走 `MainNode`：触发器是一轮里的**第一个**节点，重试也不是过程条目。于是触发器行整个
+  不可达，重试则两套渲染并存（`MainNode` 里那行旧的 `等待重试` 与新的 `ModelRetryRow` 互相矛盾，
+  同一个重试会因为走哪条路而长得不一样）。tsc 与原有 202 个测试全绿——没有测试挂载过真实
+  `Reader`。现在两条路共用同一套分支，并补了 `turn-trigger.client.test.tsx`。
+- `TurnTriggerRow` 的 `t` 改为可选：`MainNode` 没有宿主 `chat` 翻译座位，无座位时 `NoticeBody`
+  用插件自己的 `block.unknown` / `truncate.label`，行标题本来就来自插件字典。
+- 触发行的 `data-trigger-family` 从**展开后**的 body 上移到自带 wrapper：折叠态是默认态，
+  而「谁唤醒了这一轮」正是这一行唯一的职责，不该只有展开才读得到。
+- **新增 `tests/reader-seats.client.test.tsx`**：真正挂载 `Reader`，断言触发行与重试行在渲染树里
+  存在，并断言两者能共存于同一轮。此前没有任何测试挂载过 `Reader`，这正是上一条静默失效能躲过
+  全绿测试的原因。这条防线本身做了变异验证（把分支改回 `return null`，2/3 断言立刻失败）。
+- **用户消息不再丢掉引擎解析出的 `@` 引用**（§11.5）：`referenceLabels` 是引擎数据，不在
+  `content` 里，此前被完全忽略——正文照常渲染，所以肉眼看不出来，只是不再说明引用了什么。
+  插件把用户正文渲染为 Markdown（皮肤文档中的既定设计），无法在不放弃它的前提下复用宿主的行内
+  chip，因此在气泡下方以一行「引用：…」呈现，与宿主 `message.referenceSummary` 等价。
+- **turn-tail 补上结束时刻**（§11.7）：原生尾行印该轮结束时的绝对时刻，插件此前只印**时长**，
+  读者无从知道「这轮是什么时候结束的」。时刻取 `closing.time` 而非尾节点自己的 `time`
+  ——后者是 tail 节点的到达时刻，对重试/续跑的一轮晚于它收束的那个回答。新增 `messageClock`，
+  当天只印 `HH:MM`、非当天补日期，跨日边界可注入测试。用量与时刻各行其是：只有时刻没有用量
+  也照样出这一行，两者都没有才整行不渲染。
+- **`TurnTailData` 补齐契约字段**：`turn` / `seq` / `time` / `closing` / `branchUnavailable`
+  此前全部读不到（只声明了 `tokenUsage`）。
+- **turn-tail 的复制不是缺口、fork 是（且已实现）**：复制插件已有，只是放在回答卡上
+  （`CopyAnswer`）而非尾行，不重复再加一个。branch/fork 此前被记为**平台硬限制**——那个结论**
+  是错的**：`forkAt` 在槽层上确实只随 `conversation.chat.node` 的 owner props 投递（阅读视图挂的
+  `conversation.view` 拿不到），但它在宿主怀里只是 `ctx.sessions.fork({ sessionId, atSeq,
+  increaseTitle: true })` + `ctx.uiWorkspace.openSession(childId)` 两次**普通服务调用**，
+  插件够得着，因此在阅读视图里重建。`extraActions` 槽确实仍然不可达，保留为平台限制。
+  教训（已写进 §11.7）：**「不在我这个座位的 owner props 上」不等于「不可达」**——要顺着能力的
+  实现追到它调用的服务；另外，同一个服务有服务端与客户端两份契约类型时**先看客户端那份**
+  （`SessionForkRequest` 没有 `increaseTitle`，但客户端契约有）。
+- **turn-tail 补上分支按钮**（§11.7）：尾行新增「在新对话中分支」，按**禁用而非隐藏**处理
+  不可用态（`aria-disabled` + 可观察的 `data-unavailable` + `aria-describedby` 指向视觉隐藏的
+  原因），并且只在可用时才挂 `onClick`——宿主刻意用 `aria-disabled` 而不是原生 `disabled`，
+  因为原生禁用按钮不派发 hover/focus，tooltip 就没了，所以「禁用」与「点击被忽略」必须分开写。
+  fork 序号取尾节点自己的 `seq`（不是它所收束回答的序号，后者会**截断这一轮**）；`increaseTitle`
+  与宿主一致；失败静默吞掉（源视图原封不动）。`'uiWorkspace'` **不进 `inject` 列表**、按
+  `ctx.get('uiWorkspace')?` 懒取：没有工作区浏览器的部署应当退化成空操作，而不是让插件加载失败。
+  尾行的提前返回同时改为「用量 / 结束时刻 / 分支任一存在就渲染」——只按用量门控会把分支按钮从
+  **恰好只有它可报**的轮次上拿掉，而那正是读者最想分支的轮次。
+- **新增 `tests/fork.client.test.tsx`**：本仓库**第一个驱动 `apply()` 的测试**。它读注入出来的
+  face 而不是搭假替身，因此「调错服务」「漏参数」「开错会话」这类错误才看得见（三条断言分别用
+  `atSeq: seq - 1`、去掉 `increaseTitle`、`openSession(sessionId)` 变异验证过）。
+- **审计返工：三条「缺口」里一条根本不存在**（§11.13）。复核时把 §11 的结论逐条对回宿主的
+  **挂载点**，结果如下——这一条不产功能，但它决定了后面几轮该做什么、不该做什么：
+  - **会话说统计条是误报**。此前记为 `[影响:高]`「插件不读 `sessionStats`，会话级读数也没有」。
+    实际是宿主的 `StatsPills` 注册在 `conversation.composer.dock`、渲染于 `InputBar`，
+    而 `InputBar` 挂的是 `conversation.composer.bar`；插件替换的是 `conversation.view`。
+    两者是**兄弟槽**，宿主自己的 `skeleton.client.spec.tsx` 也是当两个独立分支分别挂载的。
+    → **用户一直看得见会话统计**，「插件没实现」被误当成了「用户看不到」。据此**撤销**
+    §11.11 里的「复刻会话统计条」——复刻会让同屏出现两份不同源的统计。
+  - **§11.5 三条证据失焦**：用户 image/file 附件**没有被丢**（`contentBlocks` 第二行就是
+    `image → {kind:'image'}`，走 `ImageBlock`，非图片文件是退化为通用卡）；`context` 行**没有**
+    读旧字段 `provenance`（全库已无残留，读的是 `producer`）；`context` 行图标**没有**退化
+    （已按 `producer.role` 分叉 inject/recall）。
+  - **§11.0 的前提只对一半**：「插件当初放弃的一整层现在可以做了」对**会话级读数**不成立
+    （见上），只对插件自己那条**行内单行**（turn-tail 用量行）成立。
+  - 四次同类误判（含 §11.6）根因相同：**只读插件代码，然后凭印象推断宿主行为**。
+    插件代码只能证明「插件做了什么」，证明不了「读者最终看到什么」。新口径：
+    **宿主哪个槽 → 那个槽有没有被替换 → 用户实际看见哪一份**，三步缺一步就会重犯。
+    注了 `[影响:高]` 的结论必须先写探针再写代码（`useProjection` 可达性即用 `src/` 内探针
+    `'YES'` / `'NO'` 定的；探针放仓库根会被 `tsconfig.json` 的 `include: ["src"]` 静默排除，
+    `tsc` 全绿反而什么都没证明）。
+- 测试 171 → **247 项**（`npm test` 实测 247 / 247 通过）。本行原先只列了改动相关的几个
+  文件、且其中两个数字是凭印象写的（设置面板实际 7、家族排名与短语已到 18）；现改为按
+  `node --test` 报的总数为准，不再维护手写子集——**手写子集每改一次都会过期一次**。
+  同理，计数要用 `grep -c "^test("`，松一点的模式会把 `skip`/嵌套形式也算进去（实测 224 被数成 235）。
+- 组体溢出渐隐与组内独立滚动（§11.6）已实现：`process-scroll.ts` + `.cappedBody` / `.fadeTop` /
+  `.fadeBottom` / `.flowContent`。**刻意不是宿主 `use-process-scroll` 的移植**——宿主那一份建在
+  `use-scroll-follow` 上，带自动跟随与 `scrollend` 结算；transcript 自己的跟随层已经占着
+  「读者想待在哪儿」这个意图，再添一个控制器比只有一个更糟，所以只抄读者看得见的上限与两侧渐隐。
+  上限由 CSS 给，渐隐一律由实测指标推导；哪一档限高由调用方决定（只给真正会折叠的 `folded`
+  档，flat / open-header 档限高会藏起读者从未被提供折叠入口的调用）。
+  **修掉一个真 bug**：折叠守卫原抄宿主的 `closest('[hidden], [data-expanded="false"]')`，
+  但宿主的组体在 `ChatGroupSeat` 树里、祖先带 `data-group-expanded-mode`，而插件的 `Disclosure`
+  **不包裹自己的 body**（标题按钮与 flow body 是兄弟），该选择器永远匹配不上；改为读 `open` prop。
+  新挂载测试抓到（「重新展开要把被抑制的渐隐报回来」），变异验证：从 `sync` 依赖里漏掉 `open`
+  → 2.3 ms 干净报错；`reader-seats` 新增「只有会折叠的档位才给组体限高」，变异把 `capped`
+  写死 `true` → 14.6 ms 干净报错。教训：**宿主靠祖先选择器拿到的状态，兄弟结构里只能靠 prop 拿**。
+- **又删掉一段永远跑不到的代码（第四次同类）**：为组体写的位置恢复（`saved` ref + layout effect）
+  在变异下**怎么改都不红**，插计数器实测 `RESTORES: 0`——它按构造不可达：layout effect 依赖
+  `[bodyRef, capped, open, sync]`，而 `sync` 是 `useCallback([bodyRef, open])`，只在 `open` 变化时
+  重跑，而每次经 `open`/`capped` 变化进入都先走「清空 `saved` → return」的分支。
+  连带删掉唯一使用它的 `capped` 参数，而不是写测试把死代码装成活的。
+  同时删掉一项**永远不可能失败**的测试（「重渲染后保持滚动位置」）：jsdom 既不夹紧 `scrollTop`
+  也不重建元素，那条断言测的是环境不是插件。教训：**环境可能白送你正在测的行为**——
+  判断办法就是把源码删掉看它还过不过。
+  另记录一种**无法用断言固定的失败形态**：`sync` 由无依赖 effect 每次渲染后调用，安全性依赖
+  两个 `setEdges` 无变化时保留原对象；改成「抑制计算但不 `return`」会让两个分支互相竞争 →
+  无限渲染循环，表现为跑满 runner 上限（实测 224 s）且**没有单测行**，与「把 DOM 节点传给
+  `assert.equal`」同形。这种只写进测试文件头部说明，不去写一个假装能守住它的测试。
+- 折叠头的「等」收敛（§11.6）：上限由 2 族提到宿主同款 **3 族**，超过 3 族才包一层
+  `{title}等`；新增 `frame.activity.comma` / `frame.activity.more` 两键 × 2 语言。
+  **同时删掉两段抄来却永远走不到的分支**：宿主 `processTitle` 会省掉中文后项公共前缀 `已`、
+  并把英文后项改小写，但本插件的中文标签是 `运行了X` 型（无公共前缀）、英文标签本就是小写短语，
+  两段分支在本词表上不可能触发。变异验证暴露了这点——把条件硬写成 `false`、把降格函数改成恒等，
+  测试**全绿**。处理方式是删掉分支，改用一个不变量测试守住前提（6 个家族的中文标签不得以 `已`
+  开头、英文标签首字符须已小写），将来改标签就会红。教训：**抄上游行为前先确认自己的词表能不能
+  让它触发**；变异验证是识别死代码最省事的办法，因为死代码的特征就是「怎么改都不红」。
+- 分组头补齐「准备中/运行中」两态标题（§11.6 三态标题）：新增 `frame.prepare.*` /
+  `frame.running.*` 共 14 键 × 2 语言，家族词汇沿用插件已有的
+  6 族而不是原生的 14 个动作名。只在 `boundary.status === 'open'` 时解析。
+- **修掉一处长期死代码**：头部详情行 `liveDetail` 自写下起从未渲染过——它先调用
+  `liveToolEntry`，再 `if (entry.block === undefined) return undefined;`，而旧谓词正是
+  `entry.block === undefined`，两条件互斥、memo 恒为 `undefined`。根因是 `liveToolEntry`
+  把 0.1.7 的两种在途阶段读错了一种：**「已开始」的调用有 block，只是 block 没有 `kind`**，
+  旧谓词把它当已结算，于是绝大多数真正在跑的调用都看不见。已改为「未结算 = 无 block，
+  或有 block 但无 `kind`」，并去掉 `Reader.tsx` 侧的互斥守卫；`liveFramePhase` 改为读
+  `activityPhase` 而不是自己再判一次。变异验证：谓词改回旧写法立即被抓到（1.7 ms）。
+  教训：**两个各自合理的守卫叠在一起会静默抵消**，恒为 `undefined` 的 memo 不报错，只让那一行永远空着。
+- 补上上面那条修复一直缺的**真机守卫**：`reader-seats` 新增 3 项挂载测试，断言三态标题
+  真的经由 `GroupStatus` 渲染到视图里——运行态给出家族短语、详情行给出**具体工具名**
+  （标题说家族「正在运行命令」，详情说工具「Bash」，二者刻意不是同一个字符串）、结算后不再
+  自称在跑。此前只有纯函数测试，没有任何一项证明这条路径在真实 `Reader` 挂载下可达。
+  变异验证 4 条全部被抓到：live 分支不可达（14/16）、`liveFrame` 恒 `undefined`（14/16）、
+  去掉 `policy.liveProcessDetail` 守卫（15/16）、删掉详情行 span（15/16）。
+  其中第三条**首次证明 `liveDetail` 的策略守卫是承重的**——上一轮只证明了 `liveToolEntry` 那一半。
+  教训：**纯函数测试全绿不等于那条路径可达**；一个座位分支必须至少有一项挂载测试。
+- 中途插话强制展开（§11.6 `hasInterleavedInput`）已实现：纯函数 + 座位订阅两层，三条变异
+  （删参数 / 订阅恒 `false` / 扫 `mainKeys`）各自都能被抓到。
+  **同时修掉一个会让守卫失效的测试写法**：`assert.equal(节点, null)` 一旦失败，node 的 differ
+  会深度格式化带循环 fiber 引用的 DOM 元素，整个文件卡到 65 秒超时——失败时卡死等于没有守卫。
+  本仓库同形的断言已全部改为比较布尔值。
+- `tsdown.config.ts` 新增 `DSHX_DEVKIT` 覆盖：devkit（`tools/dshx`）在旧 checkout 里、
+  目标 checkout 里没有，构建时两者要分别指。
+
+### 上游修复回搬（`port/upstream-fixes` 分支）
 
 上游 `aa2246740/dsh-better-display` 从分叉点（`3b0177f`，09-07）到现在走了 26 个提交。整包 merge 的冲突面是 10 个文件、且全在重写过的核心文件里（还会把包名/版本拉回 `dsh-better-display@0.1.0`），所以按短清单挑搬，每条都落到我们的代码上并复验：
 

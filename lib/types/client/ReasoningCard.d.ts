@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 /** One real transcript: reference transform while following, native scroll while reading. */
-export declare function ReasoningCard({ children, step, active, history, motion, selected, onRead }: {
+export declare function ReasoningCard({ children, step, active, history, preview, motion, selected, onRead }: {
     children: ReactNode;
     step: number;
     active: boolean; /** A closed turn's card rests as its heading line until expanded. */
-    history?: boolean;
+    history?: boolean; /** Whether settled reasoning keeps a one-line preview instead of resting as a bare heading. */
+    preview?: boolean;
     motion: boolean;
     selected: boolean;
     onRead: () => void;

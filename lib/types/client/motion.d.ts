@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react';
+import type { ComponentType, ReactNode, RefObject } from 'react';
 export declare function useMotionAllowed(enabled: boolean): boolean;
 export declare function usePinnedSelection(root: RefObject<HTMLElement>, selector?: string): readonly string[];
 /**
@@ -8,13 +8,19 @@ export declare function usePinnedSelection(root: RefObject<HTMLElement>, selecto
  * working verb and a tabular clock in its own slot — so `verb` and `clock` are
  * supplied as separate parts and the CSS picks which of the two the skin shows.
  */
-export declare function StatusText({ text, ariaText, motion, shimmer, verb, clock, swapKey }: {
+export declare function StatusText({ text, ariaText, motion, shimmer, verb, clock, swapKey, detail }: {
     text: string;
     ariaText?: string;
     motion: boolean;
     shimmer?: boolean;
     verb?: string;
     clock?: string;
+    /**
+     * What the live turn is doing right now — the running command, path, or
+     * query — shown beside the phase label when the reader's work-details level
+     * asks for live detail. Decoration only: the live region keeps the phase.
+     */
+    detail?: string;
     /**
      * Identity for the swap animation, when it is not the label itself. A label
      * that embeds a ticking clock changes every second, and swapping on the text
@@ -24,10 +30,17 @@ export declare function StatusText({ text, ariaText, motion, shimmer, verb, cloc
      */
     swapKey?: string;
 }): import("react").JSX.Element;
-export declare function Disclosure({ open, onChange, label, summary, status, controls, buttonRef }: {
+export declare function Disclosure({ open, onChange, label, activity, summary, status, controls, buttonRef }: {
     open: boolean;
     onChange: (value: boolean) => void;
     label: ReactNode;
+    /** The ranked action phrase and its family glyph: what a fold hides, in words. */
+    activity?: {
+        phrase: string;
+        glyph: ComponentType<{
+            className?: string;
+        }>;
+    };
     summary?: string;
     status?: string;
     controls: string;

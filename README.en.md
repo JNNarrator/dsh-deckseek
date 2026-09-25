@@ -74,7 +74,7 @@ The terminal skin adds a window title bar (workspace path plus a standing `N tur
 **Compatibility**
 
 - **Generative MCP Apps (SEP-1865)**: an ````mcp-app```` code block in a reply mounts as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, talking over JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, …), with the card height adapting between 60 and 2400px.
-- **157 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
+- **252 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
 
 ## Keyboard shortcuts
 
@@ -88,14 +88,16 @@ The terminal skin adds a window title bar (workspace path plus a standing `N tur
 
 ## Installation
 
-There are two release channels and **they are not in sync**: npm currently carries **0.6.0**, while newer versions ship as GitHub Release tarballs (this repository is at **0.10.1**).
+There are two release channels and **they are not in sync**: npm currently carries **0.6.0**, while newer versions ship as GitHub Release tarballs (this repository is at **0.11.0**).
+
+> **0.11.0 and later require DSH ≥ 0.1.7-rc.1**: the peer range narrows to `>=0.1.7-rc.1 <0.2.0-0`, so **0.1.3 is no longer supported** — installing on an older host fails the peer check and needs `dsh plugin allow-version`. Upgrading to 0.11.0 also carries one breaking change: the settings namespace moves from `deckseek` to `dsh-deckseek`, so an existing `deckseek.skin` is no longer read (the skin silently falls back to the default soft card); rename the key to keep your choice. See the [CHANGELOG](CHANGELOG.md).
 
 ```sh
 # From npm (0.6.0)
 dsh plugin --profile web add dsh-deckseek
 
 # Or install the newest release from its tarball
-dsh plugin --profile web add ./dsh-deckseek-0.10.1.tgz
+dsh plugin --profile web add ./dsh-deckseek-0.11.0.tgz
 ```
 
 `--profile` takes `web`, `desktop`, or `headless` depending on the host you run. Restart the host after installing.
@@ -108,10 +110,12 @@ Listed in:
 ## Development
 
 ```sh
-npm test                                  # 157 tests (node --test + happy-dom)
+npm test                                  # 252 tests (node --test + happy-dom)
 npx tsc -p tsconfig.json --noEmit         # type check
 DSHX_HARNESS=<DSH checkout> npm run build # build lib/ (client + host halves)
 ```
+
+> If the build fails with `Set DSHX_HARNESS to the checkout used for this build.` or `DSHX externalClientBundle adapter is missing`, the devkit (`tools/dshx`) is not in the checkout `DSHX_HARNESS` points at — pass both: `DSHX_DEVKIT=<checkout that has tools/dshx> DSHX_HARNESS=<target checkout> npm run build`.
 
 - **Dependencies come from a DSH checkout, not npm**: link development dependencies to a built Harness checkout with `node scripts/link-harness-dependencies.mjs <DSH checkout>`; do not run `pnpm install` / `pnpm add` in this directory.
 - **`package-lock.json` is a best-effort artifact under `--legacy-peer-deps` semantics**: the published `@deepseek-ai/dsh-client-ui-settings` declares a `^0.0.1-rc.1` peer on `@deepseek-ai/dsh-client-ui-primitives`, which cannot intersect this plugin's 0.1.x range, so strict resolution always ends in ERESOLVE.
@@ -123,4 +127,4 @@ DSHX_HARNESS=<DSH checkout> npm run build # build lib/ (client + host halves)
 - Features and usage are also documented by the original repository: [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh-better-display)
 - Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Design contract: [DESIGN.md](DESIGN.md) · Design docs: [docs/design/](docs/design/)
 
-**v0.10.1 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**
+**v0.11.0 · An unofficial DSH display & interaction enhancement plugin. It only changes presentation and interaction views — never the Agent's core execution, SDK, or model credentials.**

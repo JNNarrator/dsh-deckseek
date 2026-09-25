@@ -1,7 +1,7 @@
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment';
 import type { AssistantBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots';
-import type { SkinId } from '../skin.js';
+import type { SkinId, WorkDetailId } from '../skin.js';
 import type { createReaderStore } from './store.js';
 export interface ReaderBlockOwner {
     block: AssistantBlock;
@@ -24,8 +24,19 @@ export interface ReaderInjected {
         data: Uint8Array;
         mediaType: string;
     }>;
+    /**
+     * Fork this session at an event seq and open the child.
+     *
+     * The reading view cannot receive the host's `forkAt` (it is delivered with
+     * `ChatNodeOwnerProps`, which this seat never holds), so the capability is
+     * rebuilt here from the two services the host's own implementation uses:
+     * `sessions.fork` and `uiWorkspace.openSession`.
+     */
+    forkAt: (seq: number) => void;
     /** Current reading skin, reactive to the Host settings document. */
     useSkin: () => SkinId;
+    /** Current work-details level, reactive to the Host settings document. */
+    useWorkDetail: () => WorkDetailId;
 }
 export type ReaderProps = PropsRuntime<'conversation.view'> & PropsLocale<'chat'> & PropsRenderSlots<'dsh-deckseek.block'> & PropsStore<ReturnType<typeof createReaderStore>> & ReaderInjected;
 /** Values threaded from a turn down to its rows. */
@@ -44,5 +55,9 @@ export interface DeckSeekSectionInjected {
     useWritable: () => boolean;
     /** Persist one skin choice. */
     setSkin: (next: SkinId) => void;
+    /** Current work-details level, reactive to the Host settings document. */
+    useWorkDetail: () => WorkDetailId;
+    /** Persist one work-details choice. */
+    setWorkDetail: (next: WorkDetailId) => void;
 }
 //# sourceMappingURL=types.d.ts.map

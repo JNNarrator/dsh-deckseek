@@ -13,8 +13,24 @@ export declare const SystemPromptRow: import("react").MemoExoticComponent<({ tex
 export declare const TurnProcessMeta: import("react").MemoExoticComponent<({ data }: {
     data: TurnProcessData;
 }) => import("react").JSX.Element>;
-/** Turn-tail record: compact usage/time stats footer; null when nothing to show. */
-export declare const TurnTailStats: import("react").MemoExoticComponent<({ data }: {
+/**
+ * Turn-tail record: the turn's end time and its usage footer; null when the
+ * turn left neither.
+ *
+ * The clock is the tail's own, not the footer's decoration: the host puts the
+ * end time here because this is the last row of the turn, and a reader scanning
+ * a transcript wants to know when the answer landed without opening anything.
+ * It is read from `closing.time` when there is a closing answer, because the
+ * tail node's own `time` is when the tail arrived — which for a retried turn is
+ * later than the answer it is closing.
+ *
+ * The usage numbers stay the numbers a reader scans for — total, cache hit
+ * rate, reasoning share. Everything the provider reported is kept on the row's
+ * title, which is where the routes that billed the turn live, so the accounting
+ * is recoverable without printing seven numbers on the line.
+ */
+export declare const TurnTailStats: import("react").MemoExoticComponent<({ data, forkAt }: {
     data: TurnTailData;
+    forkAt?: (seq: number) => void;
 }) => import("react").JSX.Element | null>;
 //# sourceMappingURL=TurnRecords.d.ts.map

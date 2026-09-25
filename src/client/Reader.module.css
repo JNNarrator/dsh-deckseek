@@ -124,6 +124,7 @@
    against a card filled with them. */
 .userGlyph { flex: none; display: flex; align-items: center; justify-content: center; width: 16px; align-self: center; color: var(--dsw-alias-label-secondary); }
 .userBody { min-width: 0; flex: 1 1 auto; }
+.userReferences { margin: 6px 0 0; color: var(--dx-ink-dim); font-size: 0.6875rem; line-height: 1.125rem; }
 .user .blocks { gap: 10px; }
 .answer { position: relative; display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; background: var(--dx-surface-answer); border: var(--dx-border-answer); border-radius: var(--dx-radius-card); padding: calc(16px + var(--dx-font-delta)) 18px; }
 .readingText { min-width: 0; }
@@ -137,7 +138,22 @@
 .retiringContent { min-width: 0; }
 .retiringContent[data-reader-retiring=retiring] { overflow: hidden; }
 .mainFlow, .blocks { display: flex; flex-direction: column; gap: calc(16px + var(--dx-font-delta)); min-width: 0; }
-.mainFlow:empty, .blocks:empty { display: none; }
+/* The gap now belongs to the content wrapper, because the body itself can be a
+   scroll container and must not also be the thing that spaces its children. */
+.flowContent { display: flex; flex-direction: column; gap: calc(16px + var(--dx-font-delta)); min-width: 0; }
+.mainFlow:empty, .blocks:empty, .flowContent:empty { display: none; }
+/* The cap that makes a body scrollable. Applied only where the level folds —
+   a flat level is uncapped, so every call stays visible. `scrollbar-gutter`
+   reserves the track so the cap does not shift the content sideways when the
+   fold opens and the scrollbar disappears. */
+.cappedBody { max-height: min(400px, 50vh); overflow-y: auto; overscroll-behavior-y: auto; scrollbar-gutter: stable; }
+/* Edge fades: whichever side still has content behind it. Kept as `mask-image`
+   so they work over any skin's background rather than painting a gradient that
+   would have to know the surface colour. `black` is the opaque mask stop, not a
+   colour — the same idiom the reasoning fade above already uses. */
+.fadeTop { -webkit-mask-image: linear-gradient(transparent 0, black 24px, black 100%); mask-image: linear-gradient(transparent 0, black 24px, black 100%); }
+.fadeBottom { -webkit-mask-image: linear-gradient(black 0, black calc(100% - 24px), transparent 100%); mask-image: linear-gradient(black 0, black calc(100% - 24px), transparent 100%); }
+.fadeTop.fadeBottom { -webkit-mask-image: linear-gradient(transparent 0, black 24px, black calc(100% - 24px), transparent 100%); mask-image: linear-gradient(transparent 0, black 24px, black calc(100% - 24px), transparent 100%); }
 .blocks > :first-child { margin-top: 0; }
 .blocks > :last-child { margin-bottom: 0; }
 .blocks :global(.md-table-wide) { max-width: 100%; }
@@ -364,6 +380,24 @@
 .systemPromptBody { margin: 0; padding: 8px 10px; max-height: 141px; /* Figma-anchored geometry, intentionally below --dsh-reader-code-max-height */ overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--dsw-alias-bg-base); border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-panel); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.75rem; line-height: 1.125rem; color: var(--dsw-alias-label-secondary); }
 .turnProcess { margin: 0; padding: 8px 12px; background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); font-size: 0.75rem; line-height: 1.25rem; color: var(--dx-ink-dim); }
 .turnTail { margin: 14px 0 0; padding: 8px 12px; background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.6875rem; line-height: 1.25rem; color: var(--dx-ink-dim); }
+/* The end stamp is one token: a dated stamp ("8月3日 14:03") breaking across lines
+   reads as two facts instead of one. */
+.turnTail time { white-space: nowrap; }
+/* The branch control rides the tail row as an inline glyph button. It is an
+   action rather than decoration, so no skin hides it: forking is the one thing
+   a reader can do to a finished turn, and a skin that dropped it would leave the
+   turn with no affordance at all. The focus ring comes from `.root button`. */
+.branch { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 8px; padding: 0; border: 0; border-radius: var(--dx-radius-chip); background: transparent; color: var(--dx-ink-dim); vertical-align: middle; cursor: pointer; }
+.branch:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.branch svg { width: 14px; height: 14px; }
+/* Unavailable is a state, not a removal: the control stays in place and says why
+   it does nothing, which is the whole reason the host prefers `aria-disabled`
+   over `disabled`. */
+.branch[data-unavailable] { cursor: not-allowed; opacity: 0.45; }
+.branch[data-unavailable]:hover { background: transparent; color: var(--dx-ink-dim); }
+/* The reason text is referenced by `aria-describedby`, never merely nested, so it
+   is kept for assistive tech and taken out of the visual flow. */
+.branchReason { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .failure { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; border-radius: var(--dx-radius-card); padding: 10px 14px; font-size: 0.8125rem; line-height: 1.5rem; overflow-wrap: anywhere; background: var(--dx-surface-danger); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-danger); color: var(--dsw-alias-label-primary); }
 .failureHead { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
 .failureHead strong { color: var(--dsw-alias-state-error-primary); }
@@ -501,10 +535,10 @@
    one hides it here. The card skins keep the phase sentence and never show the
    terminal's working verb, tabular clock, breathing glyph, window title or
    window-bar readout. */
-.framePath, .statusGlyph, .statusVerb, .statusClock, .frameMeter, .emptyMark, .emptyHintLabel { display: none; }
+.framePath, .statusGlyph, .statusVerb, .statusClock, .statusDetail, .frameMeter, .emptyMark, .emptyHintLabel { display: none; }
 /* The fold count is the one exception: it is information, not decoration, so the
    skins that do not draw it keep it for assistive tech instead of dropping it. */
-.frameCounts { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.frameCounts, .foldActivity { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 [data-deckseek-skin='terminal'] {
   --dx-radius-card: 0px;
   --dx-radius-panel: 3px;
@@ -643,6 +677,7 @@
 [data-deckseek-skin='terminal'] .turn { gap: 4px; }
 [data-deckseek-skin='terminal'] .turn + .turn { margin-top: var(--dx-gap-block); }
 [data-deckseek-skin='terminal'] .mainFlow,
+[data-deckseek-skin='terminal'] .flowContent,
 [data-deckseek-skin='terminal'] .blocks { gap: 5px; }
 /* One glyph vocabulary for the whole skin: the tool marker, the result bracket
    the tool result hangs off, and the thinking star. */
@@ -713,10 +748,22 @@
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusClock {
   display: inline-block; min-width: 6ch; text-align: right; color: var(--dx-ink-dim);
 }
+/* A live turn's detail — the command, path or query actually in flight — rides
+   beside the phase label once the work-details level asks for it. Truncated
+   rather than wrapped, and dropped before the phase label on a narrow column:
+   the label is what tells the reader work is happening, the detail only what. */
+[data-deckseek-skin='terminal'] .statusText .statusDetail {
+  display: inline-block; max-width: 34ch; overflow: hidden; white-space: nowrap;
+  text-overflow: ellipsis; vertical-align: bottom; color: var(--dx-ink-dim);
+}
+[data-deckseek-skin='terminal'] .statusText .statusDetail::before { content: '· '; }
 /* The clock is the first thing a narrow column drops: the verb is what says work
    is happening, the number is only what it has cost so far. */
 @container (max-width: 480px) {
   [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusClock { display: none; }
+}
+@container (max-width: 560px) {
+  [data-deckseek-skin='terminal'] .statusText .statusDetail { display: none; }
 }
 /* Tool marker colour: the category says what kind of thing is happening — amber
    for a command, brand blue for a change, quiet neutrals for reading. Red stays
@@ -793,6 +840,20 @@
   white-space: nowrap;
 }
 [data-deckseek-skin='terminal'] .disclosure[data-expanded='true'] .frameCounts { display: none; }
+/* The ranked action phrase leads the header: a family glyph, then what that
+   family did ("ran commands and edited files"). It is set in the label colour,
+   not the dim count colour — it is the header's sentence, the counts only its
+   footnote. Both leave the line when the turn opens, for the same reason. */
+[data-deckseek-skin='terminal'] .foldActivity {
+  position: static; width: auto; height: auto; overflow: visible; clip-path: none;
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+}
+[data-deckseek-skin='terminal'] .foldActivityGlyph { flex: none; width: 14px; height: 14px; color: var(--dx-ink-dim); }
+[data-deckseek-skin='terminal'] .foldActivityPhrase {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+[data-deckseek-skin='terminal'] .disclosure[data-expanded='true'] .foldActivity { display: none; }
 /* Closing line: the numbers hang off the right margin on a hairline, the way a
    ruled readout does in the reference TUIs. */
 [data-deckseek-skin='terminal'] .turnTail {

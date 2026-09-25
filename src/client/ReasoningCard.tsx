@@ -7,8 +7,8 @@ import css from './Reader.module.css';
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
 /** One real transcript: reference transform while following, native scroll while reading. */
-export function ReasoningCard({ children, step, active, history = false, motion, selected, onRead }: {
-  children: ReactNode; step: number; active: boolean; /** A closed turn's card rests as its heading line until expanded. */ history?: boolean; motion: boolean; selected: boolean; onRead: () => void;
+export function ReasoningCard({ children, step, active, history = false, preview = true, motion, selected, onRead }: {
+  children: ReactNode; step: number; active: boolean; /** A closed turn's card rests as its heading line until expanded. */ history?: boolean; /** Whether settled reasoning keeps a one-line preview instead of resting as a bare heading. */ preview?: boolean; motion: boolean; selected: boolean; onRead: () => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -298,7 +298,10 @@ export function ReasoningCard({ children, step, active, history = false, motion,
     setExpanded(value => !value);
   };
 
-  return <div className={css.reasonCard} data-reader-reasoning-card data-reader-anchor data-expanded={expanded} data-history={history || undefined} data-following={allowed} data-overflow={overflow} data-ud-motion="reader-reasoning-size">
+  // `preview` keeps a settled card's heading line and its first line of text;
+  // without it a closed turn's reasoning rests as the bare heading alone.
+  const resting = history && !preview;
+  return <div className={css.reasonCard} data-reader-reasoning-card data-reader-anchor data-expanded={expanded} data-history={resting || undefined} data-following={allowed} data-overflow={overflow} data-ud-motion="reader-reasoning-size">
     <div className={css.reasonHeading} data-reader-reasoning-heading data-ud-check="reasoning-identity">
       <span className={css.reasonLabel} data-reader-reasoning-label>{ui('reasoning.label')}</span>
       <span>{ui('reasoning.step', { step })}</span>
@@ -310,7 +313,7 @@ export function ReasoningCard({ children, step, active, history = false, motion,
         <div ref={content} className={css.reasonText} data-reader-reasoning-text>{children}</div>
       </div>
     </div>
-    {(overflow || expanded || history) && <div className={css.reasonFooter} data-ud-check="reasoning-controls">
+    {(overflow || expanded || resting) && <div className={css.reasonFooter} data-ud-check="reasoning-controls">
       {active && motion ? <button type="button" className={css.reasonAction} disabled={selected} aria-controls={controls}
         aria-label={following ? ui('reasoning.pauseFollowAria') : ui('reasoning.resumeFollowAria')}
         title={selected ? ui('reasoning.followHint') : undefined}

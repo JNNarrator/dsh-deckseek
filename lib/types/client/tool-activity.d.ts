@@ -73,4 +73,18 @@ export declare function diffStat(hunks: readonly {
     added: number;
     removed: number;
 } | null;
+/**
+ * The tool call a live group is working on right now: the last unfinished call
+ * in the flow, so the phase label can name the command, path, or query instead
+ * of leaving the reader to open the fold.
+ *
+ * "Unfinished" covers both live stages, because 0.1.7 splits a live call in two:
+ * a preparing call carries no block at all, while a started one carries a block
+ * with no `kind` — its own streamed head. Only a block that has a `kind` is the
+ * frozen result, and only that is settled. Reading the head as settled would
+ * hide every call that has actually started, which is most of them.
+ * @param flow - the group's ordered flow entries.
+ * @returns the newest unfinished call, or undefined when every call has settled.
+ */
+export declare function liveToolEntry(flow: readonly ReaderFlowEntry[]): ToolActivityEntry | undefined;
 //# sourceMappingURL=tool-activity.d.ts.map

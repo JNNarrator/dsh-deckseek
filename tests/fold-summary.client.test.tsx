@@ -22,7 +22,7 @@ test('a folded turn states what the fold hides', () => {
 
 test('a turn with nothing to count draws no summary node', () => {
   const { view } = fold(undefined);
-  assert.equal(view.container.querySelector('[data-reader-fold-summary]'), null);
+  assert.equal(view.container.querySelector('[data-reader-fold-summary]') === null, true);
 });
 
 /** The summary is information, so it stays in the tree when the turn opens —

@@ -209,6 +209,6 @@ ctx.slots.inject('settings.section', () => ctx.slots.register({
 - 不做自定义强调色、字号滑杆、圆角滑杆。
 - 不做皮肤级动效差异（动效是同一个契约）。
 - ~~不做 ANSI 色彩块~~ **部分修订（0.8.0）**：语法仍不上色，但终端皮肤的 `⏺` 标记按工具类别上色（见「不变式」的颜色许可扩展）。颜色依旧不承载"这段代码是什么语言"，只承载状态与"会改变什么"。
-- **不做实时 token / TPS / 上下文占用**（0.8.0 明确）：宿主把 token 与上下文做成 projection（`dsh-token-meter` 的 `tokenUsage` / `contextPressure`、`dsh-session-stats`），插件要读就得新增两个宿主 peer 依赖与类型增强。当前状态行的数字只用插件已持有的数据：轮次耗时、工具 ±行数、`turn-tail` 的 tokens / tok·s⁻¹ / ttft。上下文占用百分比是已知的空白，不是遗漏。
+- **不做实时 token / TPS / 上下文占用**（0.8.0 明确）：宿主把 token 与上下文做成 projection（`dsh-token-meter` 的 `tokenUsage` / `contextPressure`、`dsh-session-stats`），插件要读就得新增两个宿主 peer 依赖与类型增强。当前状态行的数字只用插件已持有的数据：轮次耗时、工具 ±行数、`turn-tail` 的用量分桶（原句写的 `tok·s⁻¹` / `ttft` 在 0.1.7 已被宿主删除，逐轮粒度不存在了，见 `compat-0.1.7.md` §11.3）。**0.1.7 修订（2026-09-23）**：宿主现在自带这一层（`StatsPills` + `ContextMeter`），且它们挂在 `conversation.composer.dock` / `conversation.composer.bar` 上 —— 本插件替换的是 `conversation.view`，两者是兄弟槽，**遮不住它们**。所以「不做」升级为**「不重复」**：用户本来就看得见，插件不再印第二份会话级读数，免得同屏出现两个不同源的数字。上下文占用百分比因此也不再是空白。
 - ~~终端皮肤不做假终端提示符~~ **已被用户要求推翻**：`> ` 输入行、`⏺` / `⎿` / `✻` 字形与窗口边框是点名要的，取代了此前"不做终端 cosplay、只做终端风味的阅读皮肤"这一判断。
 - **受宿主所有权所限，终端皮肤改不到**：底部输入框（`packages/client/ui-chat` 的 composer）、`[y]/[n]/[a]` 危险操作确认（`packages/interaction/user-approval`、`tool-ask-user`）、应用级状态栏——model / git / agent 这些数据插件也拿不到，插件手上只有 `cwd` 与本轮 token。动它们等于改宿主，不属于本插件范围。

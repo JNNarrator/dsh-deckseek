@@ -75,7 +75,12 @@ export declare function SnapshotBody({ content, source, t }: {
 export declare function NoticeBody({ content, t }: {
     content: ContextMessageNode['content'];
     source: unknown;
-    t: Translate;
+    /**
+     * Host locale seat. Optional because the reading view's non-process seats
+     * (`MainNode`) are not given one; the two labels this body needs then come
+     * from the plugin's own dictionary instead.
+     */
+    t?: Translate;
 }): ReactNode;
 /**
  * `relay` form: which agent sent this, then what it said.

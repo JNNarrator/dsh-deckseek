@@ -1,0 +1,18 @@
+/*
+ * A turn trigger reuses ContextInjectionRow's geometry — both are 24px
+ * disclosure headers over a capped code-style body — and adds only what is
+ * specific to a waking message: the explanation line above the body.
+ */
+
+/*
+ * The explanation is the harness's own framing sentence, not the notification,
+ * so it is set apart from the body: italic, at the row's label color rather
+ * than the body's dimmer one, and outside the scrollport's code font.
+ */
+.explanation {
+  margin: 0 0 8px;
+  color: var(--dsw-alias-label-secondary);
+  font-style: italic;
+  font-size: 12px;
+  line-height: 18px;
+}

@@ -8,7 +8,7 @@
  * default authoring language.
  */
 
-import type { SkinId } from '../skin.js';
+import type { SkinId, WorkDetailId } from '../skin.js';
 
 export type UiLang = 'zh' | 'en'
 
@@ -65,6 +65,40 @@ export const zh = {
   'frame.toolsOne': '{count} 次工具调用',
   'frame.filesOne': '{count} 个文件',
   'frame.failed': '{count} 次失败',
+  'frame.activity.terminal': '运行了命令',
+  'frame.activity.write': '修改了文件',
+  'frame.activity.read': '读取了文件',
+  'frame.activity.search': '搜索了代码',
+  'frame.activity.web': '查询了网络',
+  'frame.activity.other': '调用了工具',
+  'frame.activity.join': '{first}并{second}',
+  // Joining three or more families. `comma` is the full-width list comma and
+  // `more` is the host's own `{title}等` — one character standing for "and the
+  // rest", where a fourth family would name more than the reader can use.
+  // `more` is the host's own `{title}等` — one character standing for "and the
+  // rest", where a fourth family would name more than the reader can use.
+  'frame.activity.comma': '，',
+  'frame.activity.more': '{title}等',
+  // The live phase of a group, in the same 6-family vocabulary as the settled
+  // phrase above. The harness splits a live group three ways — preparing for a
+  // call whose arguments have not arrived, running it, and done — and only the
+  // last matches `frame.activity.*`. Preparing is the state a reader most needs
+  // named: nothing on screen has changed yet, so without it the label claims
+  // work that has not started.
+  'frame.prepare.terminal': '准备运行命令',
+  'frame.prepare.write': '准备修改文件',
+  'frame.prepare.read': '准备读取文件',
+  'frame.prepare.search': '准备搜索代码',
+  'frame.prepare.web': '准备查询网络',
+  'frame.prepare.other': '准备调用工具',
+  'frame.prepare.tools': '准备调用工具',
+  'frame.running.terminal': '正在运行命令',
+  'frame.running.write': '正在修改文件',
+  'frame.running.read': '正在读取文件',
+  'frame.running.search': '正在搜索代码',
+  'frame.running.web': '正在查询网络',
+  'frame.running.other': '正在调用工具',
+  'frame.running.tools': '正在调用工具',
   'rail.label': '消息导航',
   'rail.jump': '跳到第 {turn} 轮',
   'rail.turn': '第 {turn} 轮',
@@ -72,6 +106,14 @@ export const zh = {
   // Turn / process status
   'turn.stopped': '已停止',
   'turn.errorTitle': '本轮出现错误',
+  'retry.scheduled': '等待重试',
+  'retry.started': '已开始重试',
+  'retry.cancelled': '重试已取消',
+  'retry.status': '{label}：第 {retry}/{max} 次，约 {seconds} 秒后',
+  'retry.delay': '等待',
+  'retry.failure': '失败原因',
+  'retry.provider': '供应方',
+  'retry.auth': '凭据无效或已过期，重试不会成功。',
   'turn.maxTokens': '已到达输出长度限制，回答尚未完整。',
   'turn.retryWaiting': '模型请求未成功，正在等待重试。',
   'turn.you': '你',
@@ -80,6 +122,8 @@ export const zh = {
   // not a phase sentence — nothing is running on this line.
   'turn.preamble': '会话起始记录',
   'turn.steering': '补充消息',
+  'turn.references': '引用：{labels}',
+  'turn.referenceSeparator': '、',
   'turn.process': '思考与过程',
   'turn.foldAriaCollapse': '收起思考与过程',
   'turn.foldAriaExpand': '展开思考与过程',
@@ -137,8 +181,31 @@ export const zh = {
   'turnProcess.subagents.other': '{count} 个 subagent',
   'turnProcess.separator': ' · ',
   'turnTail.tokens': '约 {tokens} tokens',
-  'turnTail.tokPerSec': '{value} tok/s',
-  'turnTail.ttft': '首字 {seconds}s',
+  'turnTail.cacheHit': '缓存命中 {percent}%',
+  'turnTail.total': '总量 {tokens} tok',
+  'trigger.request': '收到执行请求',
+  'trigger.goal': '继续执行目标',
+  'trigger.agent': '收到任务消息',
+  'trigger.team': '收到团队消息',
+  'trigger.subagent': '子任务状态更新',
+  'trigger.github': '收到 GitHub 事件',
+  'trigger.webhook': '收到外部事件',
+  'trigger.schedule': '定时任务',
+  'trigger.job': '后台任务状态更新',
+  'trigger.plugin': '插件状态更新',
+  'trigger.explanation': '这条通知触发了本轮回复。',
+  'trigger.source': '来源',
+  'turnTail.uncachedInput': '未缓存输入 {tokens} tok',
+  'turnTail.cacheRead': '缓存读取 {tokens} tok',
+  'turnTail.cacheWrite': '缓存写入 {tokens} tok',
+  'turnTail.output': '输出 {tokens} tok',
+  'turnTail.reasoningDetail': '其中推理 {tokens} tok',
+  'turnTail.routes': '路由 {routes}',
+  'turnTail.reasoning': '其中推理 {tokens} tok',
+  'branch.action': '在新对话中分支',
+  'branch.unavailable': '仅可从已完成轮次的最后一条消息分支',
+  'clock.md': '{m}月{d}日',
+  'clock.ymd': '{y}年{m}月{d}日',
   // Failure card
   'failure.note': '详情保留在执行记录中。',
   'failure.toolTitle': '工具执行失败',
@@ -174,6 +241,9 @@ export const zh = {
   'code.copy': '复制',
   'code.copied': '已复制',
   'code.copyCode': '复制代码',
+  'code.block': '代码块',
+  'code.wrap': '自动换行',
+  'code.unwrap': '取消自动换行',
   'table.copyCsv': '复制为 CSV',
   'footnotes': '脚注',
   // Tool activity
@@ -197,13 +267,13 @@ export const zh = {
   'read.expand': '展开其余 {hidden} 行',
   'terminal.signal': '信号 {signal}',
   'terminal.exitCode': '退出码 {code}',
+  'terminal.noExitCode': '未正常退出',
   'terminal.running': '执行中',
   'terminal.failed': '失败',
   'terminal.done': '已完成',
   'terminal.noOutput': '没有输出',
   'terminal.collapseAria': '收起命令输出',
   'diff.collapseAria': '收起差异',
-  'diff.files': '{count} 个文件',
   'search.pathsSummary': '{shown} / {total} 个路径{truncated}',
   'search.matchesSummary': '{shown} / {total} 处匹配 · {files} 个文件{truncated}',
   'search.truncated': '（结果已截断）',
@@ -222,6 +292,7 @@ export const zh = {
   'json.collapseNode': '收起节点',
   'json.expandNode': '展开节点',
   'truncate.label': '内容过长，已截断（共 {count} 个字符）',
+  'block.unknown': '未知内容块',
   // Reasoning card
   'reasoning.label': '思考',
   'reasoning.step': '步骤 {step}',
@@ -331,6 +402,16 @@ export const zh = {
   'settings.skin.soft.hint': '卡片承载，留白多、字号大，适合久读。',
   'settings.skin.terminal': '终端',
   'settings.skin.terminal.hint': '行列对齐，等宽高密度，适合盯执行过程。',
+  'settings.workDetail': '过程细节',
+  'settings.workDetail.hint': '决定一轮的过程默认折起多少。与宿主对话视图同名同义。',
+  'settings.workDetail.compact': '精简',
+  'settings.workDetail.compact.hint': '折起整轮过程，折叠标题不显示实时命令，思考只留标题。',
+  'settings.workDetail.standard': '标准',
+  'settings.workDetail.standard.hint': '折起整轮过程，运行中标题显示命令，思考带首行预览。',
+  'settings.workDetail.detailed': '详细',
+  'settings.workDetail.detailed.hint': '当前轮过程展开，历史轮才折起。',
+  'settings.workDetail.verbose': '全部展开',
+  'settings.workDetail.verbose.hint': '不折起任何一轮，过程与正文一样直接铺开。',
 } as const
 
 export type UiKey = keyof typeof zh
@@ -380,17 +461,51 @@ export const en: Record<UiKey, string> = {
   'frame.toolsOne': '{count} tool call',
   'frame.filesOne': '{count} file',
   'frame.failed': '{count} failed',
+  'frame.activity.terminal': 'ran commands',
+  'frame.activity.write': 'edited files',
+  'frame.activity.read': 'read files',
+  'frame.activity.search': 'searched code',
+  'frame.activity.web': 'searched the web',
+  'frame.activity.other': 'called tools',
+  'frame.activity.join': '{first} and {second}',
+  // English list punctuation and the host's `{title}, etc.`.
+  'frame.activity.comma': ', ',
+  'frame.activity.more': '{title}, etc.',
+  'frame.prepare.terminal': 'preparing to run commands',
+  'frame.prepare.write': 'preparing to edit files',
+  'frame.prepare.read': 'preparing to read files',
+  'frame.prepare.search': 'preparing to search code',
+  'frame.prepare.web': 'preparing to search the web',
+  'frame.prepare.other': 'preparing tool calls',
+  'frame.prepare.tools': 'preparing tool calls',
+  'frame.running.terminal': 'running commands',
+  'frame.running.write': 'editing files',
+  'frame.running.read': 'reading files',
+  'frame.running.search': 'searching code',
+  'frame.running.web': 'searching the web',
+  'frame.running.other': 'calling tools',
+  'frame.running.tools': 'calling tools',
   'rail.label': 'Message navigation',
   'rail.jump': 'Jump to turn {turn}',
   'rail.turn': 'Turn {turn}',
   'rail.message': 'Message',
   'turn.stopped': 'Stopped',
   'turn.errorTitle': 'Error in this turn',
+  'retry.scheduled': 'Retry scheduled',
+  'retry.started': 'Retry started',
+  'retry.cancelled': 'Retry cancelled',
+  'retry.status': '{label}: attempt {retry}/{max}, about {seconds}s',
+  'retry.delay': 'Delay',
+  'retry.failure': 'Failure',
+  'retry.provider': 'Provider',
+  'retry.auth': 'Credentials are invalid or expired; retrying will not succeed.',
   'turn.maxTokens': 'Output length limit reached; the answer may be incomplete.',
   'turn.retryWaiting': 'Model request failed; waiting to retry.',
   'turn.you': 'You',
   'turn.preamble': 'Session preamble',
   'turn.steering': 'Supplementary message',
+  'turn.references': 'References: {labels}',
+  'turn.referenceSeparator': ', ',
   'turn.process': 'Thinking & process',
   'turn.foldAriaCollapse': 'Collapse thinking & process',
   'turn.foldAriaExpand': 'Expand thinking & process',
@@ -444,8 +559,31 @@ export const en: Record<UiKey, string> = {
   'turnProcess.subagents.other': '{count} subagents',
   'turnProcess.separator': ' · ',
   'turnTail.tokens': '~{tokens} tokens',
-  'turnTail.tokPerSec': '{value} tok/s',
-  'turnTail.ttft': 'first token {seconds}s',
+  'turnTail.cacheHit': '{percent}% cached',
+  'turnTail.total': '{tokens} tok total',
+  'trigger.request': 'Execution requested',
+  'trigger.goal': 'Continuing goal',
+  'trigger.agent': 'Task message received',
+  'trigger.team': 'Team message received',
+  'trigger.subagent': 'Subtask status updated',
+  'trigger.github': 'GitHub event received',
+  'trigger.webhook': 'External event received',
+  'trigger.schedule': 'Scheduled task',
+  'trigger.job': 'Background task updated',
+  'trigger.plugin': 'Plugin status updated',
+  'trigger.explanation': 'This notification started the reply below.',
+  'trigger.source': 'source',
+  'turnTail.uncachedInput': '{tokens} tok uncached input',
+  'turnTail.cacheRead': '{tokens} tok cache read',
+  'turnTail.cacheWrite': '{tokens} tok cache write',
+  'turnTail.output': '{tokens} tok output',
+  'turnTail.reasoningDetail': '{tokens} tok of it reasoning',
+  'turnTail.routes': 'routes {routes}',
+  'turnTail.reasoning': '{tokens} tok reasoning',
+  'branch.action': 'Branch into a new conversation',
+  'branch.unavailable': 'Available only on the last message of a completed turn',
+  'clock.md': '{m}/{d}',
+  'clock.ymd': '{y}-{m}-{d}',
   'failure.note': 'Details are kept in the execution record.',
   'tool.failureShown': 'Failure details are in the card above; raw output is under "Raw data".',
   'failure.toolTitle': 'Tool failed',
@@ -477,6 +615,9 @@ export const en: Record<UiKey, string> = {
   'code.copy': 'Copy',
   'code.copied': 'Copied',
   'code.copyCode': 'Copy code',
+  'code.block': 'Code block',
+  'code.wrap': 'Wrap lines',
+  'code.unwrap': 'Do not wrap lines',
   'table.copyCsv': 'Copy as CSV',
   'footnotes': 'Footnotes',
   'tool.prepareWrite': 'Generating file content',
@@ -498,13 +639,13 @@ export const en: Record<UiKey, string> = {
   'read.expand': 'Expand remaining {hidden} lines',
   'terminal.signal': 'signal {signal}',
   'terminal.exitCode': 'exit code {code}',
+  'terminal.noExitCode': 'no exit code',
   'terminal.running': 'Running',
   'terminal.failed': 'Failed',
   'terminal.done': 'Done',
   'terminal.noOutput': 'No output',
   'terminal.collapseAria': 'Collapse command output',
   'diff.collapseAria': 'Collapse diff',
-  'diff.files': '{count} files',
   'search.pathsSummary': '{shown} / {total} paths{truncated}',
   'search.matchesSummary': '{shown} / {total} matches · {files} files{truncated}',
   'search.truncated': ' (truncated)',
@@ -523,6 +664,7 @@ export const en: Record<UiKey, string> = {
   'json.collapseNode': 'Collapse node',
   'json.expandNode': 'Expand node',
   'truncate.label': 'Content too long — truncated ({count} characters)',
+  'block.unknown': 'Unknown content block',
   'reasoning.label': 'Thinking',
   'reasoning.step': 'Step {step}',
   'reasoning.regionAria': 'Thinking for step {step}',
@@ -627,6 +769,16 @@ export const en: Record<UiKey, string> = {
   'settings.skin.soft.hint': 'Cards, generous whitespace and larger type for long reading.',
   'settings.skin.terminal': 'Terminal',
   'settings.skin.terminal.hint': 'Aligned rows, monospace and dense, for watching execution.',
+  'settings.workDetail': 'Process detail',
+  'settings.workDetail.hint': 'How much of a turn\u2019s process starts folded. Same names and meaning as the host transcript view.',
+  'settings.workDetail.compact': 'Compact',
+  'settings.workDetail.compact.hint': 'Folds the whole turn, group titles omit the live command, thinking keeps only its title.',
+  'settings.workDetail.standard': 'Standard',
+  'settings.workDetail.standard.hint': 'Folds the whole turn, running titles name the command, thinking previews its first line.',
+  'settings.workDetail.detailed': 'Detailed',
+  'settings.workDetail.detailed.hint': 'The current turn stays open; only historical turns fold.',
+  'settings.workDetail.verbose': 'Everything open',
+  'settings.workDetail.verbose.hint': 'No turn is folded; process rows sit in the flow beside the body.',
 }
 
 /** The DSH app marks its language on <html lang="…">; browser fallback otherwise. */
@@ -673,14 +825,62 @@ export function turnProcessLabel(data: TurnProcessData): string {
   return turnProcessLabelIn(currentLocale(), data);
 }
 
-/** Structural subset of the native turn-tail node payload. */
-export interface TurnTailData {
-  readonly tokenUsage?: { readonly totalTokens: number } | null
-  readonly tokensPerSecond?: number
-  readonly ttftMs?: number
+/**
+ * Structural subset of the native turn-tail node payload.
+ *
+ * 0.1.7 replaced the per-turn rate fields. OLD's `turn-tail.ts` carried
+ * `ttftMs` / `tokensPerSecond` from `deriveTurnMetrics`, and that whole
+ * function is gone — per-turn speed and first-token latency no longer exist at
+ * this granularity. Reading them silently produced no text at all, which is why
+ * they are deleted here rather than kept as optional fields that never arrive.
+ *
+ * What replaced them is exact provider-reported accounting for the turn:
+ * `deriveTurnTokenUsage`. Only totals are unconditional; the cache, reasoning
+ * and route buckets are present only when every billed attempt reported them,
+ * so a mixed-attribution turn reports no `routes` rather than a partial list.
+ */
+export interface TurnTokenUsageRoute {
+  readonly provider: string
+  readonly model: string
 }
 
-/** Compact token count, e.g. 1234 -> "1.2k". */
+export interface TurnTokenUsage {
+  readonly uncachedInputTokens: number
+  readonly outputTokens: number
+  readonly totalTokens: number
+  readonly cacheReadTokens?: number
+  readonly cacheWriteTokens?: number
+  readonly reasoningTokens?: number
+  readonly routes?: readonly TurnTokenUsageRoute[]
+}
+
+/**
+ * The turn-tail node's payload, as `ui-chat` publishes it.
+ *
+ * `closing` is the last content-bearing answer in the turn, and it is the only
+ * place the turn's end time survives: the tail's own `time` is the tail node's
+ * arrival, which for a turn that was retried or resumed is not when the answer
+ * landed. `branchUnavailable` says the engine already knows this turn cannot be
+ * forked, so a reader never has to be told "no" by a control.
+ */
+export interface TurnTailData {
+  readonly turn?: number
+  readonly seq?: number
+  readonly time?: number
+  readonly closing?: { readonly time?: number } | null
+  readonly branchUnavailable?: boolean
+  readonly tokenUsage?: TurnTokenUsage | null
+}
+
+/**
+ * Compact token count, e.g. 1234 -> "1.2k".
+ *
+ * Kept in sync with the host's own `formatTokens` (`ui-chat`'s `token-format`),
+ * which the plugin cannot import: `ui-chat` is not a platform module, so
+ * reaching into it would bundle a second copy of the chat. The host groups
+ * thousands with the locale's separator at the M boundary; the reading view
+ * prints its footer inline and so stays with the unseparated M form.
+ */
 export function formatTokens(value: number): string {
   if (value >= 1000) {
     const k = value / 1000;
@@ -689,22 +889,96 @@ export function formatTokens(value: number): string {
   return String(value);
 }
 
+/**
+ * The turn's cache hit rate, as a whole percent, or null when the turn reported
+ * no cache buckets.
+ *
+ * `uncachedInputTokens` is the provider's own uncached prompt count, so the
+ * denominator is the prompt the provider saw: cached plus uncached. A turn that
+ * reported cached reads but no uncached input still has a rate — 100%.
+ */
+export function cacheHitRate(usage: TurnTokenUsage): number | null {
+  const cached = usage.cacheReadTokens;
+  if (cached === undefined) return null;
+  const prompt = cached + usage.uncachedInputTokens;
+  return prompt > 0 ? Math.round((cached / prompt) * 100) : null;
+}
+
+/**
+ * The wall-clock time a message landed, e.g. "14:03", or "8月3日 14:03" for a
+ * day that is not today.
+ *
+ * Mirrors the host's `formatMessageClock` (`ui-chat`'s `message-chrome`), which
+ * the plugin cannot import for the same reason as `formatTokens`. The date is
+ * added only when the stamp is not from today, because on the turn a reader is
+ * reading right now the date is noise.
+ *
+ * @param time - Unix epoch milliseconds.
+ * @param lang - reading language.
+ * @param now - clock to compare against; injected so the day boundary is testable.
+ * @returns the formatted stamp.
+ */
+export function messageClock(time: number, lang: UiLang, now: number = Date.now()): string {
+  const at = new Date(time);
+  const today = new Date(now);
+  const clock = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+  if (at.getFullYear() === today.getFullYear() && at.getMonth() === today.getMonth() && at.getDate() === today.getDate()) {
+    return clock;
+  }
+  const params = { y: at.getFullYear(), m: at.getMonth() + 1, d: at.getDate() };
+  const day = at.getFullYear() === today.getFullYear() ? uiIn(lang, 'clock.md', params) : uiIn(lang, 'clock.ymd', params);
+  return `${day} ${clock}`;
+}
+
 /** Compact one-line turn stats for one language; null when nothing measurable. */
 export function turnTailStatsIn(lang: UiLang, data: TurnTailData): string | null {
-  const parts: string[] = [];
-  if (data.tokenUsage) parts.push(uiIn(lang, 'turnTail.tokens', { tokens: formatTokens(data.tokenUsage.totalTokens) }));
-  if (data.tokensPerSecond !== undefined && data.tokensPerSecond > 0) {
-    parts.push(uiIn(lang, 'turnTail.tokPerSec', { value: Math.round(data.tokensPerSecond * 10) / 10 }));
+  const usage = data.tokenUsage;
+  if (!usage) return null;
+  const parts: string[] = [uiIn(lang, 'turnTail.tokens', { tokens: formatTokens(usage.totalTokens) })];
+  const hit = cacheHitRate(usage);
+  if (hit !== null) parts.push(uiIn(lang, 'turnTail.cacheHit', { percent: hit }));
+  if (usage.reasoningTokens !== undefined && usage.reasoningTokens > 0) {
+    parts.push(uiIn(lang, 'turnTail.reasoning', { tokens: formatTokens(usage.reasoningTokens) }));
   }
-  if (data.ttftMs !== undefined && data.ttftMs > 0) {
-    parts.push(uiIn(lang, 'turnTail.ttft', { seconds: Math.round(data.ttftMs / 10) / 100 }));
+  return parts.join(uiIn(lang, 'turnProcess.separator'));
+}
+
+/**
+ * The full accounting behind the one-line footer: every bucket the turn
+ * reported, plus the routes that billed it.
+ *
+ * The footer can only carry a couple of numbers before it stops being a footer,
+ * so the rest hangs off the row's title. That is also the only place a reader
+ * can see which provider/model served the turn, which is exactly the kind of
+ * thing a reader only wants when something looks wrong with the numbers.
+ * Unreported buckets are left out rather than shown as zero: a turn that never
+ * told us its cache write count has no cache write count.
+ */
+export function turnTailDetailIn(lang: UiLang, data: TurnTailData): string | null {
+  const usage = data.tokenUsage;
+  if (!usage) return null;
+  const rows: string[] = [
+    uiIn(lang, 'turnTail.total', { tokens: usage.totalTokens }),
+    uiIn(lang, 'turnTail.uncachedInput', { tokens: usage.uncachedInputTokens }),
+  ];
+  if (usage.cacheReadTokens !== undefined) rows.push(uiIn(lang, 'turnTail.cacheRead', { tokens: usage.cacheReadTokens }));
+  if (usage.cacheWriteTokens !== undefined) rows.push(uiIn(lang, 'turnTail.cacheWrite', { tokens: usage.cacheWriteTokens }));
+  rows.push(uiIn(lang, 'turnTail.output', { tokens: usage.outputTokens }));
+  if (usage.reasoningTokens !== undefined) rows.push(uiIn(lang, 'turnTail.reasoningDetail', { tokens: usage.reasoningTokens }));
+  if (usage.routes !== undefined && usage.routes.length > 0) {
+    rows.push(uiIn(lang, 'turnTail.routes', { routes: usage.routes.map(route => `${route.provider}/${route.model}`).join(' · ') }));
   }
-  return parts.length === 0 ? null : parts.join(uiIn(lang, 'turnProcess.separator'));
+  return rows.join('\n');
 }
 
 /** Compact one-line turn stats for the current app language. */
 export function turnTailStats(data: TurnTailData): string | null {
   return turnTailStatsIn(currentLocale(), data);
+}
+
+/** Full accounting behind the footer, for the current app language. */
+export function turnTailDetail(data: TurnTailData): string | null {
+  return turnTailDetailIn(currentLocale(), data);
 }
 
 /** Friendly label for a record kind, for one language. */
@@ -731,4 +1005,14 @@ export function skinHint(id: SkinId): string {
   if (id === 'paper') return ui('settings.skin.paper.hint');
   if (id === 'terminal') return ui('settings.skin.terminal.hint');
   return ui('settings.skin.soft.hint');
+}
+
+/** Settings-page name for one work-details level. */
+export function workDetailName(id: WorkDetailId): string {
+  return ui(`settings.workDetail.${id}`);
+}
+
+/** One-line description for one work-details level. */
+export function workDetailHint(id: WorkDetailId): string {
+  return ui(`settings.workDetail.${id}.hint`);
 }

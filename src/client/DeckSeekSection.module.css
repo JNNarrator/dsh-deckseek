@@ -3,7 +3,10 @@
 .subtitle { margin: 0; color: var(--dsw-alias-label-secondary); font-size: 0.8125rem; line-height: 1.375rem; }
 .label { margin: 20px 0 0; color: var(--dsw-alias-label-caption); font-size: 0.75rem; line-height: 1.25rem; font-weight: 600; letter-spacing: 0.04em; }
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
-@media (max-width: 720px) { .tiles { grid-template-columns: 1fr; } }
+/* The work-details row carries four options; two columns keep its hints readable. */
+.tiles[data-work-detail] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 720px) { .tiles, .tiles[data-work-detail] { grid-template-columns: 1fr; } }
+.labelHint { margin: 2px 0 0; color: var(--dsw-alias-label-tertiary); font-size: 0.75rem; line-height: 1.25rem; }
 .tile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 11px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 14px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tile:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .tile:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }

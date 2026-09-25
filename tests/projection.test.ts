@@ -2,9 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AssistantBlock, ToolCallBlock, TurnLocation } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { AssistantChatData, ChatConversationViewNode } from '@deepseek-ai/dsh-client-ui-chat/client';
-import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel, toolFailed } from '../src/client/projection.ts';
+import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel, toolFailed, turnStructure } from '../src/client/projection.ts';
 import type { TurnBoundary } from '../src/client/projection.ts';
+import { WORK_DETAIL_IDS, workDetailPolicy, type WorkDetailId } from '../src/skin.ts';
 import { activityPhase, activitySummary, inputFields, readerFlow } from '../src/client/tool-activity.ts';
+import { hasInterleavedInput } from '../src/client/projection.ts';
 
 const text: AssistantBlock = { kind: 'text', text: '前序说明或回答：不能靠关键词判断。' };
 function assistant(values: Partial<AssistantChatData> = {}): AssistantChatData {
@@ -12,6 +14,9 @@ function assistant(values: Partial<AssistantChatData> = {}): AssistantChatData {
 }
 const active: TurnBoundary = { status: 'open', reason: null, latestStep: 2, closingStep: null };
 const completed: TurnBoundary = { ...active, status: 'closed', reason: 'completed', closingStep: 2 };
+/** The level in force for a call: most tests read the plugin's default. */
+const at = (level: WorkDetailId) => workDetailPolicy(level);
+const standard = at('standard');
 
 test('reasoning and body retain original order, content and identities across streaming appends', () => {
   const first: AssistantBlock = { kind: 'reasoning', text: '**原始标点**\n  原始空格\n' };
@@ -32,29 +37,70 @@ test('a settled step alone never means final or disposable', () => {
 });
 
 test('process stays open through body output and later steps until successful turn completion', () => {
-  assert.equal(processExpanded(undefined, active), true);
-  assert.equal(processExpanded(undefined, { ...active, latestStep: 7 }), true);
-  assert.equal(processExpanded(undefined, completed), false);
-  assert.equal(processExpanded(undefined, { ...active, status: 'unknown' }), true);
+  assert.equal(processExpanded(undefined, active, standard), true);
+  assert.equal(processExpanded(undefined, { ...active, latestStep: 7 }, standard), true);
+  assert.equal(processExpanded(undefined, completed, standard), false);
+  assert.equal(processExpanded(undefined, { ...active, status: 'unknown' }, standard), true);
   for (const reason of ['error', 'aborted', 'interrupted', 'blocked', 'max-tokens', 'future-terminal']) {
-    assert.equal(processExpanded(undefined, { ...completed, reason }), true, reason);
+    assert.equal(processExpanded(undefined, { ...completed, reason }, standard), true, reason);
   }
 });
 
 test('deliberate process expansion or collapse overrides the automatic lifecycle', () => {
-  assert.equal(processExpanded(true, completed), true);
-  assert.equal(processExpanded(false, active), false);
-  assert.equal(processExpanded(false, { ...completed, reason: 'error' }), false);
+  assert.equal(processExpanded(true, completed, standard), true);
+  assert.equal(processExpanded(false, active, standard), false);
+  assert.equal(processExpanded(false, { ...completed, reason: 'error' }, standard), false);
 });
 
 test('reading during a run does not keep the completed process open; reopening after completion is deliberate', () => {
   const choices: Record<string, boolean> = {};
   choices[processChoiceKey('turn:1', active)] = true;
-  assert.equal(processExpanded(choices[processChoiceKey('turn:1', completed)], completed), false);
+  assert.equal(processExpanded(choices[processChoiceKey('turn:1', completed)], completed, standard), false);
   assert.equal(processChoiceKey('turn:1', active), processChoiceKey('turn:1', { ...active, latestStep: 9 }));
   choices[processChoiceKey('turn:1', completed)] = true;
-  assert.equal(processExpanded(choices[processChoiceKey('turn:1', completed)], completed), true);
-  assert.equal(processExpanded(choices[processChoiceKey('turn:2', completed)], completed), false);
+  assert.equal(processExpanded(choices[processChoiceKey('turn:1', completed)], completed, standard), true);
+  assert.equal(processExpanded(choices[processChoiceKey('turn:2', completed)], completed, standard), false);
+});
+
+test('the work-details level decides whether a completed turn folds, and only verbose leaves it open', () => {
+  // compact/standard/detailed all fold a normally completed turn ...
+  for (const level of ['compact', 'standard', 'detailed'] as const) {
+    assert.equal(processExpanded(undefined, completed, at(level)), false, level);
+  }
+  // ... and only verbose starts it open.
+  assert.equal(processExpanded(undefined, completed, at('verbose')), true);
+  // An unfinished turn is always open, whatever the level: work in flight must
+  // not be hidden. An exception is a failure, not a normal completion.
+  for (const level of WORK_DETAIL_IDS) {
+    assert.equal(processExpanded(undefined, active, at(level)), true, level);
+    assert.equal(processExpanded(undefined, { ...completed, reason: 'error' }, at(level)), true, level);
+  }
+});
+
+test('an explicit reader choice outranks the work-details level', () => {
+  assert.equal(processExpanded(true, completed, at('compact')), true);
+  assert.equal(processExpanded(false, active, at('verbose')), false);
+});
+
+test('grouping separates a folded turn from one whose rows sit in the flow', () => {
+  assert.equal(turnStructure(at('compact')), 'folded');
+  assert.equal(turnStructure(at('standard')), 'folded');
+  assert.equal(turnStructure(at('detailed')), 'folded');
+  assert.equal(turnStructure(at('verbose')), 'flat');
+  // A flat structure has no fold to close, even on a completed turn.
+  assert.equal(processExpanded(undefined, completed, at('verbose')), true);
+});
+
+test('every documented level resolves to a policy and the legacy names map onto it', () => {
+  for (const level of WORK_DETAIL_IDS) {
+    const policy = workDetailPolicy(level);
+    assert.equal(typeof policy.foldCompletedTurns, 'boolean', level);
+    assert.equal(typeof policy.groupProcess, 'boolean', level);
+    assert.equal(typeof policy.liveProcessDetail, 'boolean', level);
+    assert.equal(typeof policy.settledReasoningPreview, 'boolean', level);
+  }
+  assert.deepEqual(workDetailPolicy('verbose'), { level: 'verbose', foldCompletedTurns: false, groupProcess: false, liveProcessDetail: false, settledReasoningPreview: true });
+  assert.deepEqual(workDetailPolicy('compact'), { level: 'compact', foldCompletedTurns: true, groupProcess: true, liveProcessDetail: false, settledReasoningPreview: false });
 });
 
 test('body-only steps do not advertise empty thinking, while real reasoning and earlier progress remain accessible', () => {
@@ -66,6 +112,12 @@ test('body-only steps do not advertise empty thinking, while real reasoning and 
   assert.equal(hasProcessContent(node(assistant({ step: 2, blocks: [{ kind: 'reasoning', text: '真实思考' }, text] })), active), true);
   assert.equal(hasProcessContent(node(assistant({ step: 1 })), completed), true);
   assert.equal(hasProcessContent({ ...closing, visibility: 'hidden' }, completed), false);
+});
+
+test('a turn trigger counts as process content because it cannot be summarized away', () => {
+  const trigger = { kind: 'turn-trigger', visibility: 'visible', data: {} } as unknown as ChatConversationViewNode;
+  assert.equal(hasProcessContent(trigger, completed), true);
+  assert.equal(hasProcessContent({ ...trigger, visibility: 'hidden' }, completed), false);
 });
 
 test('completed turns preserve the public closing message, even with a later nontext step', () => {
@@ -160,4 +212,61 @@ test('a nonzero terminal exit is a failure even when the tool transport is non-e
   assert.equal(activityPhase({ block }), 'failed');
   assert.equal(activityPhase({ block: { ...block, meta: null } as ToolCallBlock }), 'returned');
   assert.equal(activityPhase({}, true), 'interrupted');
+});
+
+/** A minimal node of the given kind, already settled and visible. */
+function kindNode(index: number, kind: string): ChatConversationViewNode {
+  return {
+    key: `k${index}`, kind, visibility: 'visible', anchorSeq: index,
+    data: { status: 'settled', turn: 1, step: 0, blocks: [], time: index },
+    location: { kind: 'turn', turn: { turn: 1 } },
+  } as unknown as ChatConversationViewNode;
+}
+
+test('a later human input is interleaved; the opening one is not', () => {
+  const nodes = new Map([
+    ['a', kindNode(0, 'user')],
+    ['b', kindNode(1, 'tool-call')],
+    ['c', kindNode(2, 'assistant-step')],
+  ]);
+  const get = (key: string) => nodes.get(key);
+  // The opening user message is the turn's premise, not an interruption.
+  assert.equal(hasInterleavedInput(['a', 'b', 'c'], get), false);
+  // A second human input inside the process is what must stay readable.
+  nodes.set('d', kindNode(3, 'user'));
+  assert.equal(hasInterleavedInput(['a', 'b', 'c', 'd'], get), true);
+  // Steering counts as speaking again.
+  nodes.delete('d');
+  nodes.set('e', kindNode(4, 'steering'));
+  assert.equal(hasInterleavedInput(['a', 'b', 'e'], get), true);
+  // A trigger reads as a message, so it counts too — but only after the opening.
+  assert.equal(hasInterleavedInput(['f', 'b'], key => key === 'f' ? kindNode(5, 'turn-trigger') : get(key)), false);
+  assert.equal(hasInterleavedInput(['f', 'b', 'e'], key => key === 'f' ? kindNode(5, 'turn-trigger') : get(key)), true);
+});
+
+test('a hidden later input does not force the fold open', () => {
+  const nodes = new Map([
+    ['a', kindNode(0, 'user')],
+    ['b', kindNode(1, 'tool-call')],
+    ['c', { ...kindNode(2, 'user'), visibility: 'hidden' } as ChatConversationViewNode],
+  ]);
+  assert.equal(hasInterleavedInput(['a', 'b', 'c'], key => nodes.get(key)), false);
+});
+
+test('a group with no input at all is never interleaved', () => {
+  const nodes = new Map([['b', kindNode(1, 'tool-call')], ['c', kindNode(2, 'assistant-step')]]);
+  assert.equal(hasInterleavedInput(['b', 'c'], key => nodes.get(key)), false);
+});
+
+test('interleaved input forces the fold open at every level, but a reader choice still wins', () => {
+  const at = (level: WorkDetailId) => workDetailPolicy(level);
+  // Every folding level would otherwise start a completed turn closed.
+  for (const level of WORK_DETAIL_IDS) {
+    if (level === 'verbose') continue;
+    assert.equal(processExpanded(undefined, completed, at(level)), false, level);
+    assert.equal(processExpanded(undefined, completed, at(level), true), true, level);
+  }
+  // The floor is not a policy the reader chose, so their own toggle overrides it.
+  assert.equal(processExpanded(false, completed, at('standard'), true), false);
+  assert.equal(processExpanded(true, active, at('standard'), true), true);
 });

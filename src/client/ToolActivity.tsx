@@ -1,8 +1,8 @@
 import { memo, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ToolCallBlock, ToolResultNode } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { DiffHunk, ReadBlockLine, SearchFileGroup } from '@deepseek-ai/dsh-client-ui-primitives';
-import { DiffBlock, DisclosureRow, JsonTree, ReadBlock, SearchBlock, TerminalBlock, WebBlock,
-  IconApiOutline14, IconBrowseOutline16, IconEditOutline16, IconSearchOutline16, IconSkillOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives';
+import { DiffBlock, DisclosureRow, JsonTree, ReadBlock, SearchBlock, TerminalBlock, WebBlock } from '@deepseek-ai/dsh-client-ui-primitives';
+import { BrowseGlyph, EditGlyph, SearchGlyph, SkillGlyph, TerminalGlyph, ToolGlyph } from './icons.js';
 import { Blocks, contentBlocks } from './Blocks.js';
 import { ProcessFragment } from './motion.js';
 import { activityPhase, activitySummary, diffStat, executionFacts, objectValue, toolFailureFacts, toolFailureText, toolFailureTitle, toolIdentity, toolStateLabel } from './tool-activity.js';
@@ -15,7 +15,7 @@ import { currentLocale, ui } from './locale.js';
 import { FailureCard } from './FailureCard.js';
 import css from './Reader.module.css';
 
-const ICONS = { write: IconEditOutline16, read: IconBrowseOutline16, terminal: IconApiOutline14, search: IconSearchOutline16, web: IconSearchOutline16, other: IconSparkle16 } satisfies Record<ToolCategory, unknown>;
+const ICONS = { write: EditGlyph, read: BrowseGlyph, terminal: TerminalGlyph, search: SearchGlyph, web: SearchGlyph, other: ToolGlyph } satisfies Record<ToolCategory, unknown>;
 const number = new Intl.NumberFormat(currentLocale() === 'zh' ? 'zh-CN' : 'en-US');
 const language = (path: string | undefined) => path?.split('.').at(-1);
 const duration = (ms: number) => ms < 1000 ? ui('tool.durationMs', { count: Math.round(ms) }) : ui('tool.durationSeconds', { count: (ms / 1000).toFixed(ms < 10000 ? 1 : 0) });
@@ -154,7 +154,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
     return () => document.removeEventListener('selectionchange', track);
   }, []);
   const facts = executionFacts(entry.block);
-  const Icon = model.name === 'skill' ? IconSkillOutline16 : ICONS[model.category];
+  const Icon = model.name === 'skill' ? SkillGlyph : ICONS[model.category];
   const block = entry.block;
   const native = block ? toolRowModel(model.name, block, cwd) : null;
   // "+N -M" line changes for write/edit rows, from the settled diff record.

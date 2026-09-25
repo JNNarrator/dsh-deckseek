@@ -1,7 +1,8 @@
 import { Fragment, memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import type { ChatConversationViewNode, ChatNode, ChatNodeKind } from '@deepseek-ai/dsh-client-ui-chat/client';
-import { IconUserOutline16, JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
+import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
+import { UserGlyph } from './icons.js';
 import { BlockBoundary, Blocks, contentBlocks, CopyAnswer } from './Blocks.js';
 import { ReasoningCard } from './ReasoningCard.js';
 import { ToolActivity, ToolMedia } from './ToolActivity.js';
@@ -20,13 +21,20 @@ import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
 import { shortCwd } from './frame-path.js';
-import { collapsedSummary, frameMeterLabel, railTurns, turnCounts } from './frame-meter.js';
+import { activityPhrase, activityRanks, collapsedSummary, dominantCategory, frameMeterLabel, liveFrameLabel, railTurns, turnCounts } from './frame-meter.js';
 import { EMPTY_MARK } from './empty-mark.js';
 import { pickStatusVerb, preambleLabel } from './status-verb.js';
-import { assistantSegments, boundaryOf, groupNodes, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel } from './projection.js';
+import { ACTIVITY_GLYPHS } from './icons.js';
+import { liveToolEntry, toolIdentity } from './tool-activity.js';
+import { useProcessScroll } from './process-scroll.js';
+import { toolRowModel } from './native/tool-call-model.js';
+import { assistantSegments, boundaryOf, groupNodes, hasInterleavedInput, hasProcessContent, hasVisibleBody, isEarlierNarration, processChoiceKey, processExpanded, terminalLabel, turnStructure } from './projection.js';
 import { ContextInjectionRow } from './native/ContextInjectionRow.js';
+import { TurnTriggerRow, triggerFamily, triggerTitleKey } from './native/TurnTriggerRow.js';
+import { ModelRetryRow } from './native/ModelRetryRow.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
-import type { BlockRenderProps, ReaderProps, TurnRowContext } from './types.js';
+import { workDetailPolicy, type WorkDetailPolicy } from '../skin.js';
+import type { BlockRenderProps, ReaderInjected, ReaderProps, TurnRowContext } from './types.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
 
@@ -36,6 +44,8 @@ function isNode<K extends ChatNodeKind>(node: ChatConversationViewNode, kind: K)
 
 type SeatProps = BlockRenderProps & Pick<ReaderProps, 'useChat'> & TurnRowContext & {
   nodeKey: string; boundary: TurnBoundary; pinned?: boolean; processOpen?: boolean;
+  /** Fork the session at an event seq; only the turn tail acts on it. */
+  forkAt?: ReaderInjected['forkAt'];
 };
 
 const ProcessNode = memo(function ProcessNode({ useChat, t, nodeKey, open, motion, onRead, returnFocusTo }: Pick<ReaderProps, 'useChat' | 't'> & {
@@ -45,13 +55,14 @@ const ProcessNode = memo(function ProcessNode({ useChat, t, nodeKey, open, motio
   if (!node || node.visibility === 'hidden') return null;
   let content: ReactNode = null;
   if (isNode(node, 'context')) content = <ContextInjectionRow {...node.data} t={t} />;
-  else if (isNode(node, 'model-retry')) content = <JsonBlock label={ui('tool.retryRecord')} payload={node.data.attempts} truncatedLabel={truncatedJsonLabel} />;
   else if (isNode(node, 'command') || isNode(node, 'manual-compaction')) content = <JsonBlock label={ui('tool.commandRecord')} payload={node.data} truncatedLabel={truncatedJsonLabel} />;
   return content && <ProcessFragment open={open} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>{content}</ProcessFragment>;
 });
 
-const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, processOpen = false, pinned = false, motion, onRead, returnFocusTo, ...render }: SeatProps & {
+const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, processOpen = false, pinned = false, settledReasoningPreview = true, motion, onRead, returnFocusTo, ...render }: SeatProps & {
   motion: boolean; onRead: () => void; returnFocusTo: RefObject<HTMLButtonElement>;
+  /** Whether settled reasoning keeps a preview; the work-details level decides. */
+  settledReasoningPreview?: boolean;
 }) {
   const node = useChat(snapshot => snapshot.nodes.get(nodeKey));
   if (!node || node.visibility === 'hidden' || !isNode(node, 'assistant-step')) return null;
@@ -68,7 +79,7 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
   const body = data.blocks.filter(block => block.kind !== 'reasoning' && block.kind !== 'tool-call');
   return <>{parts.map((part, index) => part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
-      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} history={boundary.status === 'closed'} motion={motion} selected={pinned} onRead={onRead}>
+      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} history={boundary.status === 'closed'} preview={settledReasoningPreview} motion={motion} selected={pinned} onRead={onRead}>
         <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running' && index === parts.length - 1 && data.blocks.at(-1)?.kind === 'reasoning'}
           holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
       </ReasoningCard>
@@ -123,23 +134,41 @@ const CompactionDivider = memo(function CompactionDivider({ data }: { data: unkn
   </div>;
 });
 
-const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, processOpen = false, failureNote, ...render }: SeatProps) {
+const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, processOpen = false, failureNote, forkAt, ...render }: SeatProps) {
   const node = useChat(snapshot => snapshot.nodes.get(nodeKey));
   if (!node || node.visibility === 'hidden') return null;
-  if (isNode(node, 'user') || isNode(node, 'steering')) return <div className={css.user} data-reader-anchor data-reader-key={nodeKey}>
+  if (isNode(node, 'user') || isNode(node, 'steering')) {
+    // `referenceLabels` carries the `@` session mentions the engine resolved
+    // onto this message. Ignoring it drops them silently: the text still
+    // renders, it just no longer says what was referenced.
+    const references = node.data.referenceLabels ?? [];
+    return <div className={css.user} data-reader-anchor data-reader-key={nodeKey}>
     <span className={css.userRole} aria-hidden="true">{ui('turn.you')}</span>
-    <span className={css.userGlyph} aria-hidden="true"><IconUserOutline16 /></span>
+    <span className={css.userGlyph} aria-hidden="true"><UserGlyph /></span>
     <div className={css.userBody}>
       {node.kind === 'steering' && <p className={css.meta}>{ui('turn.steering')}</p>}
       <Blocks {...render} blocks={contentBlocks(node.data.content)} source="user" />
+      {/* The engine resolves `@` session mentions onto the message and the host
+          prints them as a summary line beneath the bubble. The plugin renders
+          the body as Markdown, so it cannot reuse the host's inline chips
+          without giving that up — the labels are surfaced as a line instead. */}
+      {references.length > 0 && <p className={css.userReferences} data-user-references>{ui('turn.references', { labels: references.join(ui('turn.referenceSeparator')) })}</p>}
     </div>
   </div>;
+  }
   if (isNode(node, 'assistant-step')) return null;
   if (isNode(node, 'tool-call')) return <ToolMedia {...render} failureNote={failureNote} block={node.data.root} />;
   if (isNode(node, 'turn-error')) return <FailureCard title={ui('turn.errorTitle')} message={node.data.message} code={node.data.code} note={failureNote} />;
   if (isNode(node, 'turn-max-tokens')) return <div className={css.notice}>{ui('turn.maxTokens')}</div>;
-  if (isNode(node, 'model-retry')) return node.data.current.retryState === 'scheduled'
-    ? <div className={css.notice} role="status">{ui('turn.retryWaiting')}</div> : null;
+  if (isNode(node, 'model-retry')) return <ModelRetryRow data={node.data} />;
+  // A trigger is the first node of the turn it woke, and the only durable record
+  // of why that turn exists, so it renders here alongside the user message
+  // rather than inside the foldable process list.
+  if (isNode(node, 'turn-trigger')) return <BlockBoundary><TurnTriggerRow
+    node={node.data}
+    title={ui(triggerTitleKey(triggerFamily(node.data)))}
+    explanation={ui('trigger.explanation')}
+  /></BlockBoundary>;
   if (isNode(node, 'command')) {
     if (node.data.outcome?.kind === 'error') return <FailureCard title={ui('command.failedTitle')} message={node.data.outcome.text ?? node.data.name ?? ui('command.fallback')} note={failureNote} />;
     return node.data.outcome?.text ? <MarkdownText text={node.data.outcome.text} labels={markdownLabels} /> : null;
@@ -152,7 +181,7 @@ const MainNode = memo(function MainNode({ useChat, nodeKey, boundary, pinned, pr
   if (node.kind === 'context') return null;
   if (node.kind === 'system-prompt') return <SystemPromptRow text={String((node.data as { text?: unknown }).text ?? '')} />;
   if (node.kind === 'turn-process') return <TurnProcessMeta data={node.data as TurnProcessData} />;
-  if (node.kind === 'turn-tail') return <TurnTailStats data={node.data as TurnTailData} />;
+  if (node.kind === 'turn-tail') return <TurnTailStats data={node.data as TurnTailData} forkAt={forkAt} />;
   return <UnknownRecord kind={node.kind === 'unknown' ? String((node.data as { type?: unknown }).type ?? 'unknown') : node.kind} data={node.data} />;
 });
 
@@ -162,8 +191,10 @@ function elapsedClock(start: number | undefined, now: number): string {
   return elapsed < 60 ? ui('status.clockSeconds', { seconds: elapsed }) : ui('status.clockMinutes', { minutes: Math.floor(elapsed / 60), seconds: elapsed % 60 });
 }
 
-function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, motion, variant }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionPendingInteraction'> & { group: ReaderGroup; motion: boolean; variant: 'header' | 'dock' }) {
-  const pending = useSessionPendingInteraction(snapshot => snapshot.get(sessionId));
+function GroupStatus({ group, sessionId, useChat, useSessionStatus, motion, variant, policy, liveDetail, liveFrame }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionStatus'> & { group: ReaderGroup; motion: boolean; variant: 'header' | 'dock'; policy: WorkDetailPolicy; liveDetail?: string; liveFrame?: string }) {
+  // 0.1.7 removed the per-Session pending-interaction hook; the unified Session
+  // status snapshot carries it, keyed by identity, alongside the running state.
+  const pending = useSessionStatus(snapshot => snapshot.get(sessionId)?.pendingInteraction);
   const open = useChat(snapshot => group.turn !== null && snapshot.timeline.turns.get(group.turn)?.status === 'open');
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -219,8 +250,15 @@ function GroupStatus({ group, sessionId, useChat, useSessionPendingInteraction, 
       <StatusText text={text} ariaText={ariaText} motion={motion} shimmer verb={pickStatusVerb(group.key)} clock={elapsedClock(turnStart, now)} swapKey={kind} />
     </div>;
   }
+  // The header leads with the live three-state title when a call is in flight:
+  // that names which family of work is running, which the phase sentence above
+  // cannot. A turn between calls has no live state and keeps the phase sentence
+  // — the dock variant is unaffected, since it must keep its own verb+clock.
+  if (variant === 'header' && liveFrame !== undefined && kind !== 'thinking' && kind !== 'waiting') {
+    return <StatusText text={liveFrame} ariaText={liveFrame} motion={motion} shimmer={busy} swapKey={liveFrame} detail={liveDetail} />;
+  }
   if (kind === 'delving') return null;
-  return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} swapKey={kind} />;
+  return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} swapKey={kind} detail={liveDetail} />;
 }
 
 // Element-wise identity comparison for the per-node subscription: unrelated
@@ -246,6 +284,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   }
   const turn = props.useChat(snapshot => group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn));
   const boundary = useMemo(() => boundaryOf(turn), [turn]);
+  // The work-details level decides how much of a turn starts folded. It is read
+  // once here and its booleans are handed down, so no row compares the enum.
+  const policy = workDetailPolicy(props.useWorkDetail());
   const choiceKey = processChoiceKey(group.key, boundary);
   const expansionChoice = props.useStore(state => state.expanded[choiceKey]);
   const flowId = useId();
@@ -259,35 +300,88 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   // this group re-renders only when one of its own nodes changes.
   const nodeValues = props.useChat(snapshot => mainKeys.map(key => snapshot.nodes.get(key)), eqNodeValues);
   const nodeMap = useMemo(() => new Map(mainKeys.map((key, index) => [key, nodeValues[index]!])), [mainKeys, nodeValues]);
+  // Read against the group's own keys, not `mainKeys`: the opening input is what
+  // the interleaved check measures the others against, and it lives in the slot
+  // `mainKeys` drops.
+  const interleaved = props.useChat(
+    snapshot => hasInterleavedInput(group.keys, key => snapshot.nodes.get(key)),
+  );
   const flow = useMemo(() => readerFlow({ ...group, keys: mainKeys }, turn, key => nodeMap.get(key)), [group, mainKeys, turn, nodeMap]);
   const hasProcess = flow.some(item => item.kind === 'tool' || hasProcessContent(nodeMap.get(item.nodeKey), boundary));
   // Only a real, still-active text selection delays folding. Merely clicking,
   // focusing or scrolling the live card does not create a permanent override.
   const holdingSelection = flow.some(item => selectedProcessKeys.includes(item.key));
-  const expanded = holdingSelection || processExpanded(expansionChoice, boundary);
+  // Interleaved input forces the fold open: the disclosure must not swallow the
+  // reader's own later message. Applied through `processExpanded` rather than
+  // here so the stored toggle still wins over it.
+  const expanded = holdingSelection || processExpanded(expansionChoice, boundary, policy, interleaved);
+  // Whether this turn folds at all. Read from the policy once, beside `expanded`,
+  // because every fold decision below — the header, its phrase, the summary — reads it.
+  const structure = turnStructure(policy);
+  // The body is capped and faded only where the level actually folds. A flat or
+  // open-header level shows every call inline, so capping it would hide work the
+  // reader was never offered a fold for — and there would be no header to
+  // un-hide it with.
+  const capped = structure === 'folded';
+  const flowBody = useRef<HTMLDivElement>(null);
+  const flowContent = useRef<HTMLDivElement>(null);
+  const scroll = useProcessScroll(flowBody, flowContent, expanded);
   // What the fold is hiding, in calls rather than in prose: the reference TUIs
   // put a count on a collapsed block so a reader can tell a one-call turn from a
   // twenty-call one without opening either. Counted only while folded — an open
   // turn already lists its calls, and the walk re-reads every call's arguments.
   const summary = useMemo(() => expanded ? null : collapsedSummary(turnCounts(flow)), [expanded, flow]);
-  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="header" />;
+  // The ranked action phrase heads the fold. Same gate as the counts: the walk
+  // re-reads every call's arguments, and an open turn already lists its calls.
+  const activity = useMemo(() => {
+    if (expanded || structure === 'flat') return undefined;
+    const phrase = activityPhrase(flow);
+    const category = dominantCategory(activityRanks(flow));
+    return phrase === null || category === null ? undefined : { phrase, glyph: ACTIVITY_GLYPHS[category] };
+  }, [expanded, structure, flow]);
+  const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
+  // What the running turn is on, for the header label. Only the level that asks
+  // for live detail pays for walking the flow, and only while something is
+  // actually in flight: a settled group has nothing live to name.
+  const liveDetail = useMemo(() => {
+    if (!policy.liveProcessDetail || !expanded) return undefined;
+    const entry = liveToolEntry(flow);
+    if (!entry || entry.block === undefined) return undefined;
+    const title = toolRowModel(toolIdentity(entry).name, entry.block, cwd).title;
+    return title.trim() === '' ? undefined : title;
+  }, [policy.liveProcessDetail, expanded, flow, cwd]);
+  // Three-state live title, mirroring the native group header: a call whose
+  // arguments have not arrived reads "准备…", the same call once started reads
+  // "正在…", and a settled group falls back to the folded phrase. Only a running
+  // turn has a live state, so a settled one pays nothing for this.
+  const liveFrame = useMemo(() => boundary.status === 'open' ? liveFrameLabel(flow) ?? undefined : undefined, [boundary.status, flow]);
+  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="header" policy={policy} liveDetail={liveDetail} liveFrame={liveFrame} />;
   const terminal = terminalLabel(boundary.reason);
   // A failure card and the terminal line both point at the full record, so the
   // card carries that note only while no terminal line says it below.
   const failureNote = terminal === null ? ui('failure.note') : undefined;
-  const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
-  const shared = { useChat: props.useChat, renderSlotChain: props.renderSlotChain, loadImage: props.loadImage, cwd, failureNote };
+  const shared = { useChat: props.useChat, renderSlotChain: props.renderSlotChain, loadImage: props.loadImage, forkAt: props.forkAt, cwd, failureNote };
   return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton} summary={summary ?? undefined}
-      label={headerStatus} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
+      label={headerStatus} activity={activity} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
     {!hasProcess && boundary.status === 'open' && <div className={css.disclosure} data-reader-status-only>
       {headerStatus}
     </div>}
-    <div id={flowId} className={css.mainFlow} data-reader-flow>
+    <div ref={flowBody} id={flowId} className={[
+      css.mainFlow,
+      capped ? css.cappedBody : '',
+      capped && scroll.edges.canScrollUp ? css.fadeTop : '',
+      capped && scroll.edges.canScrollDown ? css.fadeBottom : '',
+    ].filter(Boolean).join(' ')} data-reader-flow
+      data-reader-flow-capped={capped || undefined}
+      data-reader-flow-scroll-up={capped && scroll.edges.canScrollUp || undefined}
+      data-reader-flow-scroll-down={capped && scroll.edges.canScrollDown || undefined}
+      {...scroll.events}>
+      <div ref={flowContent} className={css.flowContent} data-reader-flow-content>
       {flow.map(item => item.kind === 'node' ? <Fragment key={item.key}>
         <BlockBoundary><ProcessNode useChat={props.useChat} t={props.t} nodeKey={item.nodeKey} open={expanded} motion={motion} onRead={pinProcess} returnFocusTo={processButton} /></BlockBoundary>
-        <BlockBoundary><AssistantNode {...shared} boundary={boundary} nodeKey={item.nodeKey} pinned={pinnedKeys.includes(item.nodeKey)} processOpen={expanded} motion={motion} onRead={pinProcess} returnFocusTo={processButton} /></BlockBoundary>
+        <BlockBoundary><AssistantNode {...shared} boundary={boundary} nodeKey={item.nodeKey} pinned={pinnedKeys.includes(item.nodeKey)} processOpen={expanded} settledReasoningPreview={policy.settledReasoningPreview} motion={motion} onRead={pinProcess} returnFocusTo={processButton} /></BlockBoundary>
         <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={item.nodeKey} pinned={pinnedKeys.includes(item.nodeKey)} processOpen={expanded} /></BlockBoundary>
       </Fragment> : <Fragment key={item.key}>
         <BlockBoundary><ProcessFragment open={expanded} motion={motion} onRead={pinProcess} returnFocusTo={processButton} nodeKey={item.key} framed>
@@ -295,8 +389,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
         </ProcessFragment></BlockBoundary>
         {item.block && <BlockBoundary><ToolMedia {...shared} block={item.block} /></BlockBoundary>}
       </Fragment>)}
+      </div>
     </div>
-    {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionPendingInteraction={props.useSessionPendingInteraction} motion={motion} variant="dock" />}
+    {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} />}
     {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section>;
 });
@@ -312,7 +407,7 @@ export function Reader(props: ReaderProps) {
   const order = props.useChat(snapshot => snapshot.order);
   const nodes = props.useChat(snapshot => snapshot.nodes);
   const timeline = props.useChat(snapshot => snapshot.timeline);
-  const pending = props.useSessionPendingInteraction(snapshot => snapshot.get(props.sessionId));
+  const pending = props.useSessionStatus(snapshot => snapshot.get(props.sessionId)?.pendingInteraction);
   const openError = props.useSession(snapshot => snapshot.openError);
   const loading = props.useSession(snapshot => snapshot.openState === 'loading');
   const hasMore = props.useSession(snapshot => snapshot.hasMore);

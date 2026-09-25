@@ -1,0 +1,53 @@
+/*
+ * A model-retry notice: a status line that may be counting down, over the
+ * delay, failure and provider that explain it. Geometry follows the other
+ * reading-view notice rows so a stalled turn lines up with the tool calls
+ * around it.
+ */
+
+.root {
+  min-width: 0;
+}
+
+/* A live wait is the only thing in the reading view that changes on its own, so
+   it gets the warning accent rather than the neutral record surface. */
+.root[data-active] {
+  color: var(--dsw-alias-label-primary);
+}
+
+.summary {
+  min-width: 0;
+  cursor: default;
+  color: var(--dx-ink-dim);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.status {
+  min-width: 0;
+}
+
+.details {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dx-border-hairline);
+  border-radius: var(--dx-radius-card);
+  background: var(--dx-surface-record);
+  font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 0.6875rem;
+  line-height: 1.125rem;
+  color: var(--dx-ink-dim);
+}
+
+/* Field labels sit in a fixed gutter so delay/failure/provider values align. */
+.label {
+  display: inline-block;
+  min-width: 5.5em;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.label::after {
+  content: ':';
+}
