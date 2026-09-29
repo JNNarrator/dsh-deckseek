@@ -12,6 +12,7 @@ test('unknown and missing values fall back to the default skin', () => {
   assert.equal(parseSkin(null), DEFAULT_SKIN);
   assert.equal(parseSkin(3), DEFAULT_SKIN);
   assert.equal(parseSkin({ skin: 'paper' }), DEFAULT_SKIN);
+  assert.equal(parseSkin('paper'), DEFAULT_SKIN, 'a skin this version no longer ships is not a skin');
 });
 
 test('the default is one of the declared skins', () => {

@@ -133,12 +133,12 @@ test('Enter runs the highlighted command', () => {
   press({ key: 'k', ctrlKey: true });
   const palette = view.container.querySelector('[data-reader-palette]')!;
   const field = within(palette as HTMLElement).getByRole('combobox');
-  fireEvent.change(field, { target: { value: '纸面' } });
+  fireEvent.change(field, { target: { value: '软卡' } });
   // Fired on the field, not on the window: the palette reads Enter on its own
   // subtree, which only works because a real keydown bubbles up from whatever
   // holds focus. Pressing `window` directly would skip the component entirely.
   fireEvent.keyDown(field, { key: 'Enter' });
-  assert.deepEqual(view.skins, ['paper'], 'the skin command must write through the host document');
+  assert.deepEqual(view.skins, ['soft'], 'the skin command must write through the host document');
   assert.equal(view.container.querySelector('[data-reader-palette]'), null, 'running a command closes the palette');
 });
 

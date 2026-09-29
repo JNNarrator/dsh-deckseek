@@ -26,7 +26,7 @@ test('renders one radio per skin with the current one checked', () => {
   const { injected } = face('terminal');
   render(<DeckSeekSection {...injected} />);
   const skins = screen.getAllByRole('radio').filter(node => node.hasAttribute('data-skin'));
-  assert.equal(skins.length, 3);
+  assert.equal(skins.length, 2);
   const checked = skins.filter(node => node.getAttribute('aria-checked') === 'true');
   assert.equal(checked.length, 1);
   assert.equal(checked[0].getAttribute('data-skin'), 'terminal');
@@ -35,8 +35,8 @@ test('renders one radio per skin with the current one checked', () => {
 test('choosing another tile reports that skin', () => {
   const { injected, calls } = face('soft');
   render(<DeckSeekSection {...injected} />);
-  fireEvent.click(screen.getByRole('radio', { name: /纸面/ }));
-  assert.deepEqual(calls, ['paper']);
+  fireEvent.click(screen.getByRole('radio', { name: /软卡/ }));
+  assert.deepEqual(calls, ['soft']);
 });
 
 test('a read-only document disables every tile and says so', () => {

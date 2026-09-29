@@ -18,7 +18,7 @@ export interface ReaderCommand {
   hint?: string;
   /**
    * Extra words the query may match. Skin and work-details commands carry the
-   * untranslated identifier here, so `paper` finds 「纸面」 too.
+   * untranslated identifier here, so `soft` finds 「软卡」 too.
    */
   keywords?: string;
   /** Runs the command. The palette closes first, then calls this. */

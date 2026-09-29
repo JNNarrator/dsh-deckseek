@@ -5,7 +5,13 @@
 
 ## 状态
 
-- 三套皮肤全部保留：**纸面 / 软卡 / 终端**。
+> **2026-09-29 更新：纸面皮肤已移除，只保留终端与软卡。**
+> 本文档其余段落（含对比表与「纸面」列）保留为**当时的设计记录**，不再描述当前实现；
+> 与纸面无关的结论（颜色策略、单一 DOM、Markdown 阶梯必须在消费处重绑）仍然有效。
+> 移除带来的兼容处理见 CHANGELOG：枚举不能直接收窄——旧文档里存着 `paper` 会让整个设置节
+> 校验失败并被丢弃，所以皮肤字段改成 `.loose()`，由视图侧的 `parseSkin` 兜回默认值。
+
+- 两套皮肤：**软卡 / 终端**（纸面已于 2026-09-29 移除）。
 - 设置入口：DSH 设置里的独立 **DeckSeek 页**。
 - 颜色策略：皮肤只表达**结构、密度、字体、圆角**；所有颜色取自宿主主题 token，亮暗自动适配，两套主题不各做一份。
 - 默认皮肤：**终端**（0.12.0 起；此前是软卡）。设置页里也排在第一位。
@@ -17,7 +23,7 @@
 阅读视图渲染**一套**组件树；皮肤只改变阅读区根元素的属性：
 
 ```
-<div class="root" data-deckseek-skin="paper | soft | terminal">
+<div class="root" data-deckseek-skin="soft | terminal">
 ```
 
 所有皮肤差异写在以该属性为前缀的 CSS 里。React 侧**不做皮肤分支**（唯一例外见「装饰性 chrome」）。这样皮肤新增一套的代价是"再加一块 token 定义"，不是"再写一个视图"。
@@ -28,7 +34,7 @@
 
 ```ts
 ctx.inject(['settings'], (settingsCtx) => {
-  settingsCtx.settings.register('deckseek', DeckSeekSchema)   // { skin: 'paper' | 'soft' | 'terminal' }
+  settingsCtx.settings.register('deckseek', DeckSeekSchema)   // { skin: 'soft' | 'terminal' }
 })
 ```
 

@@ -393,8 +393,6 @@ export declare const zh: {
     readonly 'settings.subtitle': "阅读视图的外观与行为。切换即时生效，不用重启。";
     readonly 'settings.appearance': "阅读区外观";
     readonly 'settings.readonly': "当前部署不支持持久化设置，外观保持默认。";
-    readonly 'settings.skin.paper': "纸面";
-    readonly 'settings.skin.paper.hint': "排版流：留白分组，字号落差大，不用卡片。";
     readonly 'settings.skin.soft': "软卡";
     readonly 'settings.skin.soft.hint': "卡片承载，留白多、字号大，适合久读。";
     readonly 'settings.skin.terminal': "终端";

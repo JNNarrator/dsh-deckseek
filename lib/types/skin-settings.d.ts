@@ -46,11 +46,11 @@ export interface DeckSeekConfig {
  * also the wire envelope the browser validates against.
  */
 export declare const DeckSeekConfigSchema: z<Schemastery.ObjectS<NoInfer<{
-    skin: z<"terminal" | "soft" | "paper", "terminal" | "soft" | "paper", "volatile-defined">;
+    skin: z<"terminal" | "soft", "terminal" | "soft", "volatile-defined">;
     texture: z<"soft" | "off" | "crt", "soft" | "off" | "crt", "volatile-defined">;
     workDetail: z<"compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "volatile-defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    skin: z<"terminal" | "soft" | "paper", "terminal" | "soft" | "paper", "volatile-defined">;
+    skin: z<"terminal" | "soft", "terminal" | "soft", "volatile-defined">;
     texture: z<"soft" | "off" | "crt", "soft" | "off" | "crt", "volatile-defined">;
     workDetail: z<"compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "volatile-defined">;
 }>>, "plain">;

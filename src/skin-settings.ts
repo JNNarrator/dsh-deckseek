@@ -24,7 +24,13 @@ export interface DeckSeekSettings {
 
 /** Durable DeckSeek schema. */
 export const DeckSeekSettingsSchema: z<DeckSeekSettings> = z.object({
-  [SKIN_FIELD]: z.union([...SKIN_IDS]).default(DEFAULT_SKIN),
+  // `.loose()` for the same reason the work-details field carries it below, and
+  // with a recent example: the paper skin shipped and was then removed. A
+  // document that still selects it must VALIDATE — an enum narrowed under a
+  // saved value throws, and a section that fails validation is dropped whole,
+  // which is how a removed skin turns into "the settings panel is gone". The
+  // view degrades the value instead: it reads every skin through `parseSkin`.
+  [SKIN_FIELD]: z.union([...SKIN_IDS]).default(DEFAULT_SKIN).loose(),
   [TEXTURE_FIELD]: z.union([...SCREEN_TEXTURE_IDS]).default(DEFAULT_SCREEN_TEXTURE),
   // `.loose()` accepts a saved value this build does not name yet, so an older
   // plugin reading a newer document validates instead of dropping the section.
@@ -61,7 +67,7 @@ export interface DeckSeekConfig {
  * also the wire envelope the browser validates against.
  */
 export const DeckSeekConfigSchema = z.object({
-  [SKIN_FIELD]: z.union([...SKIN_IDS]).default(DEFAULT_SKIN).volatile(),
+  [SKIN_FIELD]: z.union([...SKIN_IDS]).default(DEFAULT_SKIN).loose().volatile(),
   [TEXTURE_FIELD]: z.union([...SCREEN_TEXTURE_IDS]).default(DEFAULT_SCREEN_TEXTURE).volatile(),
   [WORK_DETAIL_FIELD]: z.union([...WORK_DETAIL_SETTING_VALUES]).default(DEFAULT_WORK_DETAIL).loose().volatile(),
 });

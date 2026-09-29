@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SCREEN_TEXTURE, DEFAULT_SKIN, DEFAULT_WORK_DETAIL, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, TEXTURE_FIELD, WORK_DETAIL_FIELD } from '../src/skin.js';
 import { DeckSeekConfigSchema, DeckSeekSettingsSchema } from '../src/skin-settings.js';
+import { parseSkin } from '../src/skin.js';
 import { Config, name } from '../src/dsh-deckseek.js';
 
 test('an empty section resolves to the default skin', () => {
@@ -10,7 +11,28 @@ test('an empty section resolves to the default skin', () => {
 
 test('a declared skin passes through', () => {
   assert.equal(DeckSeekSettingsSchema({ skin: 'terminal' }).skin, 'terminal');
-  assert.equal(DeckSeekSettingsSchema({ skin: 'paper' }).skin, 'paper');
+  assert.equal(DeckSeekSettingsSchema({ skin: 'soft' }).skin, 'soft');
+});
+
+/**
+ * The paper skin was removed, and a settings document written before that still
+ * selects it. It has to arrive at the view as the default rather than as a skin
+ * nothing draws.
+ */
+test('a document selecting a skin this version no longer ships still validates', () => {
+  // The enum cannot simply be narrowed: a saved value outside it made the whole
+  // section fail validation, and a section that fails validation is dropped —
+  // which reads to the user as the plugin losing its settings. With `.loose()`
+  // the document validates and the value resolves to the default.
+  assert.equal(DeckSeekSettingsSchema({ skin: 'paper' }).skin, DEFAULT_SKIN);
+  assert.equal(DeckSeekSettingsSchema({ skin: 'neon' }).skin, DEFAULT_SKIN);
+  assert.equal(DeckSeekSettingsSchema({ skin: 'soft' }).skin, 'soft', 'a skin that is still declared passes through');
+});
+
+test('and the view is what degrades it', () => {
+  for (const stored of ['paper', 'neon', 7, undefined]) {
+    assert.equal(parseSkin(stored), DEFAULT_SKIN);
+  }
 });
 
 /**

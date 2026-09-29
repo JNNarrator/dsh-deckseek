@@ -17,15 +17,15 @@ test('a query matches an ordered subsequence, not just a substring', () => {
   // `exp` never appears literally in the Chinese label, so a substring matcher
   // would find nothing where a reader expects the export command.
   assert.deepEqual(filterCommands([command('export', '导出为 Markdown')], 'Markdown').map(c => c.id), ['export']);
-  assert.deepEqual(filterCommands([command('skin', '皮肤：纸面')], '皮纸').map(c => c.id), ['skin']);
-  assert.deepEqual(filterCommands([command('skin', '皮肤：纸面')], '纸皮').map(c => c.id), []);
+  assert.deepEqual(filterCommands([command('skin', '皮肤：木纹')], '木纹').map(c => c.id), ['skin']);
+  assert.deepEqual(filterCommands([command('skin', '皮肤：木纹')], '纹木').map(c => c.id), []);
 });
 
 test('keywords let an identifier find a translated label', () => {
-  const paper = command('skin-paper', '皮肤：纸面', 'g', 'skin paper');
-  assert.deepEqual(filterCommands([paper], 'paper').map(c => c.id), ['skin-paper']);
-  assert.deepEqual(filterCommands([paper], '皮肤').map(c => c.id), ['skin-paper']);
-  assert.deepEqual(filterCommands([command('x', '导出')], 'paper').map(c => c.id), []);
+  const keyworded = command('skin-soft', '皮肤：软卡', 'g', 'skin soft');
+  assert.deepEqual(filterCommands([keyworded], 'soft').map(c => c.id), ['skin-soft']);
+  assert.deepEqual(filterCommands([keyworded], '皮肤').map(c => c.id), ['skin-soft']);
+  assert.deepEqual(filterCommands([command('x', '导出')], 'soft').map(c => c.id), []);
 });
 
 test('a contiguous match outranks a scattered one', () => {

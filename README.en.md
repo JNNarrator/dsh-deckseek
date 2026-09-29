@@ -18,7 +18,7 @@ It adds an independent **DeckSeek reading tab** to DSH: the execution record fol
 
 ![The Terminal skin](docs/screenshots/terminal-skin.png)
 
-**The Terminal skin (the default)**: box-character corners on the window, a workspace title bar above, and a standing status line below (`RUN` / `WAIT` / `IDLE` plus `12 turns · last turn 34 steps` and `^K commands` / `? help`); the body opens a turn with a `> ` prompt, keeps one glyph vocabulary (`⏺ ⎿ ✻`) and spins a braille glyph while work is in flight. Three skins (**Terminal** rows / **Soft** cards / **Paper** typographic flow) share one DOM and change only structure, density and type; colours always come from host theme tokens, so light and dark adapt on their own.
+**The Terminal skin (the default)**: box-character corners on the window, a workspace title bar above, and a standing status line below (`RUN` / `WAIT` / `IDLE` plus `12 turns · last turn 34 steps` and `^K commands` / `? help`); the body opens a turn with a `> ` prompt, keeps one glyph vocabulary (`⏺ ⎿ ✻`) and spins a braille glyph while work is in flight. Two skins (**Terminal** rows / **Soft** cards) share one DOM and change only structure, density and type; colours always come from host theme tokens, so light and dark adapt on their own.
 
 | Message navigation rail | In-view search |
 |---|---|
@@ -36,7 +36,6 @@ Switch from the dedicated **DeckSeek** page in DSH settings, or press `Ctrl/Cmd+
 |---|---|---|
 | **Terminal** (default) | Rows: monospace, a box-character window, a status line, and ANSI role colour plus tool-category colour as the only colour | TUI and Claude Code sensibilities; watching work happen |
 | **Soft** | Cards: the answer card uses the host's own elevation (0.5px hairline stroke + soft glow), and the user card derives an identity colour from the brand accent | Everyday reading; clear separation between turns |
-| **Paper** | Typographic flow: no containers at all, only a heading hierarchy and article-scale prose rhythm; colour is reserved for failures | Long-form reading, export and print |
 
 Skins express structure, density, type, and radii only; **every colour comes from a host theme token**, so dark and light themes adapt automatically and the plugin ships no palette of its own. Switching skins does not change the component tree — one DOM, a different stylesheet; see [docs/design/reading-skins.md](docs/design/reading-skins.md).
 

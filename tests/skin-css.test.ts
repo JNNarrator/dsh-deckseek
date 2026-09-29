@@ -119,7 +119,7 @@ test('every plugin token a sheet reads is declared somewhere', () => {
 
 /** The focus ring is per skin, and a skin that forgets it falls back to soft's. */
 test('every skin declares its own focus ring', () => {
-  for (const skin of ['soft', 'paper', 'terminal']) {
+  for (const skin of ['soft', 'terminal']) {
     assert.ok(
       new RegExp(`\\[data-deckseek-skin='${skin}'\\]\\s*\\{[^}]*--dx-focus-ring:`).test(reader.css),
       `the ${skin} skin has no --dx-focus-ring`,
@@ -299,7 +299,7 @@ test('the screen texture is off by default, static, and terminal-only', () => {
   assert.ok(rules.length >= 2, `expected the texture rules, found ${rules.length}`);
   for (const [, selector, body] of rules) {
     assert.doesNotMatch(body, /animation|transition/, `${selector.trim()} must be painted, not animated`);
-    assert.doesNotMatch(selector, /data-deckseek-skin='(soft|paper)'/, 'the texture belongs to the terminal skin only');
+    assert.doesNotMatch(selector, /data-deckseek-skin='soft'/, 'the texture belongs to the terminal skin only');
   }
   // The layer must not occupy the column's flow at all. See the test below for
   // why the scheme itself is not the thing to assert.

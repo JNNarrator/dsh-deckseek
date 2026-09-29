@@ -21,9 +21,7 @@
 .pvUser { height: 12px; width: 58%; margin-left: auto; border-radius: 6px 6px 2px 6px; background: var(--dsw-specific-bubble); }
 .pvCard { height: 22px; border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover); }
 .pvAnswer { height: 20px; border-radius: 6px; background: var(--dsw-alias-bg-module-platform); }
-/* Paper drops the containers; terminal turns them into separated rows. */
-[data-preview='paper'] .pvUser { width: 40%; margin: 0 0 0 2px; border-radius: 3px; background: var(--dsw-alias-label-tertiary); }
-[data-preview='paper'] .pvCard, [data-preview='paper'] .pvAnswer { border-radius: 3px; background: var(--dsw-alias-interactive-bg-hover); }
+/* The terminal turns the preview containers into separated rows. */
 [data-preview='terminal'] .pvUser { border-radius: 3px; background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent); }
 [data-preview='terminal'] .pvCard, [data-preview='terminal'] .pvAnswer { border-radius: 3px; background: transparent; border: 0; border-top: 1px solid var(--dsw-alias-border-l1); }
 .readonly { margin: 10px 0 0; color: var(--dsw-alias-label-tertiary); font-size: 0.75rem; line-height: 1.25rem; }

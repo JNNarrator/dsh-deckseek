@@ -18,7 +18,7 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 
 ![终端皮肤](docs/screenshots/terminal-skin.png)
 
-**终端皮肤（默认）**：窗口四角是字符边框、顶部是工作区标题栏（`DeckSeek ~/work/deckseek`）、底部是常驻状态栏（`RUN` / `WAIT` / `IDLE` + `12 轮 · 最新一轮 34 步` + `^K 命令` / `? 帮助`），正文里 `> ` 提示符开轮、`⏺ ⎿ ✻` 一套字形词汇、braille spinner 转着表示在跑。三套皮肤（**终端**行 / **软卡**卡片 / **纸面**排版流）共用同一份 DOM，只换结构、密度与字号；颜色一律取自宿主主题 token，亮暗自动适配。
+**终端皮肤（默认）**：窗口四角是字符边框、顶部是工作区标题栏（`DeckSeek ~/work/deckseek`）、底部是常驻状态栏（`RUN` / `WAIT` / `IDLE` + `12 轮 · 最新一轮 34 步` + `^K 命令` / `? 帮助`），正文里 `> ` 提示符开轮、`⏺ ⎿ ✻` 一套字形词汇、braille spinner 转着表示在跑。两套皮肤（**终端**行 / **软卡**卡片）共用同一份 DOM，只换结构、密度与字号；颜色一律取自宿主主题 token，亮暗自动适配。
 
 | 消息导航导轨 | 页内查找 |
 |---|---|
@@ -36,9 +36,8 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 |---|---|---|
 | **终端**（默认） | 行列：等宽字体、字符边框窗口、状态栏、ANSI 角色色与工具类别色是唯一的颜色 | 喜欢 TUI / Claude Code 观感；盯执行过程 |
 | **软卡** | 卡片容器：回答卡用宿主自己的 elevation（0.5px 发丝描边 + 柔光），用户卡从品牌色派生身份色 | 一般阅读；上下文分明、层次清楚 |
-| **纸面** | 排版流：没有容器，只有标题层级与文章尺度的正文节奏，颜色只留给失败 | 长文精读、导出打印 |
 
-三套皮肤只表达结构、密度、字体与圆角；**颜色全部取自宿主主题 token**，亮暗主题自动适配，插件不携带自己的调色板。皮肤切换不改变组件树——同一份 DOM，只有样式表换一册；详见 [docs/design/reading-skins.md](docs/design/reading-skins.md)。
+两套皮肤只表达结构、密度、字体与圆角；**颜色全部取自宿主主题 token**，亮暗主题自动适配，插件不携带自己的调色板。皮肤切换不改变组件树——同一份 DOM，只有样式表换一册；详见 [docs/design/reading-skins.md](docs/design/reading-skins.md)。
 
 终端皮肤额外有：字符边框的窗口四角、可选的屏幕纹理（扫描线 / 暗角 / 辉光，三档，默认关闭）、底部状态栏（`RUN` / `WAIT` / `IDLE` + 轮数读数 + 两个面板键）、`Ctrl/Cmd+K` 命令面板与 `?` 快捷键面板、`j` `k` `g` `G` `/` 导航键、工作区标题栏、流式回答末尾的 `▌` 光标、braille spinner + 每轮动词 + 右对齐耗时、工具调用按类别取色的 `⏺`、右对齐的数字列、折叠回合的计数摘要（`39 次工具调用 · 4 个文件 · 2 次失败`）、收尾读数行的挂右发丝线、用户回合的整行底纹带，以及空闲屏的 braille 点阵标识。设计取舍与实测参数见 [terminal-skin-v3.md](docs/design/terminal-skin-v3.md)、[terminal-skin-v4.md](docs/design/terminal-skin-v4.md)、[terminal-skin-v5.md](docs/design/terminal-skin-v5.md)。
 

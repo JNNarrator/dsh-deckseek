@@ -72,7 +72,7 @@
   --dx-gap-block: 12px;
   --dx-rail-neutral: var(--dsw-alias-border-l3);
   /* The hairline is the record surfaces' base edge colour: soft hides it on
-     record cards, terminal and paper drop it with the containers and
+     record cards, the terminal drops it with the containers and
      re-derive their rules from the same alias, and notice/error keep it in
      every skin. Danger tint derives from the static red the user reads as
      "standard error red" — red-500 is rgb(239,68,68). */
@@ -248,9 +248,6 @@
 .compactionSummaryHeader { margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary); font-size: 0.75rem; font-weight: 500; }
 [data-motion=off] .compactionChevron, [data-motion=off] .compactionButton { transition: none; }
 @media (prefers-reduced-motion: reduce) { .compactionChevron, .compactionButton { transition: none; } }
-/* Paper reads as type, not as cards: the memo becomes an indented note. */
-[data-deckseek-skin='paper'] .compactionPill { border: 0; background: transparent; padding: 0 4px; }
-[data-deckseek-skin='paper'] .compactionSummaryBox { padding: 0 0 0 12px; border: 0; border-left: 2px solid var(--dsw-alias-border-l2); border-radius: 0; background: transparent; }
 /* Terminal: square chrome, and the memo keeps the skin's own hairline. */
 [data-deckseek-skin='terminal'] .compactionPill { border-radius: 0; background: transparent; }
 
@@ -267,11 +264,6 @@
    a row of half-wrapped names stops reading as a row of files. */
 .deliverableName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deliverablesMore { color: var(--dx-ink-dim); font-size: 0.75rem; white-space: nowrap; }
-/* Paper groups by whitespace and draws no containers: an underlined name is the
-   whole affordance, and the row keeps the label's weight down to the prose's. */
-[data-deckseek-skin='paper'] .deliverablesLabel { font-weight: 400; }
-[data-deckseek-skin='paper'] .deliverableChip { padding: 0 2px; border: 0; background: transparent; text-decoration: underline; text-decoration-color: var(--dsw-alias-border-l2); text-underline-offset: 3px; }
-[data-deckseek-skin='paper'] .deliverableChip:hover { background: transparent; text-decoration-color: var(--dsw-alias-state-business-primary); }
 /* Terminal draws a log, not a set of cards: square brackets off, one hairline
    rule, and the meta type scale the rest of the skin's footers use. */
 [data-deckseek-skin='terminal'] .deliverablesRoot { margin-top: 8px; gap: 8px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.6875rem; line-height: 1.0625rem; }
@@ -546,7 +538,7 @@
 @container (max-width: 640px) { .railSpacer, .rail { display: none; } }
 /* Soft reads a focus ring as a soft halo around the card's own radius — the
    skin has no hard edges anywhere else, so a 2px outline is the only crisp
-   thing on the page. Paper rings slightly tighter; the terminal keeps a
+   thing on the page. The terminal keeps a
    hairline, because a glow is the one thing a terminal never draws. */
 [data-deckseek-skin='soft'] { --dx-focus-ring: 0 0 0 4px color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent); }
 /* No left rail in this skin: a card with real volume does not need a colour
@@ -700,7 +692,7 @@
    the glyph from the real ToolPhase union — there is no 'done'. Only the tool
    icon inside our own wrapper is hidden, never the primitive's expand chevron.
    The base `.toolGlyphState { display: none }` at the top of this block keeps
-   the glyph out of the soft and paper skins. */
+   the glyph out of the soft skin; the terminal draws its own. */
 .toolLead { display: inline-flex; align-items: center; justify-content: center; }
 [data-deckseek-skin='terminal'] .toolLead > :first-child { display: none; }
 [data-deckseek-skin='terminal'] .toolGlyphState { display: block; font-size: 0.75rem; line-height: 1.25rem; }
@@ -748,7 +740,7 @@
 [data-deckseek-skin='terminal'] .toolState { font-size: 0.78125rem; line-height: 1.25rem; }
 [data-deckseek-skin='terminal'] .turnTail,
 [data-deckseek-skin='terminal'] .processMetaLine { font-size: 0.6875rem; line-height: 1.0625rem; }
-/* Terminal v2 — the skin must read as a terminal, not as dark paper. Density
+/* Terminal v2 — the skin must read as a terminal, not as dark cards. Density
    comes first: `--dx-gap-block` was declared from the start but nothing ever
    consumed it, so every gap silently inherited the soft skin's 22/16/16. */
 [data-deckseek-skin='terminal'] .column {
@@ -975,108 +967,18 @@
   margin: 0 calc(-1 * var(--dx-frame-pad-x)) calc(4px + var(--dx-font-delta));
   gap: 8px;
 }
-/* Paper — typographic flow. No containers at all: grouping is whitespace and
-   the size gap between the answer and everything else. Only the closing stats
-   line draws a rule, and only failures carry colour. */
 .userRole { display: none; }
-[data-deckseek-skin='paper'] {
-  --dx-radius-card: 0px;
-  --dx-radius-panel: 4px;
-  --dx-radius-chip: 4px;
-  --dx-rail-width: 0px;
-  --dx-surface-record: transparent;
-  --dx-surface-answer: transparent;
-  --dx-border-answer: none;
-  --dx-rule: none;
-  --dx-gap-block: 20px;
-  --dx-focus-ring: 0 0 0 4px color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent);
-}
-[data-deckseek-skin='paper'] .column { gap: calc(26px + var(--dx-font-delta)); }
-[data-deckseek-skin='paper'] .toolActivity,
-[data-deckseek-skin='paper'] .unknown,
-[data-deckseek-skin='paper'] .processCommentary,
-[data-deckseek-skin='paper'] .systemPrompt,
-[data-deckseek-skin='paper'] .turnProcess,
-[data-deckseek-skin='paper'] .reasonCard {
-  background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0;
-}
-[data-deckseek-skin='paper'] .answer { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; font-size: 1.0625rem; line-height: 1.8; }
-/* Paper's answer is one step above the host's body (17px against 14), but the
-   Markdown root consumes the ladder as a `font:` shorthand — which resets
-   font-size — so the skin's own size never reached the prose: every paragraph
-   rendered at the host's 14px while the skin thought it was drawing 17. Rebind
-   the ladder where it is consumed, shifting it by the same increment it was
-   drawn with (+7/+5/+4 over the body, so the hierarchy keeps the host's shape),
-   and let the host's own type-setting increment ride along in the delta. The
-   dense variants (code, code-block, small) stay fixed: that is the host's rule
-   for them, not a gap. */
-[data-deckseek-skin='paper'] .answer {
-  --dsw-font-markdown-base: 400 calc(17px + var(--dsh-content-font-delta, 0px)) / calc(30px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-  --dsw-font-markdown-base-strong: 600 calc(17px + var(--dsh-content-font-delta, 0px)) / calc(30px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-  --dsw-font-markdown-h1: 700 calc(24px + var(--dsh-content-font-delta, 0px)) / calc(33px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-  --dsw-font-markdown-h2: 700 calc(22px + var(--dsh-content-font-delta, 0px)) / calc(31px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-  --dsw-font-markdown-h3: 700 calc(21px + var(--dsh-content-font-delta, 0px)) / calc(29px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-  --dsw-font-markdown-h4: 600 calc(17px + var(--dsh-content-font-delta, 0px)) / calc(30px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-  /* Tables ride the host's secondary tier, one step under the body; at paper's
-     body that tier is 16px, not 13. */
-  --dsw-font-markdown-table: 400 calc(16px + var(--dsh-content-font-delta-secondary, 0px)) / calc(25px + var(--dsh-content-font-delta-secondary, 0px)) var(--dsw-font-family);
-  --dsw-font-markdown-table-head: 500 calc(16px + var(--dsh-content-font-delta-secondary, 0px)) / calc(25px + var(--dsh-content-font-delta-secondary, 0px)) var(--dsw-font-family);
-}
-/* The user's message takes the same treatment one step smaller: paper's voice is
-   15/26, and the Markdown root would otherwise draw it at the host's 14. */
-[data-deckseek-skin='paper'] .user {
-  --dsw-font-markdown-base: 400 calc(15px + var(--dsh-content-font-delta, 0px)) / calc(26px + var(--dsh-content-font-delta, 0px)) var(--dsw-font-family);
-}
-/* Prose rhythm at article scale, scoped to the answer: the host pairs a 16px
-   paragraph margin with a 24px line, paper's line is 30, so the rhythm moves to
-   20 to keep that ratio (0.67 lines) and the list markers' line box follows the
-   body line height instead of the host's fixed 28px. A user's message is a
-   message, not an article, and keeps the host's rhythm. */
-[data-deckseek-skin='paper'] .answer [data-markdown] p { margin: 20px 0; }
-[data-deckseek-skin='paper'] .answer [data-markdown] :where(ul, ol) { margin: 20px 0; }
-[data-deckseek-skin='paper'] .answer [data-markdown] li:not(:first-child) { margin-top: 8px; }
-[data-deckseek-skin='paper'] .answer [data-markdown] li::marker { line-height: 1.875rem; }
-[data-deckseek-skin='paper'] .answer [data-markdown] blockquote { margin: 20px 0 0; }
-[data-deckseek-skin='paper'] .answer [data-markdown] pre { margin: 20px 0; }
-[data-deckseek-skin='paper'] .answer [data-markdown] hr { margin: 36px 0; }
-[data-deckseek-skin='paper'] .turnTail { background: transparent; border: 0; border-top: 1px solid var(--dsw-alias-border-l1); border-radius: 0; box-shadow: none; padding: 14px 0 0; }
-/* The user block opens a turn: the speaker name sits at the single left edge
-   with a name rule carrying the eye out to the right margin, so a message can
-   never be read as the answer's next paragraph. Typography only — paper's
-   colour licence stays with failures, and reasoning's opening line borrows the
-   same name-rule device below. */
-[data-deckseek-skin='paper'] .user { align-self: stretch; max-width: none; display: block; margin: 0; padding: 0; border-radius: 0; background: transparent; }
-[data-deckseek-skin='paper'] .userGlyph { display: none; }
-[data-deckseek-skin='paper'] .userRole { display: flex; align-items: center; gap: 12px; width: auto; padding: 0 0 7px; color: var(--dsw-alias-label-secondary); font-size: 0.71875rem; line-height: 1.125rem; letter-spacing: 0.1em; font-weight: 600; }
-[data-deckseek-skin='paper'] .userRole::after { content: ''; flex: 1 1 auto; border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-deckseek-skin='paper'] .userBody { font-size: 0.9375rem; line-height: 1.625rem; color: var(--dsw-alias-label-secondary); }
 /* Reasoning shares the prose's single left edge, and is marked the way this skin
    already marks a speaker — a name and a hairline rule out to the right margin.
    It used to carry a 16px indent plus a vertical rule, which is a document's
    quotation language and pushed the text off the one axis the skin is built on;
    the opening rule says "a different kind of text starts here" without a second
    left edge, and stays legible when the reasoning runs long. */
-[data-deckseek-skin='paper'] .reasonCard { overflow: visible; }
-[data-deckseek-skin='paper'] .reasonHeading {
-  display: flex; align-items: center; gap: 12px;
-  padding: 0 0 6px; color: var(--dsw-alias-label-secondary);
-  font-size: 0.71875rem; line-height: 1.125rem; letter-spacing: 0.1em; font-weight: 600;
-}
 /* The rule belongs to the name, not the line: it is hung on the label so it runs
    from 思考 out to the step count, which then reads as a folio at the right
    margin. Hung on the heading instead it would trail after the count. */
-[data-deckseek-skin='paper'] .reasonLabel { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; }
-[data-deckseek-skin='paper'] .reasonLabel::after { content: ''; flex: 1 1 auto; border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-deckseek-skin='paper'] .reasonText { padding: 0; border-left: 0; margin-left: 0; font-size: 0.8438rem; line-height: 1.9; color: var(--dx-ink-dim); }
 /* Tools are plain monospace lines with a › lead; the primitive's tool icon is
    dropped inside our own wrapper, never the primitive's expand chevron. */
-[data-deckseek-skin='paper'] .toolLead > :first-child { display: none; }
-[data-deckseek-skin='paper'] .toolGlyphState { display: block; }
-[data-deckseek-skin='paper'] .toolGlyphState::before { content: '›'; color: var(--dsw-alias-label-caption); }
-[data-deckseek-skin='paper'] .nativeToolSummary,
-[data-deckseek-skin='paper'] .toolDelta { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.7813rem; }
-[data-deckseek-skin='paper'] .nativeToolSummary { color: var(--dsw-alias-label-secondary); }
-[data-deckseek-skin='paper'] .failure { background: transparent; border: 0; border-left: 2px solid var(--dsw-alias-state-error-primary); border-radius: 0; box-shadow: none; padding: 0 0 0 16px; }
 /* Controls follow the skin: same radii and density as the content they sit in. */
 [data-deckseek-skin='terminal'] .searchRow,
 [data-deckseek-skin='terminal'] .historyButton,
@@ -1087,11 +989,6 @@
 [data-deckseek-skin='terminal'] .textButton,
 [data-deckseek-skin='terminal'] .searchMeta,
 [data-deckseek-skin='terminal'] .emptyHint { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
-[data-deckseek-skin='paper'] .searchRow,
-[data-deckseek-skin='paper'] .historyButton,
-[data-deckseek-skin='paper'] .answerActions { border-radius: var(--dx-radius-chip); }
-[data-deckseek-skin='paper'] .toolbar { color: var(--dx-ink-dim); }
-[data-deckseek-skin='paper'] .emptyBrand { letter-spacing: 0.04em; }
 /* Focus inside content reads as the skin's own ring rather than the app's 2px
    outline. Only these four controls take it: a ring is a shadow, and an ancestor
    with `overflow: hidden` — which the host's tool rows have — would clip it to
@@ -1099,18 +996,6 @@
    host draws. `outline: none` here is safe precisely because the ring replaces
    it and the forced-colors fallback below restores an outline when shadows are
    dropped by the OS. */
-:is([data-deckseek-skin='soft'], [data-deckseek-skin='paper'], [data-deckseek-skin='terminal'])
-  :is(.disclosureButton, .toolHeading, .reasonAction, .answerActions .iconButton):focus-visible {
-  outline: none;
-  box-shadow: var(--dx-focus-ring);
-}
-@media (forced-colors: active) {
-  :is([data-deckseek-skin='soft'], [data-deckseek-skin='paper'], [data-deckseek-skin='terminal'])
-    :is(.disclosureButton, .toolHeading, .reasonAction, .answerActions .iconButton):focus-visible {
-    outline: 2px solid;
-    outline-offset: 2px;
-  }
-}
 
 /* Terminal v5 — the skeleton the skin was missing: a frame drawn with box
    characters, a status line that is always there, ANSI-coloured furniture, and
@@ -1269,7 +1154,7 @@
 
    The lines and the vignette are mixed from `label-caption`, the theme's own
    mid ink, rather than from black or white: on a dark theme they read as the
-   brighter bleed between scanlines, on a light theme as ruled paper, and
+   brighter bleed between scanlines, on a light theme as a brighter vignette, and
    neither needs a second sheet per theme. */
 .screenTexture { display: none; }
 [data-deckseek-skin='terminal'][data-deckseek-texture='soft'] .screenTexture,

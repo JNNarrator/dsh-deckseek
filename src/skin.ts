@@ -9,9 +9,9 @@
  * settings page offers them. Terminal leads: it is the skin this plugin is
  * now maintained around, and the shipped default.
  */
-export const SKIN_IDS = ['terminal', 'soft', 'paper'] as const;
+export const SKIN_IDS = ['terminal', 'soft'] as const;
 
-/** One reading skin: instrument rows, cards, or editorial flow. */
+/** One reading skin: the terminal instrument, or the soft card. */
 export type SkinId = typeof SKIN_IDS[number];
 
 /** Skin used when the settings document carries no override or an unknown one. */
