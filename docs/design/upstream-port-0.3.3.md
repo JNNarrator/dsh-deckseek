@@ -248,7 +248,7 @@ export function settleByDeadline(animation: Animation, settle: () => void, durat
 
 **风险**：中。纯函数层与打开通路风险低；**风险集中在新增宿主路由**（能力扩张 + 路径校验 + 跨平台 `spawn`）。
 
-**状态（2026-09-29）：W3a / W3b / W3d-打开 已完成；W3c 与 W3d-显示 未做。**
+**状态（2026-09-29）：W3 全部完成。**（W3a / W3b / W3c / W3d-打开 / W3d-显示，逐项见下。）
 
 - 落地：`src/client/deliverables.ts`（纯函数）、`src/client/produced-files.ts`（每轮的解析器
   经 context 下发——解析器在六层之下且沿途每层都 memo，prop 会把它们全打掉）、
