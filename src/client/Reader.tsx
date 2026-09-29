@@ -42,6 +42,8 @@ import { SCREEN_TEXTURE_IDS, SKIN_IDS, WORK_DETAIL_IDS, workDetailPolicy, type W
 import type { BlockRenderProps, ReaderInjected, ReaderProps, TurnRowContext } from './types.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
+import { createProducedFileMentions, getTurnDeliverables } from './deliverables.js';
+import { ProducedFilesContext } from './produced-files.js';
 
 function isNode<K extends ChatNodeKind>(node: ChatConversationViewNode, kind: K): node is ChatNode<K> {
   return node.kind === kind;
@@ -366,7 +368,22 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   // card carries that note only while no terminal line says it below.
   const failureNote = terminal === null ? ui('failure.note') : undefined;
   const shared = { useChat: props.useChat, renderSlotChain: props.renderSlotChain, loadImage: props.loadImage, forkAt: props.forkAt, cwd, failureNote };
-  return <section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
+  // What this turn produced, and the resolver that turns an authored token in
+  // its prose into a control that opens one file. Computed here, where both the
+  // turn and its flow are in hand, and handed down by context: the markdown that
+  // consumes it sits six components deep behind memos, and a prop would have to
+  // be threaded through every one of them.
+  const deliverables = useMemo(() => getTurnDeliverables(turn, flow), [turn, flow]);
+  // Widened on purpose: the injected face declares this opener, but a caller that
+  // renders `Reader` directly (a preview, a test) may not supply one. With none,
+  // inline code stays inert — the same degradation the entry itself applies when
+  // the deployment has no opener — rather than throwing on the first click.
+  const openFile: ((path: string) => void) | undefined = props.openFile;
+  const mentions = useMemo(
+    () => deliverables.length > 0 && openFile ? createProducedFileMentions(deliverables, openFile) : undefined,
+    [deliverables, openFile],
+  );
+  return <ProducedFilesContext.Provider value={mentions}><section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton} summary={summary ?? undefined}
       label={headerStatus} activity={activity} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
@@ -398,7 +415,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
     </div>
     {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} />}
     {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
-  </section>;
+  </section></ProducedFilesContext.Provider>;
 });
 
 /** Render every turn the host has loaded, dropping the trailing render window.

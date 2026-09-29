@@ -5,6 +5,7 @@ import type { AssistantBlock, UserMessageNode } from '@deepseek-ai/dsh-client-ui
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives';
 import { McpAppFrame } from './McpAppFrame.js';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
+import { useProducedFileMentions } from './produced-files.js';
 import { ui } from './locale.js';
 import type { BlockRenderProps, ReaderBlockOwner } from './types.js';
 import { useStreamingText } from './streaming.js';
@@ -84,12 +85,14 @@ function ReadingMarkdown({ text, streaming, holdFormatting, startedAt, interrupt
   // Native Markdown changes block keys for its full final parse. Keep the last
   // committed mode while this answer is selected, then finish formatting on
   // deselection. Business status and the source text still update normally.
+  // One resolver for the whole turn, read from the context the turn provides.
+  const fileMentions = useProducedFileMentions();
   const committedMode = useRef(streaming);
   const effectiveMode = holdFormatting ? committedMode.current : presentation.formatStreaming;
   useLayoutEffect(() => { committedMode.current = effectiveMode; }, [effectiveMode]);
   return <div ref={root} className={css.readingText} data-reader-text data-reader-text-kind={kind} data-received-length={text.length} data-shown-length={presentation.text.length}
     data-presentation-pending={presentation.pending || undefined} data-motion-style="opacity-blur" data-ud-motion="reader-text-arrival" data-ud-motion-type="reveal" data-ud-motion-no-flash="true">
-    <MotionMarkdown text={presentation.text} streaming={effectiveMode} enabled={liveText && presentation.reveal && effectiveMode} revision={presentation.revision} />
+    <MotionMarkdown text={presentation.text} streaming={effectiveMode} enabled={liveText && presentation.reveal && effectiveMode} revision={presentation.revision} fileMentions={fileMentions} />
     <span className={css.srOnly} role="log" aria-live="polite">{announced.join('\n')}</span>
   </div>;
 }

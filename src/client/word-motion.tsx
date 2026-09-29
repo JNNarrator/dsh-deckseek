@@ -1,7 +1,7 @@
 import { createContext, useContext, useLayoutEffect, useMemo, useRef } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import { MarkdownText } from './markdown/MarkdownText.js';
-import type { MarkdownCodeLabels } from './markdown/MarkdownText.js';
+import type { MarkdownCodeLabels, MarkdownFileMentions } from './markdown/MarkdownText.js';
 import { ui } from './locale.js';
 import { WORD_MOTION, WordTimeline } from './word-timeline.js';
 import css from './Reader.module.css';
@@ -76,7 +76,7 @@ export function MotionPlainText({ text, enabled, revision }: { text: string; ena
 }
 
 /** Native DSH Markdown semantics with a stable text-leaf animation hook. */
-export function MotionMarkdown({ text, streaming, enabled, revision }: { text: string; streaming: boolean; enabled: boolean; revision: number }) {
+export function MotionMarkdown({ text, streaming, enabled, revision, fileMentions }: { text: string; streaming: boolean; enabled: boolean; revision: number; /** Produced-file resolver for this turn; absent leaves inline code inert. */ fileMentions?: MarkdownFileMentions | undefined }) {
   const timeline = useRef<WordTimeline>();
   timeline.current ??= new WordTimeline();
   timeline.current.begin(text, enabled, revision, Number(document.timeline.currentTime ?? performance.now()));
@@ -94,6 +94,6 @@ export function MotionMarkdown({ text, streaming, enabled, revision }: { text: s
     return current.hasLiveText ? <MotionAtom born={current.bornAt(offset)} generation={current.generation} offset={offset}>{children}</MotionAtom> : children;
   }, []);
   return <WordScope.Provider value={scope}>
-    <MarkdownText text={text} streaming={streaming} codeLabels={CODE_LABELS} renderText={renderText} renderAtom={renderAtom} />
+    <MarkdownText text={text} streaming={streaming} codeLabels={CODE_LABELS} fileMentions={fileMentions} renderText={renderText} renderAtom={renderAtom} />
   </WordScope.Provider>;
 }

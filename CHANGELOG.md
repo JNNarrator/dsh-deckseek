@@ -66,6 +66,38 @@
     品红——说明在那个配置下带画在了板的上面，也就没有「缝」这个可判据。画序的模型比我原来的
     假设复杂，这个装置不足以判定这类问题。
 
+### W3（前半）· 产出的文件：纯函数层 + 点亮一处「已建好但没接线」的接缝
+
+- **新增 `src/client/deliverables.ts`**（纯函数，上游 `62dbae1`/`66c8cc4`）：`basename`/`dirname`、
+  `getTurnDeliverables`（优先读官方轮数据的 `produced`，为空才回退扫本轮**成功的**写类调用；
+  写类名字集合与本仓库 `activitySummary` 的分类一致；`str_replace_editor` 只认
+  `create|str_replace|insert`）、`showDeliverablesRow`（只在轮结算后出声）、
+  `createProducedFileMentions`。
+- **点亮了一处长期空转的接缝。** `MarkdownFileMentions` 接口（`render.tsx:117`）和
+  `.fileMention` 样式（`MarkdownText.module.css:299`）早就在，但**全库没有任何调用点传入
+  `fileMentions`**——消费端一直被测，生产端根本不存在。现在正文里**命名了本轮产物**的内联代码
+  会变成可点控件（`<code><button class="fileMention">`），点击交给宿主自己的打开器。
+  **教训**：这是「纯函数全绿不等于那条路径可达」的姊妹版——**消费端被测过，不等于生产端接上了**。
+- 解析规则保守：完整路径精确命中；只给文件名时**仅当唯一**才解析，歧义时保持惰性代码
+  （「打开错文件比什么都不打开更糟」）。
+- **`openFile` 走宿主既有能力**（`remote.session.openWorkspacePath`），**不写进 `inject`**，
+  改为 `ctx.get('remote.session')` 懒取：缺这个服务时打警告并降级为空操作。上游是把
+  `remote.session` 硬声明进 `inject` 的；本仓库的既有纪律是「没有那个服务应当退化成空操作，
+  而不是拒绝加载插件」（`forkAt` 的注释里已经写过同一条）。文件夹请求（`.` / 空串）直接开
+  工作区根，不再二次解析——上游原来把 `.` 解析成了错误的目标。
+- 传递方式用 **context 而不是 prop**：解析器在「轮 → 回答 → 块 → 阅读文本 → markdown」六层之下，
+  且每层都按自己的 props 做 memo，塞一个 prop 会把沿途每个 memo 都打掉。
+- 测试 320 → **334 项**：纯函数 12（路径边界与两种斜杠、report 优先、回退扫描、失败调用不算、
+  编辑器只认三种命令、未结算的调用不算、准备中的调用从块上读、歧义不解析、标签带路径）
+  ＋ **真 `Reader` 挂载 2**（`tests/file-mentions.client.test.tsx`：本轮报告的产物在渲染树里
+  确实是可点控件、点击传出正确路径、未命中的 token 仍是普通内联代码；没有 opener 时退化为
+  不可点而不是抛错）。六条变异逐条验证：切断 `MotionMarkdown` 的转发、切断 `ReadingMarkdown`
+  读 context、轮不再 provide、忽略轮报告、歧义取第一个匹配、去掉 opener 守卫 —— 每次都被
+  **对应的那一项**抓到。
+
+**W3 还没做完的部分**（下一轮）：产出行本身的 chip 组件与三套皮肤样式；以及
+「在 Finder 中显示」所需的**宿主路由**——那是一条 `spawn` 打开器的能力扩张，按计划要单独确认。
+
 ## 0.12.0 - 2026-09-28
 
 本版把终端皮肤从「终端风的阅读页」推进成「能操作的 TUI」，并把它设为默认皮肤、在设置页排到第一位。

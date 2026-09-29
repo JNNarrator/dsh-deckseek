@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-api-session-controller/client';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
+import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client';
@@ -96,6 +97,32 @@ export function apply(ctx: Context): void {
             // A failed fork leaves the source view untouched, matching the host:
             // the session stays open and the reader keeps their place.
             .catch(() => {});
+        },
+        // The deployment's own opener, resolved lazily rather than declared as a
+        // dependency: a deployment with no remote session panel should open
+        // nothing and keep working, not refuse to load the plugin. Every failure
+        // path here is a warning and a no-op — opening a file is a convenience,
+        // and nothing about the reading view should depend on it.
+        openFile: (path: string) => {
+          try {
+            const cwd = ctx.sessions?.list?.getSnapshot?.()?.byId[sessionId]?.cwd;
+            // A folder request (`.` / empty) is the workspace itself: resolving it
+            // again would look for `.` inside the workspace and open nothing.
+            const target = path === '.' || path === ''
+              ? cwd ?? '.'
+              : cwd === undefined ? path : resolveWorkspacePath(cwd, path);
+            const remote = ctx.get('remote.session') as
+              { openWorkspacePath?: (arg: { path: string }) => Promise<{ ok?: boolean; error?: { message?: string } }> } | undefined;
+            if (!remote?.openWorkspacePath) {
+              console.warn('[dsh-deckseek] remote.session is not available; cannot open', target);
+              return;
+            }
+            void remote.openWorkspacePath({ path: target }).then(result => {
+              if (!result?.ok) console.warn('[dsh-deckseek] openWorkspacePath failed:', result?.error?.message);
+            }).catch(error => { console.warn('[dsh-deckseek] openFile failed:', error); });
+          } catch (error) {
+            console.warn('[dsh-deckseek] openFile failed:', error);
+          }
         },
         useSkin,
         useWorkDetail,

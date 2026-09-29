@@ -237,6 +237,7 @@ export declare const zh: {
     readonly 'copy.answer': "复制回答";
     readonly 'copy.done': "已复制";
     readonly 'copy.failed': "未能复制，请手动选择文字";
+    readonly 'deliverable.open': "打开 {path}";
     readonly 'tool.argsLabel': "工具参数 · {name}";
     readonly 'block.unsupported': "此内容类型尚未接入阅读页，原始内容已保留。";
     readonly viewRawContent: "查看原始内容";

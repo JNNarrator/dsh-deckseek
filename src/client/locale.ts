@@ -274,6 +274,9 @@ export const zh = {
   'copy.answer': '复制回答',
   'copy.done': '已复制',
   'copy.failed': '未能复制，请手动选择文字',
+  /* Inline code that names a file this turn wrote — the control's accessible
+     label. The path itself is the title, so the visible text stays the token. */
+  'deliverable.open': '打开 {path}',
   'tool.argsLabel': '工具参数 · {name}',
   'block.unsupported': '此内容类型尚未接入阅读页，原始内容已保留。',
   'viewRawContent': '查看原始内容',
@@ -695,6 +698,7 @@ export const en: Record<UiKey, string> = {
   'copy.answer': 'Copy answer',
   'copy.done': 'Copied',
   'copy.failed': 'Copy failed — select the text manually',
+  'deliverable.open': 'Open {path}',
   'tool.argsLabel': 'Tool arguments · {name}',
   'block.unsupported': 'This content kind is not wired into the reading view yet; the original content is preserved.',
   'viewRawContent': 'View raw content',

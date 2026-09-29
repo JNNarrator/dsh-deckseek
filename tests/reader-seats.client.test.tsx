@@ -146,6 +146,7 @@ function mountReader(
     loadImage={loadImage}
     renderSlotChain={renderSlotChain}
     forkAt={forkAt}
+    openFile={() => {}}
     t={((key: string) => key) as never}
   />);
 }

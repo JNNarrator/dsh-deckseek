@@ -215,6 +215,23 @@ export function settleByDeadline(animation: Animation, settle: () => void, durat
 
 **风险**：中。纯函数层与打开通路风险低；**风险集中在新增宿主路由**（能力扩张 + 路径校验 + 跨平台 `spawn`）。
 
+**状态（2026-09-29）：W3a / W3b / W3d-打开 已完成；W3c 与 W3d-显示 未做。**
+
+- 落地：`src/client/deliverables.ts`（纯函数）、`src/client/produced-files.ts`（每轮的解析器
+  经 context 下发——解析器在六层之下且沿途每层都 memo，prop 会把它们全打掉）、
+  `MotionMarkdown`/`ReadingMarkdown` 转发、`TurnGroup` 计算并 provide、`index.tsx` 的
+  `openFile`。
+- **最大的收获是那处接缝**：`MarkdownFileMentions` 与 `.fileMention` 早就在，却**没有任何生产端**
+  （`grep -rn fileMentions src tests` 只命中定义与消费两处文件）。也就是说「接缝测试」当时
+  全绿而功能不可能出现。**新教训：消费端被测过 ≠ 生产端接上了**——与本仓库已经记过的
+  「纯函数全绿 ≠ 路径可达」同族，但方向相反。
+- 与上游的两处**有意偏差**：① `openFile` 不写进 `inject`，改为 `ctx.get('remote.session')`
+  懒取并降级（上游硬声明；本仓库 `forkAt` 已确立「缺服务退化成空操作」的纪律）；
+  ② 解析规则要求**唯一**匹配，歧义不解析。
+- 测试 320 → 334（纯函数 12 + 真 Reader 挂载 2）；六条变异逐条验证，全部由对应守卫抓到。
+- **仍未做**：W3c（产出行 chip + 三套皮肤样式）、W3d-显示（`spawn` 宿主路由，需单独确认）。
+  注意 `dirname` 对根目录下的文件返回 `.`（继承上游行为，已写进测试注释）。
+
 ---
 
 ## W4 · 官方渲染桥接（工作量 L，最后做）

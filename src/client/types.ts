@@ -32,6 +32,14 @@ export interface ReaderInjected {
    * `sessions.fork` and `uiWorkspace.openSession`.
    */
   forkAt: (seq: number) => void;
+  /**
+   * Hand one workspace path to the deployment's own opener.
+   *
+   * Deliberately not an `inject` entry: a deployment without the service should
+   * open nothing and keep working, rather than refuse to load the plugin. The
+   * call resolves the service lazily for exactly that reason.
+   */
+  openFile: (path: string) => void;
   /** Current reading skin, reactive to the Host settings document. */
   useSkin: () => SkinId;
   /** Current work-details level, reactive to the Host settings document. */

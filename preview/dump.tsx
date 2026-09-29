@@ -103,6 +103,7 @@ const { container } = render(<Reader
   loadImage={loadImage}
   renderSlotChain={renderSlotChain}
   forkAt={() => {}}
+  openFile={() => {}}
   t={((key: string) => key) as never}
 />);
 
