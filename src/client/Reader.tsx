@@ -414,7 +414,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
       </Fragment>)}
       </div>
     </div>
-    {showDeliverablesRow(boundary.status, deliverables) && openFile && <Deliverables paths={deliverables} openFile={openFile} />}
+    {showDeliverablesRow(boundary.status, deliverables) && openFile && <Deliverables paths={deliverables} openFile={openFile} revealFile={props.revealFile} />}
     {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} />}
     {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section></ProducedFilesContext.Provider>;

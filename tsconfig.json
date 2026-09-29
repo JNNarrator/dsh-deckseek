@@ -4,7 +4,11 @@
     "strict": true, "skipLibCheck": true, "declaration": true,
     "declarationMap": true, "sourceMap": true,
     "rootDir": "src", "outDir": "lib/types", "jsx": "react-jsx",
-    "lib": ["ES2024", "DOM", "DOM.Iterable"]
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    /* The host half runs in node: it opens the OS file manager. The browser half
+       must still not reach for these at runtime, and nothing enforces that beyond
+       review — the alternative is a second tsconfig for one entry file. */
+    "types": ["node"]
   },
   "include": ["src"]
 }

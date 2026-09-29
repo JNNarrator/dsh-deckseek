@@ -277,6 +277,7 @@ export const zh = {
   /* Inline code that names a file this turn wrote — the control's accessible
      label. The path itself is the title, so the visible text stays the token. */
   'deliverable.open': '打开 {path}',
+  'deliverable.reveal': '在文件夹中显示 {path}',
   'deliverables.label': '本轮产出',
   'deliverables.more': '另有 {count} 个',
   'tool.argsLabel': '工具参数 · {name}',
@@ -699,6 +700,7 @@ export const en: Record<UiKey, string> = {
   'copy.done': 'Copied',
   'copy.failed': 'Copy failed — select the text manually',
   'deliverable.open': 'Open {path}',
+  'deliverable.reveal': 'Show {path} in its folder',
   'deliverables.label': 'Produced',
   'deliverables.more': '+{count} more',
   'tool.argsLabel': 'Tool arguments · {name}',

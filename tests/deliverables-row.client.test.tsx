@@ -57,8 +57,10 @@ function fixture(status: 'closed' | 'open', paths: readonly string[]) {
  * suite did, and the failure it produced was blamed on the product code for a
  * while.
  */
-function mountReader(status: 'closed' | 'open', paths: readonly string[], opener: 'none' | ((path: string) => void) = () => {}) {
+function mountReader(status: 'closed' | 'open', paths: readonly string[], opener: 'none' | ((path: string) => void) = () => {},
+  reveal: 'none' | ((path: string) => void) = 'none') {
   const openFile = opener === 'none' ? undefined : opener;
+  const revealFile = reveal === 'none' ? undefined : reveal;
   const { order, nodes, turns } = fixture(status, paths);
   const store = createReaderStore().create('s1');
   const useStore = (selector: (state: { expanded: Record<string, boolean>; motion: boolean }) => unknown) =>
@@ -82,6 +84,7 @@ function mountReader(status: 'closed' | 'open', paths: readonly string[], opener
     renderSlotChain={renderSlotChain}
     forkAt={() => {}}
     openFile={openFile as never}
+    revealFile={revealFile as never}
     t={((key: string) => key) as never}
   />);
 }
@@ -94,7 +97,7 @@ test('a closed turn offers the files it produced, each opening its own path', ()
   const row = view.container.querySelector('[data-reader-deliverables]');
   assert.notEqual(row, null, 'the row belongs to the turn that produced the files');
   assert.match(row!.textContent ?? '', /本轮产出/);
-  const chips = view.container.querySelectorAll('button.deliverableChip');
+  const chips = view.container.querySelectorAll('button.deliverableOpen');
   assert.equal(chips.length, 3);
   assert.deepEqual([...chips].map(chip => chip.getAttribute('title')), THREE);
   assert.deepEqual([...chips].map(chip => chip.textContent), ['a.ts', 'b.ts', 'notes.md'], 'the chip shows the file name, the title the path');
@@ -116,10 +119,29 @@ test('a turn with no artifacts draws no row at all', () => {
 test('a long list collapses its tail into a count', () => {
   const many = Array.from({ length: 12 }, (_, index) => `/tmp/work/src/f${index}.ts`);
   const view = mountReader('closed', many);
-  const chips = view.container.querySelectorAll('button.deliverableChip');
+  const chips = view.container.querySelectorAll('button.deliverableOpen');
   assert.equal(chips.length, 8, 'the chip count is the cap, not the file count');
   assert.match(view.container.querySelector('[data-reader-deliverables]')!.textContent ?? '', /另有 4 个/,
     'the tail is counted, because a turn that wrote twelve files should say so');
+});
+
+test('the folder control reveals the file where the host can, and opens its folder where it cannot', () => {
+  const opened: string[] = [];
+  const revealed: string[] = [];
+  const withReveal = mountReader('closed', THREE, path => opened.push(path), path => revealed.push(path));
+  const controls = withReveal.container.querySelectorAll('button.deliverableReveal');
+  assert.equal(controls.length, 3, 'every chip carries one');
+  assert.match(controls[0]!.getAttribute('aria-label') ?? '', /a\.ts/, 'and it names the file it acts on');
+  fireEvent.click(controls[0]!);
+  assert.deepEqual(revealed, ['/tmp/work/src/a.ts']);
+  assert.deepEqual(opened, [], 'revealing is not opening');
+
+  // No reveal route on this deployment: the control still does the nearest thing
+  // it can, which is showing the folder, rather than nothing at all.
+  const openedInstead: string[] = [];
+  const withoutReveal = mountReader('closed', THREE, path => openedInstead.push(path));
+  fireEvent.click(withoutReveal.container.querySelectorAll('button.deliverableReveal')[1]!);
+  assert.deepEqual(openedInstead, ['/tmp/work/src'], 'the containing folder, not the file');
 });
 
 test('with no opener the row is not drawn rather than drawn dead', () => {

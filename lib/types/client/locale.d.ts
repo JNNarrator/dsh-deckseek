@@ -238,6 +238,7 @@ export declare const zh: {
     readonly 'copy.done': "已复制";
     readonly 'copy.failed': "未能复制，请手动选择文字";
     readonly 'deliverable.open': "打开 {path}";
+    readonly 'deliverable.reveal': "在文件夹中显示 {path}";
     readonly 'deliverables.label': "本轮产出";
     readonly 'deliverables.more': "另有 {count} 个";
     readonly 'tool.argsLabel': "工具参数 · {name}";

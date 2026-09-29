@@ -264,7 +264,8 @@ export function settleByDeadline(animation: Animation, settle: () => void, durat
 - 测试 320 → 334（纯函数 12 + 真 Reader 挂载 2）；六条变异逐条验证，全部由对应守卫抓到。
 - **W3c 已完成**（`DeliverablesRow.tsx` + 三套皮肤 + 6 项守卫 + 5 条变异）。与上游 chip 的差额：
   双击打开、在文件夹中显示、复制路径——后两项随 W3d 的 reveal 一起补，路径已在 chip 的 `title` 上。
-- **仍未做**：W3d-显示（`spawn` 宿主路由，决定已定：cwd 受限 + 仅 POST；先查服务端能否自己得知会话 cwd）。
+- **W3d 已完成**：判定（`src/reveal-path.ts`）+ 路由注册 + 客户端 `revealFile` + chip 的第二个控件；
+  6 项接线测试用假宿主 ctx 驱动真实 `apply`，5 条变异验证。**W3 全部完成。**
   注意 `dirname` 对根目录下的文件返回 `.`（继承上游行为，已写进测试注释）。
 
 ---

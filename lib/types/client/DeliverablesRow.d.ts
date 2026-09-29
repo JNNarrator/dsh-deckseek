@@ -7,13 +7,15 @@
  * appeared on the first write would claim the work is finished while it is still
  * being written.
  *
- * Each chip is one control. Upstream also hangs "show in folder" and "copy path"
- * off the chip; the reveal action arrives with the host route for it (W3d), and
- * the path is already the chip's title, so the second control is not here yet
- * rather than absent by oversight.
+ * Each chip carries two controls: the file name opens the file, and the folder
+ * control selects it in the OS file manager. The second one needs a server route
+ * the plugin only registers where the host has a web server and a workspace
+ * registry, so where that is missing it opens the containing folder instead — a
+ * lesser affordance, and the only one available, rather than a dead control.
  */
-export declare const Deliverables: import("react").MemoExoticComponent<({ paths, openFile }: {
+export declare const Deliverables: import("react").MemoExoticComponent<({ paths, openFile, revealFile }: {
     paths: readonly string[];
     openFile: (path: string) => void;
+    revealFile?: ((path: string) => void) | undefined;
 }) => import("react").JSX.Element>;
 //# sourceMappingURL=DeliverablesRow.d.ts.map

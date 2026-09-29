@@ -1,4 +1,25 @@
 import type { Context } from '@deepseek-ai/cordis';
+import { type RevealRequestLike, type RevealResponseLike, type WorkspaceRegistry } from './reveal-path.js';
+/**
+ * The only host services this plugin uses beyond settings.
+ *
+ * Declared here rather than pulled from a host package: the plugin needs two
+ * members of them, and a dependency on the whole contract would tie the plugin
+ * to a host version for no gain. Both are resolved lazily, so a deployment that
+ * provides neither still loads and simply loses the reveal route.
+ */
+declare module '@deepseek-ai/cordis' {
+    interface Context {
+        webServer?: {
+            register: (route: {
+                kind: 'exact' | 'prefix';
+                path: string;
+                handler: (req: RevealRequestLike, res: RevealResponseLike) => void | Promise<void>;
+            }) => () => void;
+        };
+        workspaceRegistry?: WorkspaceRegistry;
+    }
+}
 export declare const name = "dsh-deckseek";
 export declare const inject: string[];
 /**

@@ -40,6 +40,15 @@ export interface ReaderInjected {
    * call resolves the service lazily for exactly that reason.
    */
   openFile: (path: string) => void;
+  /**
+   * Ask the deployment to select this file in the OS file manager.
+   *
+   * Optional on purpose: it needs a server route the plugin only registers when
+   * the host provides a web server and a workspace registry. With none, the
+   * reading view falls back to opening the containing folder through
+   * {@link openFile} — a lesser affordance, not a dead control.
+   */
+  revealFile?: (path: string) => void;
   /** Current reading skin, reactive to the Host settings document. */
   useSkin: () => SkinId;
   /** Current work-details level, reactive to the Host settings document. */

@@ -3,6 +3,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-api-session-controller/client';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path';
+import { REVEAL_PATH } from '../reveal-path.js';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client';
@@ -123,6 +124,19 @@ export function apply(ctx: Context): void {
           } catch (error) {
             console.warn('[dsh-deckseek] openFile failed:', error);
           }
+        },
+        // A POST to this plugin's own route. Fire-and-forget by design: the
+        // reveal is a convenience, and the reading view has nothing to do with
+        // the answer either way. The route is absent on a deployment without a
+        // web server, and the 404 that produces is a warning, not an error.
+        revealFile: (path: string) => {
+          void fetch(REVEAL_PATH, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, path }),
+          }).then(response => {
+            if (!response.ok) console.warn('[dsh-deckseek] reveal refused:', response.status);
+          }).catch(error => { console.warn('[dsh-deckseek] reveal failed:', error); });
         },
         useSkin,
         useWorkDetail,

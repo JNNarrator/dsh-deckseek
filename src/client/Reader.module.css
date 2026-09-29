@@ -258,8 +258,16 @@
 .deliverablesLabel { padding-top: 2px; color: var(--dx-ink-dim); font-size: 0.75rem; font-weight: 500; }
 .deliverablesLane { min-width: 0; }
 .deliverablesChips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
-.deliverableChip { display: inline-flex; align-items: center; max-width: 100%; box-sizing: border-box; padding: 2px 9px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--dsw-alias-bg-module-platform); color: var(--dx-ink-dim); font: inherit; font-size: 0.75rem; line-height: 1.125rem; cursor: pointer; }
-.deliverableChip:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l3); background: var(--dsw-alias-interactive-bg-hover); }
+.deliverableChip { display: inline-flex; align-items: center; max-width: 100%; box-sizing: border-box; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--dsw-alias-bg-module-platform); overflow: hidden; }
+.deliverableChip:hover { border-color: var(--dsw-alias-border-l3); background: var(--dsw-alias-interactive-bg-hover); }
+.deliverableOpen { display: inline-flex; align-items: center; min-width: 0; padding: 2px 8px 2px 9px; border: 0; background: transparent; color: var(--dx-ink-dim); font: inherit; font-size: 0.75rem; line-height: 1.125rem; cursor: pointer; }
+.deliverableChip:hover .deliverableOpen { color: var(--dsw-alias-label-primary); }
+/* Dimmed rather than hidden: it stays in the accessibility tree and reachable by
+   keyboard at every moment, and the divider appears with the emphasis. */
+.deliverableReveal { display: inline-flex; align-items: center; flex: none; padding: 2px 6px 2px 3px; border: 0; border-left: 1px solid transparent; background: transparent; color: var(--dx-ink-dim); cursor: pointer; opacity: 0.65; transition: opacity 120ms ease, border-color 120ms ease; }
+.deliverableChip:hover .deliverableReveal, .deliverableChip:focus-within .deliverableReveal { opacity: 1; border-left-color: var(--dsw-alias-border-l2); }
+.deliverableReveal:hover { color: var(--dsw-alias-label-primary); }
+.deliverableReveal svg { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 /* The file name is the chip: a long one ellipsises rather than wrapping, because
    a row of half-wrapped names stops reading as a row of files. */
 .deliverableName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -267,8 +275,13 @@
 /* Terminal draws a log, not a set of cards: square brackets off, one hairline
    rule, and the meta type scale the rest of the skin's footers use. */
 [data-deckseek-skin='terminal'] .deliverablesRoot { margin-top: 8px; gap: 8px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.6875rem; line-height: 1.0625rem; }
-[data-deckseek-skin='terminal'] .deliverableChip { padding: 0 6px; border-radius: 0; border-color: var(--dx-ansi-rule); background: transparent; color: var(--dx-ansi-dim); }
-[data-deckseek-skin='terminal'] .deliverableChip:hover { border-color: var(--dx-ansi-warn); background: transparent; color: var(--dx-ansi-fg); }
+[data-deckseek-skin='terminal'] .deliverableChip { border-radius: 0; border-color: var(--dx-ansi-rule); background: transparent; }
+[data-deckseek-skin='terminal'] .deliverableChip:hover { border-color: var(--dx-ansi-warn); background: transparent; }
+[data-deckseek-skin='terminal'] .deliverableOpen,
+[data-deckseek-skin='terminal'] .deliverableReveal { padding: 0 5px; color: var(--dx-ansi-dim); }
+[data-deckseek-skin='terminal'] .deliverableChip:hover .deliverableOpen,
+[data-deckseek-skin='terminal'] .deliverableReveal:hover { color: var(--dx-ansi-fg); }
+[data-deckseek-skin='terminal'] .deliverableChip:focus-within .deliverableReveal { border-left-color: var(--dx-ansi-rule); }
 [data-deckseek-skin='terminal'] .deliverablesMore { color: var(--dx-ansi-dim); }
 [data-deckseek-skin='terminal'] .compactionSummaryBox { border-radius: 0; background: transparent; border-bottom: var(--dx-rule); }
 .processFrame { min-width: 0; }
