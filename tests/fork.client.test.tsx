@@ -27,8 +27,9 @@ type SlotConfig = { name: string; inject?: (sessionId: string) => Record<string,
  *   session controller, and a workspace service. `entriesOfSlot` reports no
  *   native session body, which is what the entry button waits on, so
  *   `installReaderEntry` subscribes and stops there — it cannot contribute a
- *   slot here and this file is not about it. `ctx.effect` is a no-op because its
- *   only job is clearing the face cache on teardown.
+ *   slot here and this file is not about it. `ctx.effect` RUNS its callback, the
+ *   way the host does, so the official-rendering bridge really installs here
+ *   rather than being skipped.
  */
 function fakeContext(options: {
   fork?: (opts: unknown) => Promise<unknown>;
@@ -41,6 +42,10 @@ function fakeContext(options: {
     slots: {
       inject: (_name: string, factory: () => unknown) => { factory(); },
       register: (config: SlotConfig) => { configs.push(config); return config; },
+      // A host slot this deployment never declares: the official-rendering bridge
+      // then falls back to the contract it shipped with, which is what a real host
+      // without the plugin installed would look like.
+      spec: () => undefined,
       entriesOfSlot: () => [],
       subscribe: () => () => {},
     },
@@ -54,7 +59,10 @@ function fakeContext(options: {
         return options.fork === undefined ? Promise.resolve('child-7') : options.fork(opts);
       },
     },
-    effect: () => {},
+    effect: (run: () => unknown) => {
+      const stop = run();
+      return typeof stop === 'function' ? stop : () => {};
+    },
     get: (serviceName: string) => (serviceName === 'uiWorkspace'
       ? options.workspace === undefined
         ? { openSession: (target: unknown) => { opened.push(target); } }
@@ -71,6 +79,21 @@ function readerFace(configs: SlotConfig[]): (sessionId: string) => Record<string
   assert.equal(typeof view!.inject, 'function', 'the conversation.view slot injects no face');
   return view!.inject!;
 }
+
+test('the reading view declares a seat for every official registration it borrows', () => {
+  const { ctx, configs } = fakeContext({});
+  apply(ctx);
+  const view = configs.find(config => config.name === 'conversation.view')!;
+  const children = Object.keys((view.children ?? {}) as Record<string, unknown>);
+  for (const seat of [
+    'dsh-deckseek.official.actions/conversation.chat.assistant-actions',
+    'dsh-deckseek.official.tools/tool.call.toolview',
+    'dsh-deckseek.official.nodes/conversation.chat.node',
+  ]) {
+    assert.ok(children.includes(seat), `${seat} is not declared, so the platform cannot resolve it`);
+  }
+  assert.ok(children.includes('dsh-deckseek.block'), 'and the reader contract seat is still declared');
+});
 
 /** Resolve every promise the fire-and-forget fork left behind. */
 async function settle(): Promise<void> {

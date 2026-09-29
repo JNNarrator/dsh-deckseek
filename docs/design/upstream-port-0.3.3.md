@@ -339,6 +339,11 @@ const READER_NODES = new Set(['user','steering','assistant-step','tool-call','tu
    桥接层用公开注册表操作（`spec`/`entriesOfSlot`/`subscribe`/`inject`/`register`），与既有
    `conversation.view` 注册同一套 API。
 
+**✅ W4 已完成（2026-09-29）**：`src/client/official-slots.tsx` + `src/client/reader-nodes.ts`，
+接进 `apply()`（视图 `children` 声明三个座位 + `ctx.effect` 安装镜像）。
+**只镜像 actions / tools / nodes 三族**；`turnTail` 与 `message.images` 有意不镜像——本视图自己画收尾行、
+自己渲染图片，借过来就是两份。测试 +11，十条变异逐条验证。**四项全部完成。**
+
 **风险**：**最高**。三点必须提前想清楚：① 宿主槽契约在 0.2.0-rc.1 上是否仍与 `EXPECTED` 一致（不一致就要先改 `EXPECTED`，且这是宿主侧事实，不是本仓库能决定的）；② `READER_NODES` 与本仓库原生链路**同源**，否则双渲染或漏渲染；③ 视觉不一致是**预期代价**，要在文档里认下来，而不是事后当 bug 修。
 
 ---

@@ -15,6 +15,7 @@ import {
 import type { DeckSeekSettings } from '../skin-settings.js';
 import { DeckSeekSection } from './DeckSeekSection.js';
 import { Reader } from './Reader.js';
+import { installOfficialSlots, officialChildren } from './official-slots.js';
 import { createReaderStore } from './store.js';
 import { installReaderEntry } from './entry.js';
 import { ui } from './locale.js';
@@ -64,7 +65,13 @@ export function apply(ctx: Context): void {
     order: -5,
     label: () => ui('reader.tab'),
     locale: 'chat',
-    children: { 'dsh-deckseek.block': { kind: 'chain', scope: 'session' } },
+    // The seats the official registrations are mirrored into. Declared on the view
+    // itself because a declaration has exactly one owner: a seat this view never
+    // declared is one the platform will not resolve.
+    children: {
+      'dsh-deckseek.block': { kind: 'chain', scope: 'session' },
+      ...officialChildren(ctx.slots),
+    },
     store,
     inject: (sessionId: SessionId): ReaderInjected => {
       const existing = faces.get(sessionId);
@@ -160,4 +167,8 @@ export function apply(ctx: Context): void {
     inject: (): DeckSeekSectionInjected => ({ useSkin, useWritable, setSkin, useWorkDetail, setWorkDetail, useTexture, setTexture }),
   }, DeckSeekSection));
   installReaderEntry(ctx);
+  // Borrowing the host's renderers. Nothing to do with settings or the entry
+  // policy, and it cleans up after itself: a slot that unloads or hot-reloads
+  // takes its mirrors with it.
+  ctx.effect(() => installOfficialSlots(ctx));
 }
