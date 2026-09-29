@@ -14,11 +14,11 @@ It adds an independent **DeckSeek reading tab** to DSH: the execution record fol
 
 ![DeckSeek reading view](docs/screenshots/reading-view.png)
 
-**The DeckSeek reading view** (Soft skin, the default): the execution record folds away and the final answer renders in full — headings, tables, code, formulas and quotes in one column; the toolbar stays pinned at the top (readout plus search / motion / export); the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
+**The DeckSeek reading view** (Soft skin): the execution record folds away and the final answer renders in full — headings, tables, code, formulas and quotes in one column; the toolbar stays pinned at the top (readout plus search / motion / export); the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
 
 ![The Terminal skin](docs/screenshots/terminal-skin.png)
 
-**The Terminal skin**: a pinned window bar carrying the readout (`3 turns · last turn 1 step`), a full-width band for your own message behind a `> ` prompt, one glyph vocabulary for the whole skin (`⏺ ⎿ ✻`), a per-turn working verb and a breathing dot. Three skins (**Paper** typographic flow / **Soft** cards / **Terminal** rows) share one DOM and change only structure, density and type; colours always come from host theme tokens, so light and dark adapt on their own.
+**The Terminal skin (the default)**: box-character corners on the window, a workspace title bar above, and a standing status line below (`RUN` / `WAIT` / `IDLE` plus `12 turns · last turn 34 steps` and `^K commands` / `? help`); the body opens a turn with a `> ` prompt, keeps one glyph vocabulary (`⏺ ⎿ ✻`) and spins a braille glyph while work is in flight. Three skins (**Terminal** rows / **Soft** cards / **Paper** typographic flow) share one DOM and change only structure, density and type; colours always come from host theme tokens, so light and dark adapt on their own.
 
 | Message navigation rail | In-view search |
 |---|---|
@@ -30,17 +30,17 @@ It adds an independent **DeckSeek reading tab** to DSH: the execution record fol
 
 ## Three reading skins
 
-Switch from the dedicated **DeckSeek** page in DSH settings; it takes effect immediately, and **Soft** is the default.
+Switch from the dedicated **DeckSeek** page in DSH settings, or press `Ctrl/Cmd+K` anywhere in the reading view; it takes effect immediately. **Terminal** is the default.
 
 | Skin | Direction | Good for |
 |---|---|---|
-| **Soft** (default) | Cards: the answer card uses the host's own elevation (0.5px hairline stroke + soft glow), and the user card derives an identity colour from the brand accent | Everyday reading; clear separation between turns |
+| **Terminal** (default) | Rows: monospace, a box-character window, a status line, and ANSI role colour plus tool-category colour as the only colour | TUI and Claude Code sensibilities; watching work happen |
+| **Soft** | Cards: the answer card uses the host's own elevation (0.5px hairline stroke + soft glow), and the user card derives an identity colour from the brand accent | Everyday reading; clear separation between turns |
 | **Paper** | Typographic flow: no containers at all, only a heading hierarchy and article-scale prose rhythm; colour is reserved for failures | Long-form reading, export and print |
-| **Terminal** | Rows: monospace, a window frame with a title bar, hairline row rules, and state / tool-category colour as the only colour | TUI and Claude Code sensibilities |
 
 Skins express structure, density, type, and radii only; **every colour comes from a host theme token**, so dark and light themes adapt automatically and the plugin ships no palette of its own. Switching skins does not change the component tree — one DOM, a different stylesheet; see [docs/design/reading-skins.md](docs/design/reading-skins.md).
 
-The terminal skin adds a window title bar (workspace path plus a standing `N turns · last turn N steps` readout), a `▌` caret on the streaming answer, a breathing dot with a per-turn verb and a right-aligned clock in the status line, tool-category colour on the `⏺` marker, a right-aligned number column, a count of what a folded turn hides (`39 tool calls · 4 files · 2 failed`), a hanging hairline on the closing readout line, a full-width band for the user turn, and a braille dot-matrix mark on the idle screen. The reasoning behind each, with measured parameters, is in [docs/design/terminal-skin-v3.md](docs/design/terminal-skin-v3.md) and [terminal-skin-v4.md](docs/design/terminal-skin-v4.md).
+The terminal skin adds box-character corners, an optional screen texture (scanlines / vignette / glow, three levels, off by default), a status line (`RUN` / `WAIT` / `IDLE`, the turn readout, and two panel keys), a `Ctrl/Cmd+K` command palette and a `?` shortcut sheet, `j` `k` `g` `G` `/` navigation keys, a workspace title bar, a `▌` caret on the streaming answer, a braille spinner with a per-turn verb and a right-aligned clock in the status line, tool-category colour on the `⏺` marker, a right-aligned number column, a count of what a folded turn hides (`39 tool calls · 4 files · 2 failed`), a hanging hairline on the closing readout line, a full-width band for the user turn, and a braille dot-matrix mark on the idle screen. The reasoning behind each, with measured parameters, is in [terminal-skin-v3.md](docs/design/terminal-skin-v3.md), [terminal-skin-v4.md](docs/design/terminal-skin-v4.md) and [terminal-skin-v5.md](docs/design/terminal-skin-v5.md).
 
 ## Features
 
@@ -66,7 +66,8 @@ The terminal skin adds a window title bar (workspace path plus a standing `N tur
 
 **Interaction & state**
 
-- **Status and follow**: the reasoning card follows the latest line and rests at the bottom when it ends; while thinking it shows a localized "thinking… {time}" label, and tools show per-family states; scrolling away from the bottom reveals a ⬇ button above the composer; sending or steering a message returns the view to the bottom.
+- **Status and follow**: the reasoning card follows the latest line and rests at the bottom when it ends; while thinking it shows a localized "thinking… {time}" label, and tools show per-family states; scrolling away from the bottom floats a centred "↓ Back to latest" pill with an unread count above the composer; sending or steering a message returns the view to the bottom.
+- **Width follows the pane**: the reading column fills the conversation pane it is given (a 1100px ceiling exists only for readability) instead of inheriting the native chat column, which is sized for bubbles beside a composer.
 - **Motion can be turned off**: the toolbar toggle or the system's `prefers-reduced-motion` stops every animation from one place.
 - **Bilingual UI**: every reading-view string follows the DSH app language (Chinese / English) with no restart.
 - **Adaptive theme and type size**: dark / light syncs live with no flash; type follows browser zoom and the host's content font-size setting (skin line heights, leading slots, and block gaps follow it too).
@@ -74,7 +75,7 @@ The terminal skin adds a window title bar (workspace path plus a standing `N tur
 **Compatibility**
 
 - **Generative MCP Apps (SEP-1865)**: an ````mcp-app```` code block in a reply mounts as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, talking over JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, …), with the card height adapting between 60 and 2400px.
-- **252 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow, and the search / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
+- **306 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow and its latency budget, and the search / unread-count / reading-measure / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
 
 ## Keyboard shortcuts
 
@@ -110,7 +111,7 @@ Listed in:
 ## Development
 
 ```sh
-npm test                                  # 252 tests (node --test + happy-dom)
+npm test                                  # 297 tests (node --test + happy-dom)
 npx tsc -p tsconfig.json --noEmit         # type check
 DSHX_HARNESS=<DSH checkout> npm run build # build lib/ (client + host halves)
 ```

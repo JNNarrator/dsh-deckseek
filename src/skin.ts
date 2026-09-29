@@ -4,14 +4,18 @@
  * schema (and schemastery with it) in just to name a skin.
  */
 
-/** Skin identifiers accepted by the settings document. */
-export const SKIN_IDS = ['paper', 'soft', 'terminal'] as const;
+/**
+ * Skin identifiers accepted by the settings document, in the order the
+ * settings page offers them. Terminal leads: it is the skin this plugin is
+ * now maintained around, and the shipped default.
+ */
+export const SKIN_IDS = ['terminal', 'soft', 'paper'] as const;
 
-/** One reading skin: editorial flow, cards, or instrument rows. */
+/** One reading skin: instrument rows, cards, or editorial flow. */
 export type SkinId = typeof SKIN_IDS[number];
 
 /** Skin used when the settings document carries no override or an unknown one. */
-export const DEFAULT_SKIN: SkinId = 'soft';
+export const DEFAULT_SKIN: SkinId = 'terminal';
 
 /**
  * Settings namespace owned by this plugin.
@@ -40,6 +44,42 @@ export function isSkin(value: unknown): value is SkinId {
  */
 export function parseSkin(value: unknown): SkinId {
   return isSkin(value) ? value : DEFAULT_SKIN;
+}
+
+/**
+ * Screen-texture levels for the terminal skin's window.
+ *
+ * Off by default, and deliberately so: a texture that is on when nobody asked
+ * for it stops being a skin detail and becomes an atmosphere the reader has to
+ * fight. Every level here is static — scanlines, a vignette and a glow are
+ * painted, never animated — so this setting can never contradict the motion
+ * contract.
+ */
+export const SCREEN_TEXTURE_IDS = ['off', 'soft', 'crt'] as const;
+
+/** One screen-texture level. */
+export type ScreenTextureId = typeof SCREEN_TEXTURE_IDS[number];
+
+/** Field carrying the selected texture inside the settings namespace. */
+export const TEXTURE_FIELD = 'texture';
+
+/** Texture used when the settings document carries no override. */
+export const DEFAULT_SCREEN_TEXTURE: ScreenTextureId = 'off';
+
+/**
+ * @param value - value crossing the settings or registry boundary.
+ * @returns whether the value is one of the declared texture levels.
+ */
+export function isScreenTexture(value: unknown): value is ScreenTextureId {
+  return typeof value === 'string' && (SCREEN_TEXTURE_IDS as readonly string[]).includes(value);
+}
+
+/**
+ * @param value - value crossing the settings boundary.
+ * @returns the matching level, or {@link DEFAULT_SCREEN_TEXTURE} for anything else.
+ */
+export function parseScreenTexture(value: unknown): ScreenTextureId {
+  return isScreenTexture(value) ? value : DEFAULT_SCREEN_TEXTURE;
 }
 
 /**

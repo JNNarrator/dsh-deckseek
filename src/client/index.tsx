@@ -7,8 +7,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client';
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client';
 import {
-  DEFAULT_SKIN, DEFAULT_WORK_DETAIL, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, WORK_DETAIL_FIELD,
-  parseSkin, parseWorkDetail, type SkinId, type WorkDetailId,
+  DEFAULT_SCREEN_TEXTURE, DEFAULT_SKIN, DEFAULT_WORK_DETAIL, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, TEXTURE_FIELD, WORK_DETAIL_FIELD,
+  parseScreenTexture, parseSkin, parseWorkDetail, type ScreenTextureId, type SkinId, type WorkDetailId,
 } from '../skin.js';
 import type { DeckSeekSettings } from '../skin-settings.js';
 import { DeckSeekSection } from './DeckSeekSection.js';
@@ -46,7 +46,13 @@ export function apply(ctx: Context): void {
     () => parseWorkDetail(form.getSnapshot().value?.workDetail),
     () => DEFAULT_WORK_DETAIL,
   );
+  const useTexture = (): ScreenTextureId => useSyncExternalStore(
+    listener => form.subscribe(listener),
+    () => parseScreenTexture(form.getSnapshot().value?.texture),
+    () => DEFAULT_SCREEN_TEXTURE,
+  );
   const setSkin = (next: SkinId): void => { void form.set(SKIN_FIELD, next); };
+  const setTexture = (next: ScreenTextureId): void => { void form.set(TEXTURE_FIELD, next); };
   const setWorkDetail = (next: WorkDetailId): void => { void form.set(WORK_DETAIL_FIELD, next); };
   const faces = new Map<SessionId, ReaderInjected>();
   ctx.effect(() => () => { faces.clear(); });
@@ -93,6 +99,13 @@ export function apply(ctx: Context): void {
         },
         useSkin,
         useWorkDetail,
+        useTexture,
+        // Same writers the settings page holds, so a skin chosen from the
+        // command palette lands in the same document as one chosen from the
+        // settings page — there is one source of truth, not two.
+        setSkin,
+        setWorkDetail,
+        setTexture,
       };
       faces.set(sessionId, face);
       return face;
@@ -103,7 +116,7 @@ export function apply(ctx: Context): void {
     id: 'deckseek',
     order: 30,
     label: () => ui('settings.nav'),
-    inject: (): DeckSeekSectionInjected => ({ useSkin, useWritable, setSkin, useWorkDetail, setWorkDetail }),
+    inject: (): DeckSeekSectionInjected => ({ useSkin, useWritable, setSkin, useWorkDetail, setWorkDetail, useTexture, setTexture }),
   }, DeckSeekSection));
   installReaderEntry(ctx);
 }

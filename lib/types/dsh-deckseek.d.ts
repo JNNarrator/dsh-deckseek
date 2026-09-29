@@ -14,10 +14,12 @@ export declare const inject: string[];
  * whose schema has no volatile field. See {@link DeckSeekConfigSchema}.
  */
 export declare const Config: import("@deepseek-ai/schemastery").default<Schemastery.ObjectS<NoInfer<{
-    skin: import("@deepseek-ai/schemastery").default<"paper" | "soft" | "terminal", "paper" | "soft" | "terminal", "volatile-defined">;
+    skin: import("@deepseek-ai/schemastery").default<"terminal" | "soft" | "paper", "terminal" | "soft" | "paper", "volatile-defined">;
+    texture: import("@deepseek-ai/schemastery").default<"soft" | "off" | "crt", "soft" | "off" | "crt", "volatile-defined">;
     workDetail: import("@deepseek-ai/schemastery").default<"compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "volatile-defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    skin: import("@deepseek-ai/schemastery").default<"paper" | "soft" | "terminal", "paper" | "soft" | "terminal", "volatile-defined">;
+    skin: import("@deepseek-ai/schemastery").default<"terminal" | "soft" | "paper", "terminal" | "soft" | "paper", "volatile-defined">;
+    texture: import("@deepseek-ai/schemastery").default<"soft" | "off" | "crt", "soft" | "off" | "crt", "volatile-defined">;
     workDetail: import("@deepseek-ai/schemastery").default<"compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "volatile-defined">;
 }>>, "plain">;
 export declare function apply(ctx: Context): void;

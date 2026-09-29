@@ -4,7 +4,7 @@ import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@d
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type {} from '@deepseek-ai/dsh-client-ui-session/client';
-import type { SkinId, WorkDetailId } from '../skin.js';
+import type { ScreenTextureId, SkinId, WorkDetailId } from '../skin.js';
 import type { createReaderStore } from './store.js';
 
 export interface ReaderBlockOwner {
@@ -36,6 +36,20 @@ export interface ReaderInjected {
   useSkin: () => SkinId;
   /** Current work-details level, reactive to the Host settings document. */
   useWorkDetail: () => WorkDetailId;
+  /** Current screen texture, reactive to the Host settings document. */
+  useTexture: () => ScreenTextureId;
+  /**
+   * Persist a skin choice from inside the reading view.
+   *
+   * The same writer the settings page uses. The command palette offers the
+   * skins, and a palette entry that only told the reader where to go would be
+   * worse than no entry: switching skin is a reading-view decision.
+   */
+  setSkin: (next: SkinId) => void;
+  /** Persist a work-details choice from inside the reading view. */
+  setWorkDetail: (next: WorkDetailId) => void;
+  /** Persist a screen-texture choice from inside the reading view. */
+  setTexture: (next: ScreenTextureId) => void;
 }
 export type ReaderProps = PropsRuntime<'conversation.view'>
   & PropsLocale<'chat'>
@@ -63,4 +77,8 @@ export interface DeckSeekSectionInjected {
   useWorkDetail: () => WorkDetailId;
   /** Persist one work-details choice. */
   setWorkDetail: (next: WorkDetailId) => void;
+  /** Current screen texture, reactive to the Host settings document. */
+  useTexture: () => ScreenTextureId;
+  /** Persist one screen-texture choice. */
+  setTexture: (next: ScreenTextureId) => void;
 }

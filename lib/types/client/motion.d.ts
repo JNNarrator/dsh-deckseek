@@ -1,4 +1,17 @@
 import type { ComponentType, ReactNode, RefObject } from 'react';
+/**
+ * Count the records in one batch of DOM mutations.
+ *
+ * Split out of the observer because it is the whole of the unread rule, and the
+ * rule is worth testing without a browser: a count that double-counts nested
+ * records, or that counts a text node as a record, is worse than no count — it
+ * tells the reader to go back for something that is not there.
+ *
+ * `closest` is deliberately not consulted: an added subtree counts as one
+ * record for each record inside it, however deep, which is what a batch of
+ * newly-arrived turns looks like to React.
+ */
+export declare function countNewRecords(mutations: readonly MutationRecord[]): number;
 export declare function useMotionAllowed(enabled: boolean): boolean;
 export declare function usePinnedSelection(root: RefObject<HTMLElement>, selector?: string): readonly string[];
 /**
@@ -63,6 +76,7 @@ export declare function RetiringContent({ visible, children }: {
 }): import("react").JSX.Element | null;
 export declare function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean): {
     detached: boolean;
+    unread: number;
     jump: () => void;
 };
 /** Remember the reading position per session and restore it on return. */

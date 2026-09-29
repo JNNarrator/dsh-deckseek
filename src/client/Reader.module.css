@@ -83,9 +83,18 @@
   min-width: 0;
   flex: 0 0 auto;
   overflow-anchor: auto;
+  /* The reading measure. The reader fills the conversation pane it is given
+     rather than inheriting the chat view's own column: the chat column is sized
+     for bubbles and a composer, and a reading view that reserves the same
+     narrow measure wastes most of a wide window on two empty gutters. So this
+     is NOT `--dsh-chat-content-width`. The 1100px ceiling is the readability
+     guard, not a layout one — past roughly 90 characters a line the eye loses
+     its place on the return sweep, so an ultrawide window stops growing the
+     text and keeps the remainder as margin. */
+  --dx-content-width: min(100%, 1100px);
   container-type: inline-size;
 }
-.column { max-width: var(--dsh-chat-content-width, 748px); width: 100%; min-width: 0; display: flex; flex-direction: column; gap: calc(22px + var(--dx-font-delta)); }
+.column { max-width: var(--dx-content-width); width: 100%; min-width: 0; display: flex; flex-direction: column; gap: calc(22px + var(--dx-font-delta)); }
 /* The rail hugs the reading column's right edge; a matching .railSpacer on
    the left keeps the column at the true center of the conversation area. */
 .railSpacer { flex: 0 0 auto; align-self: flex-start; width: 20px; margin: 0 8px 0 0; }
@@ -292,8 +301,12 @@
    transcript; hand the painted offset to native scrolling for manual reading. */
 .reasonCard {
   --reason-preview-height: 224px;
-  --reason-hold: 360ms;
-  --reason-step: 500ms;
+  /* Fallbacks only. `ReasoningCard` writes both from `REASON_HOLD`/`REASON_STEP`
+     on mount, because the step's transition duration MUST equal the constant the
+     tick loop waits on — it is the condition that ends each step. Two copies of
+     that number is a bug that waits for one of them to be edited. */
+  --reason-hold: 110ms;
+  --reason-step: 240ms;
   --reason-lines: 2;
   --reason-fade: 28px;
   --reason-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -456,18 +469,47 @@
 .dialogClose { border: 0; background: transparent; color: inherit; width: 32px; height: 32px; border-radius: 8px; font-size: 1.5rem; }
 /* The host scroller runs behind the floating composer, so the dock must
    offset by the composer region height, not the raw scrollport edge. */
-/* The jump button is an overlay, so wherever it floats it is over something.
-   Right-aligning it takes it off the middle of a line, and a container with
-   room to spare pushes it clear of the text column entirely: measured in the
-   host, the column's inner right edge sits 13px inside the window frame, which
-   no usable button fits in — 28px of margin still covered the last 12px of a
-   full line, 46px clears it and leaves the control over the gutter instead.
-   Below 900px of container there is no gutter left to use. */
-.jumpDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 4px); align-self: flex-end; height: 0; z-index: var(--dx-layer-chrome); }
-@container (min-width: 900px) { .jumpDock { margin-right: -46px; } }
-.jump { transform: translateY(-100%); display: flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 0.75rem; line-height: 1.25rem; padding: 0; box-shadow: var(--dsh-reader-shadow-float); }
-.jump:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+/* The jump control is the one thing a reader needs once they have scrolled
+   away, so it goes where the eye already is: centred on the reading measure,
+   just above the composer.
+ *
+ * The old right-aligned circle was placed by arithmetic — `margin-right: -46px`
+ * reached into the gutter so that a 40px button stopped covering the last
+ * characters of a full line. That arithmetic only held above 900px of
+ * container, and below it the button sat on the text it was meant to clear;
+ * worse, it moved with the container, so the control's position was a function
+ * of the window width rather than of the reading measure. A centred pill needs
+ * no gutter, so there is no width at which it covers a line's end.
+ *
+ * It is also no longer a bare icon. A 40px circle says "down" and nothing else;
+ * the label says what happens, and the count says how much is waiting — which
+ * is the only thing that makes the control worth pressing. */
+.jumpDock { position: sticky; bottom: calc(var(--dsh-deckseek-composer) + 12px); align-self: stretch; display: flex; justify-content: center; height: 0; z-index: var(--dx-layer-chrome); pointer-events: none; }
+.jump {
+  /* The dock is a zero-height row, so the pill lifts itself clear of it. The
+     lift lives in a variable because `:active` also needs to scale the pill,
+     and a second `transform` would silently drop this one. */
+  --jump-lift: -100%;
+  transform: translateY(var(--jump-lift));
+  pointer-events: auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 34px; padding: 0 14px 0 11px;
+  border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px;
+  background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary);
+  font: inherit; font-size: 0.8125rem; line-height: 1; font-weight: 500;
+  white-space: nowrap; cursor: pointer; box-shadow: var(--dsh-reader-shadow-float);
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.jump:hover { background: var(--dsw-alias-interactive-bg-hover); border-color: var(--dsw-alias-border-l3); }
+.jump:active { transform: translateY(var(--jump-lift)) scale(.97); }
 .jump svg { flex: none; }
+/* Tabular figures so the pill does not change width as the count ticks. */
+.jumpCount { flex: none; min-width: 1.25rem; padding: 1px 6px; border-radius: 999px; background: var(--dsw-alias-interactive-bg-hover-accent); color: var(--dsw-alias-label-primary); font-size: 0.6875rem; font-variant-numeric: tabular-nums; text-align: center; }
+[data-motion=off] .jump { transition: none; }
+/* Terminal furniture is drawn, not rounded: a pill would be the only curve on
+   the screen, so the chip radius and the code face carry it instead. */
+[data-deckseek-skin='terminal'] .jump { border-radius: var(--dx-radius-chip); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+[data-deckseek-skin='terminal'] .jumpCount { border-radius: 2px; }
 [data-motion=off] .chevron, [data-motion=off] .imageOpen img, [data-motion=off] .processMeta { transition: none; }
 @media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img, .processMeta { transition: none; } }
 @media (pointer: coarse) { .disclosureButton { min-height: 44px; } .railItem { width: 28px; } .textButton, .historyButton, .iconButton { min-height: 44px; } .iconButton, .jump, .dialogClose { min-width: 44px; min-height: 44px; } }
@@ -571,7 +613,6 @@
      but inert timing (`0` iterations) rather than `none`, which keeps the
      declarations valid and leaves each decoration in its static state. */
   --dx-blink-timing: 1s linear infinite;
-  --dx-breathe-timing: 1.4s ease-in-out infinite;
   --dx-star-timing: 2s ease-in-out infinite;
   /* A terminal draws hairlines, not halos — but the ring is still a ring, not
      the 2px UI outline it would otherwise inherit. */
@@ -579,17 +620,34 @@
   /* The frame's inner padding, named because the skin needs it twice: once for
      the column, once for the user band's bleed. */
   --dx-frame-pad-x: 12px;
+  /* ANSI roles. A terminal colours by *what a thing is* — a prompt, a path, a
+     count, a warning — so the furniture reads as ANSI without one literal
+     colour: every role is bound to the host's own state or label token, which
+     is what keeps both app themes working from this one sheet. Red stays
+     reserved for failure, as the glyph contract requires. */
+  --dx-ansi-fg: var(--dsw-alias-label-primary);
+  --dx-ansi-dim: var(--dsw-alias-label-secondary);
+  --dx-ansi-muted: var(--dx-ink-dim);
+  --dx-ansi-prompt: var(--dsw-alias-state-success-primary);
+  --dx-ansi-info: var(--dsw-alias-state-business-primary);
+  --dx-ansi-warn: var(--dsw-alias-state-warn-primary);
+  --dx-ansi-error: var(--dsw-alias-state-error-primary);
+  --dx-ansi-rule: var(--dsw-alias-border-l1);
+  /* The window's frame is *drawn* (four box-drawing glyphs), so its ink comes
+     from the ink ladder rather than the hairline ladder. That distinction is the
+     whole reason the frame read as nothing at first: `border-l2` is 12% white
+     and `border-l3` is 16%, which is right for a separator and invisible for a
+     window edge. `label-caption` is the dimmest ink tier and clears both themes. */
+  --dx-ansi-frame: var(--dsw-alias-label-caption);
 }
 [data-deckseek-skin='terminal'][data-motion='off'] {
   --dx-blink-timing: 1s linear 0;
-  --dx-breathe-timing: 1.4s ease-in-out 0;
   --dx-star-timing: 2s ease-in-out 0;
 }
 @media (prefers-reduced-motion: reduce) {
   [data-deckseek-skin='terminal'] {
     --dx-blink-timing: 1s linear 0;
-    --dx-breathe-timing: 1.4s ease-in-out 0;
-    --dx-star-timing: 2s ease-in-out 0;
+      --dx-star-timing: 2s ease-in-out 0;
   }
 }
 [data-deckseek-skin='terminal'] .toolActivity,
@@ -671,7 +729,9 @@
 [data-deckseek-skin='terminal'] .column {
   gap: var(--dx-gap-block);
   font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  border: 1px solid var(--dsw-alias-border-l2);
+  /* The frame's edge, mixed from the same ink as the corners so the two read as
+     one drawing: 32% of the caption ink is a hairline you can actually see. */
+  border: 1px solid color-mix(in srgb, var(--dx-ansi-frame) 32%, transparent);
   padding: 10px var(--dx-frame-pad-x);
 }
 [data-deckseek-skin='terminal'] .turn { gap: 4px; }
@@ -733,15 +793,17 @@
   color: var(--dsw-alias-label-secondary);
   animation: caretBlink var(--dx-blink-timing);
 }
-/* Status line: a breathing glyph, the turn's working verb, and the elapsed clock
-   in a slot of its own. The verb replaces the phase sentence while the model
-   works; the thinking phase keeps its sentence, because that signal IS the
-   phase and the reference TUI's verb would spend it on flavour. */
-@keyframes glyphBreathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+/* Status line: a spinner, the turn's working verb, and the elapsed clock in a
+   slot of its own. The verb replaces the phase sentence while the model works;
+   the thinking phase keeps its sentence, because that signal IS the phase and
+   the reference TUI's verb would spend it on flavour. The spinner is braille
+   drawn by `spinner.ts`, not a `content:` glyph: every frame is one narrow
+   cell, so it rotates in place without the fixed-width clipping window that
+   killed the earlier wide-glyph rotation. */
 [data-deckseek-skin='terminal'] .statusText { align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
-[data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph { display: inline-flex; align-items: center; }
-[data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph::before {
-  content: '●'; font-size: 0.5rem; line-height: 1; color: var(--dsw-alias-state-business-primary); animation: glyphBreathe var(--dx-breathe-timing);
+[data-deckseek-skin='terminal'] .statusText[data-reader-busy='true'] .statusGlyph {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1ch; color: var(--dx-ansi-info);
 }
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .think { display: none; }
 [data-deckseek-skin='terminal'] .statusText[data-reader-status-verb] .statusVerb { display: inline; color: var(--dsw-alias-label-secondary); }
@@ -1017,3 +1079,206 @@
     outline-offset: 2px;
   }
 }
+
+/* Terminal v5 — the skeleton the skin was missing: a frame drawn with box
+   characters, a status line that is always there, ANSI-coloured furniture, and
+   the two panels the keyboard layer opens. Sources are the TUI checklist this
+   round started from; every colour still comes from a host token through the
+   `--dx-ansi-*` role layer above. */
+
+/* Keyboard affordances. The command palette and the shortcut sheet are not
+   terminal-only features, so every skin gets a way to reach them; the terminal
+   skin moves its two entries into the status line below, where a terminal puts
+   them, and hides this pair. */
+.toolbarKey { font: inherit; cursor: pointer; background: transparent; border: 0; border-radius: var(--dx-radius-chip); padding: 2px 6px; color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+.toolbarKey:hover { background: var(--dsw-alias-interactive-bg-hover); }
+[data-deckseek-skin='terminal'] .toolbarKey { display: none; }
+
+/* The status line and the box-character frame are terminal furniture: the
+   skins that are pages rather than instruments keep their existing bottom
+   edge. The frame corners are drawn by `.topBar` / `.statusBar` pseudo-elements
+   below, so hiding the status line hides them with it. */
+.statusBar { display: none; }
+
+/* Command palette and shortcut sheet. A scrim over the whole view, the panel
+   centred: both are chrome *about* the reading view, so they sit above it and
+   never inside the column's own frame. */
+@keyframes paletteIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.paletteScrim { position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px; background: color-mix(in srgb, var(--dsw-alias-label-primary) 32%, transparent); }
+.palette { display: flex; flex-direction: column; gap: 6px; width: min(560px, 100%); max-height: 70vh; overflow: hidden; padding: 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-panel); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); box-shadow: var(--dsw-elevation-panel); animation: paletteIn 120ms ease-out; }
+[data-motion='off'] .palette { animation: none; }
+@media (prefers-reduced-motion: reduce) { .palette { animation: none; } }
+.paletteField { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.palettePrompt { flex: none; color: var(--dsw-alias-label-caption); }
+.paletteInput { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: inherit; font: inherit; font-size: 0.875rem; }
+.paletteList { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; min-height: 0; }
+.paletteGroupLabel { margin: 6px 0 2px; padding: 0 6px; color: var(--dsw-alias-label-caption); font-size: 0.6875rem; letter-spacing: 0.06em; }
+.paletteItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 6px 8px; border: 0; border-radius: var(--dx-radius-chip); background: transparent; color: inherit; font: inherit; font-size: 0.8125rem; text-align: left; cursor: pointer; }
+.paletteItem:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.paletteItem[data-active] { background: var(--dsw-alias-interactive-bg-hover-accent); }
+.paletteItem:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -2px; }
+.paletteLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paletteHint, .helpKeys { flex: none; padding: 1px 6px; border-radius: var(--dx-radius-chip); background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-secondary); font-size: 0.6875rem; font-family: inherit; }
+.paletteEmpty { margin: 6px 0; padding: 0 6px; color: var(--dx-ink-dim); font-size: 0.8125rem; }
+.paletteNote { margin: 2px 0 0; padding: 0 6px; color: var(--dsw-alias-label-caption); font-size: 0.6875rem; }
+.helpTitle { margin: 0; padding: 0 6px; font-size: 0.8125rem; font-weight: 600; }
+.helpList { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 4px 12px; margin: 0; padding: 0 6px; overflow-y: auto; }
+.helpGroup { grid-column: 1 / -1; margin: 6px 0 0; color: var(--dsw-alias-label-caption); font-size: 0.6875rem; letter-spacing: 0.06em; }
+.helpRow { display: contents; }
+.helpLabel { color: var(--dsw-alias-label-secondary); font-size: 0.8125rem; }
+.helpClose { align-self: flex-end; padding: 4px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dx-radius-chip); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 0.75rem; cursor: pointer; }
+.helpClose:hover { background: var(--dsw-alias-interactive-bg-hover); }
+
+/* Terminal: the frame's corners, drawn with box characters over the hairline
+   border so the reading area reads as a window rather than as a bordered
+   column.
+ *
+ * They hang off the two bars that are already pinned to the visible top and
+ * bottom of the log, and NOT off a positioned wrapper around the column.
+ *
+ * That is a correctness rule, not a taste one. A positioned element becomes the
+ * containing block for every absolutely positioned box inside it, and this
+ * column contains the language the tool rows are written in: `.srOnly` spans,
+ * folded `.toolState` markers, per-row `.branchReason` labels — around ninety of
+ * them, one pixel each. Without a positioned column they resolve against the
+ * host's own root and stay where they belong. With one, they resolve against
+ * the column, which lifts them OUT of the capped process body's clipping (that
+ * body is `max-height` + `overflow-y: auto`, so its 400px viewport normally
+ * swallows a 11,000px process). Their static positions sit deep inside that
+ * process, so the column's scrollable overflow grows to the height of the whole
+ * process — tens of thousands of pixels of scroll range with nothing in it.
+ * The host's scroller inherits the phantom range, and reading becomes: the text
+ * stops, and you keep scrolling. Measured in the running app: `scrollHeight`
+ * 12310 → 2107 on this one declaration.
+ *
+ * The bars are already `position: sticky`, so anchoring to them is free. */
+[data-deckseek-skin='terminal'] .topBar::before,
+[data-deckseek-skin='terminal'] .topBar::after,
+[data-deckseek-skin='terminal'] .statusBar::before,
+[data-deckseek-skin='terminal'] .statusBar::after {
+  position: absolute; width: 1em; height: 1em; line-height: 1; text-align: center;
+  color: color-mix(in srgb, var(--dx-ansi-frame) 46%, transparent); font-family: inherit;
+  pointer-events: none;
+  /* One size for all four. The bars carry different type scales (the status
+     line is 11px, the bar above it 16px), and a `1em` corner would be drawn at
+     two different sizes on the same window. */
+  font-size: 0.75rem;
+}
+/* Centred on the border-box corner: half a glyph out, plus the border's own
+   width, because the bars span the content box and the border sits outside it. */
+[data-deckseek-skin='terminal'] .topBar::before { content: '┌'; top: calc(-0.5em - 1px); left: calc(-0.5em - 1px); }
+[data-deckseek-skin='terminal'] .topBar::after { content: '┐'; top: calc(-0.5em - 1px); right: calc(-0.5em - 1px); }
+[data-deckseek-skin='terminal'] .statusBar::before { content: '└'; bottom: calc(-0.5em - 1px); left: calc(-0.5em - 1px); }
+[data-deckseek-skin='terminal'] .statusBar::after { content: '┘'; bottom: calc(-0.5em - 1px); right: calc(-0.5em - 1px); }
+
+/* Terminal: the status line, pinned to the bottom of the scroll viewport so it
+   is there whatever part of the log is on screen. It sits above the host's
+   composer, which owns its own strip below. */
+[data-deckseek-skin='terminal'] .statusBar {
+  display: flex; align-items: center; gap: 10px; position: sticky; bottom: 0; z-index: 3;
+  /* A row of the column, not a box inside it: it spans the window's inner
+     width and never shrinks, so the flex column cannot squash it. */
+  flex: none; align-self: stretch;
+  margin-top: 4px; padding: 3px var(--dx-frame-pad-x);
+  border-top: var(--dx-rule); background: var(--dsw-alias-bg-base);
+  color: var(--dx-ansi-muted); font-size: 0.6875rem; line-height: 1.25rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+[data-deckseek-skin='terminal'] .statusBarMode { flex: none; font-weight: 600; letter-spacing: 0.08em; }
+[data-deckseek-skin='terminal'] .statusBar[data-mode='run'] .statusBarMode { color: var(--dx-ansi-info); }
+[data-deckseek-skin='terminal'] .statusBar[data-mode='wait'] .statusBarMode { color: var(--dx-ansi-warn); }
+[data-deckseek-skin='terminal'] .statusBar[data-mode='idle'] .statusBarMode { color: var(--dx-ansi-muted); }
+[data-deckseek-skin='terminal'] .statusBarMeter { flex: none; overflow: hidden; text-overflow: ellipsis; }
+[data-deckseek-skin='terminal'] .statusBarMeter::before { content: '· '; }
+[data-deckseek-skin='terminal'] .statusBarSpacer { flex: 1 1 auto; min-width: 8px; }
+[data-deckseek-skin='terminal'] .statusBarKey { flex: none; padding: 0 4px; border: 0; border-radius: var(--dx-radius-chip); background: transparent; color: var(--dx-ansi-dim); font: inherit; font-size: 0.6875rem; cursor: pointer; }
+[data-deckseek-skin='terminal'] .statusBarKey:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dx-ansi-fg); }
+/* The meter is the first thing the line sheds: the state and the keys are what
+   the line is for, the counts are the footnote. */
+@container (max-width: 520px) { [data-deckseek-skin='terminal'] .statusBarMeter { display: none; } }
+
+/* Terminal: the ANSI roles applied. The prompt is the one thing a terminal
+   always colours, so the two prompts take the prompt role; the workspace path
+   takes the info role the way a shell colours a directory; the counts stay
+   dim. Nothing here is red, which stays failure-only. */
+[data-deckseek-skin='terminal'] .userRole::before { color: var(--dx-ansi-prompt); }
+[data-deckseek-skin='terminal'] .emptyTitle::before { color: var(--dx-ansi-prompt); }
+[data-deckseek-skin='terminal'] .frameCwd { color: var(--dx-ansi-info); }
+[data-deckseek-skin='terminal'] .turnTail, [data-deckseek-skin='terminal'] .frameMeter { color: var(--dx-ansi-muted); }
+[data-deckseek-skin='terminal'] .palette, [data-deckseek-skin='terminal'] .statusBar { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+[data-deckseek-skin='terminal'] .palette { border-radius: var(--dx-radius-panel); }
+[data-deckseek-skin='terminal'] .palettePrompt { color: var(--dx-ansi-prompt); }
+[data-deckseek-skin='terminal'] .paletteHint, [data-deckseek-skin='terminal'] .helpKeys { background: transparent; border: 1px solid var(--dx-ansi-rule); color: var(--dx-ansi-dim); }
+[data-deckseek-skin='terminal'] .helpLabel, [data-deckseek-skin='terminal'] .paletteLabel { color: var(--dx-ansi-dim); }
+[data-deckseek-skin='terminal'] .helpClose { border-radius: var(--dx-radius-chip); border-color: var(--dx-ansi-rule); color: var(--dx-ansi-dim); }
+@media (forced-colors: active) {
+  .paletteItem[data-active] { outline: 2px solid; outline-offset: -2px; }
+  /* Box-drawing characters are drawn with the text colour, which forced-color
+     mode overrides, so the frame stops reading as a frame. The border stays. */
+  [data-deckseek-skin='terminal'] .topBar::before,
+  [data-deckseek-skin='terminal'] .topBar::after,
+  [data-deckseek-skin='terminal'] .statusBar::before,
+  [data-deckseek-skin='terminal'] .statusBar::after { content: none; }
+}
+
+/* Terminal v5, the texture layer. Off unless the settings document asks for
+   it: a texture that is on by default stops being a skin detail and becomes an
+   atmosphere the reader has to fight. Every level is painted, never animated,
+   so this layer cannot contradict the motion contract — there is nothing here
+   for `data-motion=off` to switch off.
+
+   The lines and the vignette are mixed from `label-caption`, the theme's own
+   mid ink, rather than from black or white: on a dark theme they read as the
+   brighter bleed between scanlines, on a light theme as ruled paper, and
+   neither needs a second sheet per theme. */
+.screenTexture { display: none; }
+[data-deckseek-skin='terminal'][data-deckseek-texture='soft'] .screenTexture,
+[data-deckseek-skin='terminal'][data-deckseek-texture='crt'] .screenTexture {
+  display: block; z-index: 2; pointer-events: none;
+  /* A screen texture belongs to the screen, not to the log, so it is pinned to
+     the viewport rather than laid out inside the column.
+   *
+   * It cannot be an `inset: 0` overlay on the column. That needs the column to
+     be positioned, and a positioned column is the bug written up above the
+     frame corners: it re-anchors the ninety hidden one-pixel boxes inside the
+     process body and hands the view a phantom scroll range.
+   *
+   * It cannot be `position: sticky` either — that was this layer's first fix,
+   * and it reproduced the same phantom range by a second route. `sticky` does
+   * keep the column unpositioned, but the sticky box still takes part in the
+   * column's layout: `height: 100vh` with `margin-bottom: -100vh` cancels the
+   * space only in a column at least one viewport tall. When the content is
+   * SHORTER than a viewport — a fresh session, a short history — the 100vh box
+   * is the tallest thing in the column, so the column's scrollable overflow
+   * becomes a viewport while the text ends a hundred pixels in. Measured in
+   * Chrome against this sheet: content 246px, texture 613px, host scroll
+   * overflow 11px with the level on and 0 with it off; with a single turn,
+   * content 104px, texture 613px. `useReadingPosition` then restores a position
+   * inside that empty range, which is what the reader sees as a blank page.
+   * Same failure class as the frame-corner incident, different mechanism —
+   * which is why the guard test below asserts the SCROLL RESULT and not the
+   * positioning scheme. `sticky` passed the scheme check and broke the view.
+   *
+   * `fixed` is the one scheme that pins to the viewport without either claiming
+   * a containing block or occupying the flow. It is out of the column's layout
+   * entirely, so no content height can produce overflow through it. */
+  position: fixed; inset: 0;
+  background-image:
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--dsw-alias-label-caption) 9%, transparent) 0 1px,
+      transparent 1px 3px),
+    radial-gradient(125% 105% at 50% 50%,
+      transparent 44%,
+      color-mix(in srgb, var(--dsw-alias-label-caption) 18%, transparent) 100%);
+}
+/* Half strength for `soft`: the same drawing, laid on thinner. */
+[data-deckseek-skin='terminal'][data-deckseek-texture='soft'] .screenTexture { opacity: 0.5; }
+/* `crt` adds the glow, and it belongs on the window rather than on the overlay:
+   an inset shadow paints under the text, so the halo reads as light escaping
+   from behind the content instead of as a wash over it. */
+[data-deckseek-skin='terminal'][data-deckseek-texture='crt'] .column {
+  box-shadow: inset 0 0 70px color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent);
+}
+/* The texture sits above the prose, so the frame has to sit above the texture
+   — otherwise the window's own corners dim with everything else. Both bars
+   already carry `--dx-layer-chrome`, which is above the texture's layer. */

@@ -3,9 +3,13 @@
  * Deliberately zero imports: the client bundle must not pull the settings
  * schema (and schemastery with it) in just to name a skin.
  */
-/** Skin identifiers accepted by the settings document. */
-export declare const SKIN_IDS: readonly ["paper", "soft", "terminal"];
-/** One reading skin: editorial flow, cards, or instrument rows. */
+/**
+ * Skin identifiers accepted by the settings document, in the order the
+ * settings page offers them. Terminal leads: it is the skin this plugin is
+ * now maintained around, and the shipped default.
+ */
+export declare const SKIN_IDS: readonly ["terminal", "soft", "paper"];
+/** One reading skin: instrument rows, cards, or editorial flow. */
 export type SkinId = typeof SKIN_IDS[number];
 /** Skin used when the settings document carries no override or an unknown one. */
 export declare const DEFAULT_SKIN: SkinId;
@@ -30,6 +34,32 @@ export declare function isSkin(value: unknown): value is SkinId;
  * @returns the matching skin, or {@link DEFAULT_SKIN} for anything else.
  */
 export declare function parseSkin(value: unknown): SkinId;
+/**
+ * Screen-texture levels for the terminal skin's window.
+ *
+ * Off by default, and deliberately so: a texture that is on when nobody asked
+ * for it stops being a skin detail and becomes an atmosphere the reader has to
+ * fight. Every level here is static — scanlines, a vignette and a glow are
+ * painted, never animated — so this setting can never contradict the motion
+ * contract.
+ */
+export declare const SCREEN_TEXTURE_IDS: readonly ["off", "soft", "crt"];
+/** One screen-texture level. */
+export type ScreenTextureId = typeof SCREEN_TEXTURE_IDS[number];
+/** Field carrying the selected texture inside the settings namespace. */
+export declare const TEXTURE_FIELD = "texture";
+/** Texture used when the settings document carries no override. */
+export declare const DEFAULT_SCREEN_TEXTURE: ScreenTextureId;
+/**
+ * @param value - value crossing the settings or registry boundary.
+ * @returns whether the value is one of the declared texture levels.
+ */
+export declare function isScreenTexture(value: unknown): value is ScreenTextureId;
+/**
+ * @param value - value crossing the settings boundary.
+ * @returns the matching level, or {@link DEFAULT_SCREEN_TEXTURE} for anything else.
+ */
+export declare function parseScreenTexture(value: unknown): ScreenTextureId;
 /**
  * How much of a Turn's process the reader shows at rest. Mirrors the host's
  * `TRANSCRIPT_VIEW_MODES` so one preference means the same thing in either

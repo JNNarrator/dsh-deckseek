@@ -138,6 +138,10 @@ function mountReader(
     actions={store.actions as never}
     useSkin={() => 'soft'}
     useWorkDetail={() => workDetail}
+    useTexture={() => 'off'}
+    setSkin={() => {}}
+    setWorkDetail={() => {}}
+    setTexture={() => {}}
     loadOlder={async () => {}}
     loadImage={loadImage}
     renderSlotChain={renderSlotChain}

@@ -1,10 +1,21 @@
-/** Presentation only. The original session string remains the source of truth. */
+/** Presentation only. The original session string remains the source of truth.
+ *
+ *  These are latency budgets, not aesthetics: `catchUpMs` is how long the
+ *  visible text may trail the received text, `maxQueuedMs` is the ceiling on
+ *  any one batch that arrives while more is still coming, and `finishMs` is the
+ *  grace given to the last bytes when the model stops. They were 180/240/96 and
+ *  are now 110/150/56: at 180ms a reader watching a fast model still saw the
+ *  prose resolve visibly after the turn had moved on.
+ *
+ *  `revealMs` mirrors the word-reveal duration so the two halves of the same
+ *  effect stay legible in one place; `minimumRate` is the floor that keeps a
+ *  nearly-drained buffer from crawling the last few characters in. */
 export declare const STREAM_TIMING: {
-    readonly catchUpMs: 180;
-    readonly maxQueuedMs: 240;
-    readonly finishMs: 96;
-    readonly revealMs: 350;
-    readonly minimumRate: 100;
+    readonly catchUpMs: 110;
+    readonly maxQueuedMs: 150;
+    readonly finishMs: 56;
+    readonly revealMs: 240;
+    readonly minimumRate: 220;
 };
 export declare class StreamBuffer {
     target: string;

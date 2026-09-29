@@ -55,10 +55,42 @@ test('only new word identities receive the reference stagger, with a bounded que
   timeline.begin('', true, 0, 0);
   timeline.begin('one two three four five six seven', true, 0, 100);
   const words = timeline.words('one two three four five six seven', 0).filter(word => word.text.trim());
-  assert.deepEqual(words.slice(0, 3).map(word => word.born), [100, 160, 220]);
+  // Derived from the constant, not written out: the assertion that matters is
+  // that the stagger is uniform and starts at `now`, and pinning the literal
+  // milliseconds made a timing change look like a behavioural regression.
+  const [first, second, third] = words;
+  assert.equal(first!.born, 100);
+  assert.equal(second!.born, 100 + WORD_MOTION.gap);
+  assert.equal(third!.born, 100 + WORD_MOTION.gap * 2);
   assert.ok(words.every(word => word.born! <= 100 + WORD_MOTION.maxDelay));
   timeline.begin('one two three four five six seven eight', true, 0, 900);
-  assert.deepEqual(timeline.words('one two three', 0).filter(word => word.text.trim()).map(word => word.born), [100, 160, 220]);
+  assert.deepEqual(timeline.words('one two three', 0).filter(word => word.text.trim()).map(word => word.born), [100, 100 + WORD_MOTION.gap, 100 + WORD_MOTION.gap * 2]);
+});
+
+/**
+ * The reveal must not become the thing the reader waits for.
+ *
+ * The three constants are a latency budget: a word enters at `now + maxDelay` at
+ * worst, and takes `duration` to finish arriving, so the last word of a burst is
+ * settled `maxDelay + duration` after the burst landed. The recipe's own numbers
+ * put that at 590ms, which for a CJK answer — where the segmenter emits about
+ * one item per character — is most of a second of typing after the model has
+ * already moved on. This test is the reason the budget is written down: it is
+ * the property a constant change must preserve, and unlike a pinned literal it
+ * fails for the right reason.
+ */
+test('the word reveal stays inside its latency budget', () => {
+  const budget = WORD_MOTION.duration + WORD_MOTION.maxDelay;
+  assert.ok(budget <= 400, `reveal budget is ${budget}ms, over the 400ms a reader tolerates`);
+
+  const timeline = new WordTimeline();
+  timeline.begin('', true, 0, 0);
+  const burst = '这是一整批一起到达的中文回答内容，用来量它多久才能全部显现。';
+  timeline.begin(burst, true, 0, 1000);
+  const born = timeline.words(burst, 0).filter(word => word.text.trim()).map(word => word.born!);
+  assert.ok(born.length > 10, `expected a burst of words, got ${born.length}`);
+  assert.ok(Math.max(...born) <= 1000 + WORD_MOTION.maxDelay, 'no word may be queued past the bound');
+  assert.ok(Math.max(...born) + WORD_MOTION.duration - 1000 <= budget, 'the last word must settle inside the budget');
 });
 
 test('stop, motion-off and authoritative replacement cancel old births', () => {

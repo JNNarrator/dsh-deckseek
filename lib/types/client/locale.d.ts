@@ -7,7 +7,7 @@
  * zh when no browser context exists (unit tests, SSR), matching the plugin's
  * default authoring language.
  */
-import type { SkinId, WorkDetailId } from '../skin.js';
+import type { ScreenTextureId, SkinId, WorkDetailId } from '../skin.js';
 export type UiLang = 'zh' | 'en';
 export declare const zh: {
     readonly 'reader.tab': "DeckSeek";
@@ -34,6 +34,7 @@ export declare const zh: {
     readonly 'reader.pendingHint': "请在下方原生操作区处理。此提示不会收进执行过程。";
     readonly 'reader.positionRestored': "已回到上次阅读位置。";
     readonly 'reader.jumpLatest': "回到最新";
+    readonly 'reader.jumpLatestCount': "回到最新，有 {count} 条新内容";
     readonly 'reader.showEarlierTurns': "展开更早的 {count} 轮";
     readonly 'reader.export': "导出";
     readonly 'reader.exportTitle': "将本轮会话导出为 Markdown 文件";
@@ -49,6 +50,43 @@ export declare const zh: {
     readonly 'meter.turnsMore': "{count}+ 轮";
     readonly 'meter.steps': "最新一轮 {count} 步";
     readonly 'meter.stepsOne': "最新一轮 {count} 步";
+    readonly 'palette.title': "命令";
+    readonly 'palette.placeholder': "输入命令…";
+    readonly 'palette.empty': "没有匹配的命令";
+    readonly 'palette.group.nav': "导航";
+    readonly 'palette.group.view': "视图";
+    readonly 'palette.group.skin': "皮肤";
+    readonly 'palette.group.detail': "过程细节";
+    readonly 'cmd.texture': "屏幕纹理：{name}";
+    readonly 'cmd.search': "在阅读页中查找";
+    readonly 'cmd.jumpLatest': "回到最新";
+    readonly 'cmd.jumpTop': "回到顶部";
+    readonly 'cmd.expandAll': "展开全部执行过程";
+    readonly 'cmd.collapseAll': "折叠全部执行过程";
+    readonly 'cmd.export': "导出为 Markdown";
+    readonly 'cmd.motionOn': "开启动效";
+    readonly 'cmd.motionOff': "关闭动效";
+    readonly 'cmd.skin': "皮肤：{name}";
+    readonly 'cmd.detail': "过程细节：{name}";
+    readonly 'help.title': "快捷键";
+    readonly 'help.close': "关闭（Esc）";
+    readonly 'help.group.reading': "阅读";
+    readonly 'help.group.panels': "面板";
+    readonly 'help.key.palette': "命令面板";
+    readonly 'help.key.help': "本页快捷键";
+    readonly 'help.key.search': "页内查找";
+    readonly 'help.key.next': "下一个匹配";
+    readonly 'help.key.prev': "上一个匹配";
+    readonly 'help.key.scrollDown': "向下滚一块";
+    readonly 'help.key.scrollUp': "向上滚一块";
+    readonly 'help.key.top': "回到顶部";
+    readonly 'help.key.bottom': "回到最新";
+    readonly 'help.key.dismiss': "关闭面板";
+    readonly 'help.note.palette': "↑↓ 选择 · Enter 执行";
+    readonly 'help.note.hosts': "输入框、发送消息与危险操作确认由宿主提供，本页不管这些键。";
+    readonly 'status.aria': "阅读状态栏";
+    readonly 'status.hint.palette': "^K 命令";
+    readonly 'status.hint.help': "? 帮助";
     readonly 'frame.tools': "{count} 次工具调用";
     readonly 'frame.files': "{count} 个文件";
     readonly 'frame.toolsOne': "{count} 次工具调用";
@@ -358,6 +396,14 @@ export declare const zh: {
     readonly 'settings.skin.soft.hint': "卡片承载，留白多、字号大，适合久读。";
     readonly 'settings.skin.terminal': "终端";
     readonly 'settings.skin.terminal.hint': "行列对齐，等宽高密度，适合盯执行过程。";
+    readonly 'settings.texture': "屏幕纹理";
+    readonly 'settings.texture.hint': "叠在终端皮肤窗口上的静态纹理（扫描线 / 暗角 / 辉光），只在终端皮肤下可见。";
+    readonly 'settings.texture.off': "关闭";
+    readonly 'settings.texture.off.hint': "干净的窗口。默认：没人要纹理的时候，它就不该出现。";
+    readonly 'settings.texture.soft': "轻";
+    readonly 'settings.texture.soft.hint': "扫描线 + 暗角，半强度。长期阅读也能接受。";
+    readonly 'settings.texture.crt': "CRT";
+    readonly 'settings.texture.crt.hint': "扫描线 + 暗角 + 窗口内辉光。全部是静态绘制，不含闪烁。";
     readonly 'settings.workDetail': "过程细节";
     readonly 'settings.workDetail.hint': "决定一轮的过程默认折起多少。与宿主对话视图同名同义。";
     readonly 'settings.workDetail.compact': "精简";
@@ -493,6 +539,10 @@ export declare function unknownKindLabel(kind: string): string;
 export declare function skinName(id: SkinId): string;
 /** One-line description for one reading skin. */
 export declare function skinHint(id: SkinId): string;
+/** Settings-page name for one screen-texture level. */
+export declare function textureName(id: ScreenTextureId): string;
+/** One-line description for one screen-texture level. */
+export declare function textureHint(id: ScreenTextureId): string;
 /** Settings-page name for one work-details level. */
 export declare function workDetailName(id: WorkDetailId): string;
 /** One-line description for one work-details level. */

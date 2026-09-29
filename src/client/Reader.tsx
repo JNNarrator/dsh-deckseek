@@ -10,13 +10,18 @@ import { UnknownRecord } from './UnknownRecord.js';
 import { SystemPromptRow, TurnProcessMeta, TurnTailStats } from './TurnRecords.js';
 import { FailureCard } from './FailureCard.js';
 import type { TurnProcessData, TurnTailData } from './locale.js';
-import { ui } from './locale.js';
+import { skinName, textureName, ui, workDetailName } from './locale.js';
 import { compactionFacts } from './compaction.js';
 import { readerFlow } from './tool-activity.js';
 import { Disclosure, ProcessFragment, RetiringContent, StatusText, useMotionAllowed, usePinnedSelection, useReadingPosition, useReadingScroll } from './motion.js';
 import { buildSearchIndex } from './search-index.js';
 import { buildExportMarkdown, exportFileName } from './export.js';
 import { SearchPanel } from './SearchPanel.js';
+import { CommandPalette } from './CommandPalette.js';
+import { ShortcutHelp } from './ShortcutHelp.js';
+import { StatusBar, type SessionMode } from './StatusBar.js';
+import type { ReaderCommand } from './commands.js';
+import { blockScrollDelta, isTypingTarget, readerKeyAction, type ReaderPanel } from './keymap.js';
 import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
@@ -33,7 +38,7 @@ import { ContextInjectionRow } from './native/ContextInjectionRow.js';
 import { TurnTriggerRow, triggerFamily, triggerTitleKey } from './native/TurnTriggerRow.js';
 import { ModelRetryRow } from './native/ModelRetryRow.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
-import { workDetailPolicy, type WorkDetailPolicy } from '../skin.js';
+import { SCREEN_TEXTURE_IDS, SKIN_IDS, WORK_DETAIL_IDS, workDetailPolicy, type WorkDetailPolicy } from '../skin.js';
 import type { BlockRenderProps, ReaderInjected, ReaderProps, TurnRowContext } from './types.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
@@ -417,10 +422,16 @@ export function Reader(props: ReaderProps) {
   const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
   const framePath = shortCwd(cwd);
   const skin = props.useSkin();
+  const texture = props.useTexture();
   const motionPreference = props.useStore(state => state.motion);
   const motion = useMotionAllowed(motionPreference);
   const streamMotion = useMemo(() => ({ enabled: motion, activatedAt: activatedAt.current }), [motion]);
-  const groups = useMemo(() => groupNodes(order, key => nodes.get(key)), [order, nodes, timeline]);
+  // `timeline` is deliberately NOT a dependency: `groupNodes` reads only the
+  // order and the node lookup, and a turn's boundary is resolved by `TurnGroup`
+  // from its own subscription. Listing it here re-grouped the whole session on
+  // every timeline tick — which during streaming is every frame — for an output
+  // that never changed.
+  const groups = useMemo(() => groupNodes(order, key => nodes.get(key)), [order, nodes]);
   const railItems = useMemo(() => buildRailItems(order, key => nodes.get(key)), [order, nodes]);
   // Window-bar readout. Both numbers come off state the reader already holds —
   // the turns the rail anchors and the newest of their step counts — so nothing
@@ -451,18 +462,13 @@ export function Reader(props: ReaderProps) {
   const selectedProcessKeys = usePinnedSelection(root, '[data-reader-process]');
   const [historyError, setHistoryError] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  // Cmd/Ctrl+F opens the in-view search while the reading view is mounted;
-  // preventDefault keeps the host webview's own find bar out of the way.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'f') {
-        event.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  // The reading view's own panels. One value rather than three booleans,
+  // because only one may be open: the keyboard layer and the scrim both key
+  // off which one that is, and a second open panel would leave the reader with
+  // two places to press Escape.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const panel: ReaderPanel = helpOpen ? 'help' : paletteOpen ? 'palette' : searchOpen ? 'search' : 'none';
   // The index is only consumed by the search panel: skip the O(session)
   // rebuild while the panel is closed.
   const searchIndex = useMemo(
@@ -480,6 +486,110 @@ export function Reader(props: ReaderProps) {
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 2000);
   }, [order, nodes]);
+  // Dismissing is one act, however the panel was opened: the close button, the
+  // scrim, the shortcut or Escape all land here, so no path can leave a panel
+  // open behind another one.
+  const closePanels = useCallback(() => { setSearchOpen(false); setPaletteOpen(false); setHelpOpen(false); }, []);
+  const openOnly = useCallback((which: 'search' | 'palette' | 'help') => {
+    setSearchOpen(which === 'search');
+    setPaletteOpen(which === 'palette');
+    setHelpOpen(which === 'help');
+  }, []);
+  // The reading view scrolls inside the host's own conversation scroller, and
+  // that element is the only thing that can move: scrolling `root` itself would
+  // do nothing, since the column inside it is taller than its box.
+  const scroller = useCallback(
+    () => root.current?.closest<HTMLElement>('[data-conversation-scroll]') ?? null,
+    [],
+  );
+  const scrollBlock = useCallback((by: 1 | -1) => {
+    const port = scroller();
+    if (port) port.scrollTop += by * blockScrollDelta(port.clientHeight);
+  }, [scroller]);
+  const scrollEdge = useCallback((to: 'top' | 'bottom') => {
+    if (to === 'bottom') { scroll.jump(); return; }
+    const port = scroller();
+    if (port) port.scrollTop = 0;
+  }, [scroll, scroller]);
+  // One expansion key per group, derived the same way the group itself derives
+  // it. Recomputing here is what lets the palette fold or unfold every process
+  // without reaching into the DOM for the disclosure buttons.
+  const choiceKeys = useMemo(() => groups.map(group => {
+    const turn = group.turn === null ? undefined : timeline.turns.get(group.turn);
+    return processChoiceKey(group.key, boundaryOf(turn));
+  }), [groups, timeline]);
+  const setAllProcess = useCallback((open: boolean) => {
+    for (const key of choiceKeys) props.actions.setExpanded(key, open);
+  }, [choiceKeys, props.actions]);
+  // Every entry is also reachable without the palette where a keystroke exists,
+  // so the sheet is an index rather than the only door. Skin and work-details
+  // commands carry their untranslated identifier as a keyword: `paper` and
+  // `verbose` are what the settings document calls them, and typing the English
+  // word should find the Chinese tile.
+  const commands = useMemo<ReaderCommand[]>(() => [
+    { id: 'search', group: ui('palette.group.nav'), label: ui('cmd.search'), hint: '^F', run: () => openOnly('search') },
+    { id: 'latest', group: ui('palette.group.nav'), label: ui('cmd.jumpLatest'), run: () => scrollEdge('bottom') },
+    { id: 'top', group: ui('palette.group.nav'), label: ui('cmd.jumpTop'), keywords: 'g home', run: () => scrollEdge('top') },
+    { id: 'expand', group: ui('palette.group.view'), label: ui('cmd.expandAll'), run: () => setAllProcess(true) },
+    { id: 'collapse', group: ui('palette.group.view'), label: ui('cmd.collapseAll'), run: () => setAllProcess(false) },
+    { id: 'export', group: ui('palette.group.view'), label: ui('cmd.export'), keywords: 'markdown', run: downloadExport },
+    { id: 'motion', group: ui('palette.group.view'), label: ui(motionPreference ? 'cmd.motionOff' : 'cmd.motionOn'), keywords: 'animation', run: () => props.actions.setMotion(!motionPreference) },
+    ...SKIN_IDS.map(id => ({ id: `skin-${id}`, group: ui('palette.group.skin'), label: ui('cmd.skin', { name: skinName(id) }), keywords: `skin ${id}`, run: () => props.setSkin(id) })),
+    ...WORK_DETAIL_IDS.map(id => ({ id: `detail-${id}`, group: ui('palette.group.detail'), label: ui('cmd.detail', { name: workDetailName(id) }), keywords: `detail ${id}`, run: () => props.setWorkDetail(id) })),
+    ...SCREEN_TEXTURE_IDS.map(id => ({ id: `texture-${id}`, group: ui('palette.group.view'), label: ui('cmd.texture', { name: textureName(id) }), keywords: `texture scanline crt ${id}`, run: () => props.setTexture(id) })),
+  ], [downloadExport, motionPreference, openOnly, props, scrollEdge, setAllProcess]);
+  // One listener for every key this view owns. The layer decides, so the
+  // composer's letters, the host's Alt+arrow navigation and the browser's own
+  // shortcuts pass through untouched; `preventDefault` is applied only to the
+  // keys the view actually consumed.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const action = readerKeyAction(event, { typing: isTypingTarget(event.target), panel });
+      if (action === null) return;
+      switch (action.kind) {
+        case 'palette':
+          event.preventDefault();
+          setPaletteOpen(open => !open);
+          setHelpOpen(false);
+          setSearchOpen(false);
+          break;
+        case 'help':
+          event.preventDefault();
+          setHelpOpen(open => !open);
+          setPaletteOpen(false);
+          setSearchOpen(false);
+          break;
+        // Ctrl/Cmd+F keeps the webview's own find bar out of the way, which is
+        // the reason this key was bound here in the first place.
+        case 'search':
+          event.preventDefault();
+          openOnly('search');
+          break;
+        case 'dismiss':
+          event.preventDefault();
+          closePanels();
+          break;
+        case 'scroll':
+          event.preventDefault();
+          scrollBlock(action.by);
+          break;
+        case 'edge':
+          event.preventDefault();
+          scrollEdge(action.to);
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [closePanels, openOnly, panel, scrollBlock, scrollEdge]);
+  // What the status line reports. Both facts are already subscribed here for
+  // other reasons; the line only names them.
+  const openTurns = useMemo(() => {
+    let count = 0;
+    for (const turn of timeline.turns.values()) if (turn.status === 'open') count += 1;
+    return count;
+  }, [timeline]);
+  const mode: SessionMode = pending !== undefined ? 'wait' : openTurns > 0 ? 'run' : 'idle';
   // Long histories render a trailing window: older turns collapse into a
   // one-line placeholder that expands — automatically when scrolled near, or
   // on click — with the scroll position compensated for the inserted height.
@@ -526,10 +636,20 @@ export function Reader(props: ReaderProps) {
     const timer = setTimeout(() => setPositionNotice(false), 3200);
     return () => clearTimeout(timer);
   }, [restoredPosition]);
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-deckseek-skin={skin} data-motion={motion ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-deckseek-skin={skin} data-deckseek-texture={texture} data-motion={motion ? 'on' : 'off'}>
     {/* Real element (not ::before): the container query hiding the rail cannot target the container's own pseudo-element. */}
     <div className={css.railSpacer} aria-hidden="true" />
     <div className={css.column}>
+      {/* The window frame's corners. Four box-character glyphs drawn over the
+          hairline border the column already has: the edges stay hairlines, so
+          the frame costs no layout, and the corners are what make the reading
+          area read as a window instead of as a bordered column. Decoration in
+          every skin, drawn in one. */}
+      {/* The screen texture. Rendered for every skin and every level and
+          hidden by CSS, like the rest of the chrome: one element, so a skin or
+          document that turns it off costs a `display: none` rather than a
+          remount. Static by construction — nothing here animates. */}
+      <span className={css.screenTexture} aria-hidden="true" />
       {/* The window bar and the search panel stick as one unit. A reader who
           scrolls into a long answer still needs the readout and the controls,
           and the panel opens under the bar it was invoked from. */}
@@ -541,13 +661,14 @@ export function Reader(props: ReaderProps) {
         <span className={css.framePath} aria-hidden="true" title={cwd ?? undefined}>{ui('reader.tab')}
           {framePath && <span className={css.frameCwd}>{framePath}</span>}
         </span>
-        {/* The window bar's readout, in the slot the reference TUIs give their
-            status segments. Decoration like the path beside it: the same counts
-            are reachable through the rail and the search panel. */}
-        {frameMeter && <span className={css.frameMeter} aria-hidden="true" data-reader-frame-meter>{frameMeter}</span>}
         <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
         <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
         <button type="button" className={css.textButton} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
+        {/* The palette and the sheet, for the skins that have no status line
+            to carry them. The terminal skin moves both entries down there and
+            hides this pair, so either way exactly one pair is on screen. */}
+        <button type="button" className={css.toolbarKey} onClick={() => openOnly('palette')} title={ui('help.key.palette')}>{ui('status.hint.palette')}</button>
+        <button type="button" className={css.toolbarKey} onClick={() => openOnly('help')} title={ui('help.key.help')}>{ui('status.hint.help')}</button>
       </div>
       {searchOpen && <SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} />}
       </div>
@@ -586,11 +707,22 @@ export function Reader(props: ReaderProps) {
         <span>{ui('reader.pendingHint')}</span>
       </div>}
       {scroll.detached && <div className={css.jumpDock}>
-        <button type="button" className={css.jump} aria-label={ui('reader.jumpLatest')} title={ui('reader.jumpLatest')} onClick={scroll.jump}>
-          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10m-4-4 4 4 4-4" /></svg>
+        <button type="button" className={css.jump} data-reader-jump
+          aria-label={scroll.unread > 0 ? ui('reader.jumpLatestCount', { count: scroll.unread }) : ui('reader.jumpLatest')}
+          title={ui('reader.jumpLatest')} onClick={scroll.jump}>
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10m-4-4 4 4 4-4" /></svg>
+          <span>{ui('reader.jumpLatest')}</span>
+          {/* Decoration: the label above already announces the count. */}
+          {scroll.unread > 0 && <span className={css.jumpCount} aria-hidden="true" data-reader-jump-count>{scroll.unread}</span>}
         </button>
       </div>}
+      <StatusBar mode={mode} meter={frameMeter} onPalette={() => openOnly('palette')} onHelp={() => openOnly('help')} />
     </div>
     <TurnRail root={root} items={railItems} />
+    {/* The panels sit outside the column: they are chrome about the reading
+        view, so they must not inherit the window frame's inset box, and the
+        scrim has to cover the whole view rather than the column. */}
+    {paletteOpen && <CommandPalette commands={commands} onClose={closePanels} />}
+    {helpOpen && <ShortcutHelp onClose={closePanels} />}
   </div></StreamMotionContext.Provider>;
 }

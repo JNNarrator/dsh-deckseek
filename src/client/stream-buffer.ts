@@ -1,5 +1,16 @@
-/** Presentation only. The original session string remains the source of truth. */
-export const STREAM_TIMING = { catchUpMs: 180, maxQueuedMs: 240, finishMs: 96, revealMs: 350, minimumRate: 100 } as const;
+/** Presentation only. The original session string remains the source of truth.
+ *
+ *  These are latency budgets, not aesthetics: `catchUpMs` is how long the
+ *  visible text may trail the received text, `maxQueuedMs` is the ceiling on
+ *  any one batch that arrives while more is still coming, and `finishMs` is the
+ *  grace given to the last bytes when the model stops. They were 180/240/96 and
+ *  are now 110/150/56: at 180ms a reader watching a fast model still saw the
+ *  prose resolve visibly after the turn had moved on.
+ *
+ *  `revealMs` mirrors the word-reveal duration so the two halves of the same
+ *  effect stay legible in one place; `minimumRate` is the floor that keeps a
+ *  nearly-drained buffer from crawling the last few characters in. */
+export const STREAM_TIMING = { catchUpMs: 110, maxQueuedMs: 150, finishMs: 56, revealMs: 240, minimumRate: 220 } as const;
 const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
 function atOrAfter(values: readonly number[], target: number): number {

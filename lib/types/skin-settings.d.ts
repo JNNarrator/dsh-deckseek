@@ -1,11 +1,13 @@
 /** DeckSeek section of the Host user-settings document. */
 import type { Volatile } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
-import { type SkinId, type WorkDetailSettingValue } from './skin.js';
+import { type SkinId, type ScreenTextureId, type WorkDetailSettingValue } from './skin.js';
 /** Durable DeckSeek section; also the wire envelope the browser scope validates against. */
 export interface DeckSeekSettings {
     /** Selected reading skin. */
     skin: SkinId;
+    /** Screen texture drawn over the terminal skin's window; off by default. */
+    texture: ScreenTextureId;
     /**
      * How much of a Turn's process the reader shows at rest. Stored as the raw
      * setting value so a legacy host spelling round-trips unchanged;
@@ -30,6 +32,8 @@ export declare const DeckSeekSettingsSchema: z<DeckSeekSettings>;
 export interface DeckSeekConfig {
     /** Selected reading skin. */
     skin: Volatile<SkinId>;
+    /** Screen texture, reactive to the Host settings document. */
+    texture: Volatile<ScreenTextureId>;
     /** Raw work-detail setting value; `parseWorkDetail` turns it into a level. */
     workDetail: Volatile<WorkDetailSettingValue>;
 }
@@ -42,10 +46,12 @@ export interface DeckSeekConfig {
  * also the wire envelope the browser validates against.
  */
 export declare const DeckSeekConfigSchema: z<Schemastery.ObjectS<NoInfer<{
-    skin: z<"paper" | "soft" | "terminal", "paper" | "soft" | "terminal", "volatile-defined">;
+    skin: z<"terminal" | "soft" | "paper", "terminal" | "soft" | "paper", "volatile-defined">;
+    texture: z<"soft" | "off" | "crt", "soft" | "off" | "crt", "volatile-defined">;
     workDetail: z<"compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "volatile-defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    skin: z<"paper" | "soft" | "terminal", "paper" | "soft" | "terminal", "volatile-defined">;
+    skin: z<"terminal" | "soft" | "paper", "terminal" | "soft" | "paper", "volatile-defined">;
+    texture: z<"soft" | "off" | "crt", "soft" | "off" | "crt", "volatile-defined">;
     workDetail: z<"compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "compact" | "standard" | "detailed" | "verbose" | "normal" | "expanded", "volatile-defined">;
 }>>, "plain">;
 //# sourceMappingURL=skin-settings.d.ts.map

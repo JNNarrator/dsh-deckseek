@@ -2,21 +2,24 @@ import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { DeckSeekSection } from '../src/client/DeckSeekSection.js';
-import type { SkinId, WorkDetailId } from '../src/skin.js';
+import type { ScreenTextureId, SkinId, WorkDetailId } from '../src/skin.js';
 
 afterEach(cleanup);
 
-function face(skin: SkinId, writable = true, workDetail: WorkDetailId = 'standard') {
+function face(skin: SkinId, writable = true, workDetail: WorkDetailId = 'standard', texture: ScreenTextureId = 'off') {
   const calls: SkinId[] = [];
   const detailCalls: WorkDetailId[] = [];
+  const textureCalls: ScreenTextureId[] = [];
   const injected = {
     useSkin: () => skin,
     useWritable: () => writable,
     setSkin: (next: SkinId) => { calls.push(next); },
     useWorkDetail: () => workDetail,
     setWorkDetail: (next: WorkDetailId) => { detailCalls.push(next); },
+    useTexture: () => texture,
+    setTexture: (next: ScreenTextureId) => { textureCalls.push(next); },
   };
-  return { calls, detailCalls, injected, render: () => render(<DeckSeekSection {...injected} />) };
+  return { calls, detailCalls, textureCalls, injected, render: () => render(<DeckSeekSection {...injected} />) };
 }
 
 test('renders one radio per skin with the current one checked', () => {
@@ -79,4 +82,31 @@ test('a read-only document disables the work-details tiles too', () => {
   const levels = screen.getAllByRole('radio').filter(node => node.hasAttribute('data-work-detail-option'));
   assert.equal(levels.length, 4);
   for (const radio of levels) assert.equal((radio as HTMLButtonElement).disabled, true);
+});
+/** The screen-texture row: off by default, and it must not drag the skin or the
+ *  work-details level with it — the three settings are independent. */
+test('renders one radio per texture level with the current one checked', () => {
+  const { injected } = face('terminal', true, 'standard', 'crt');
+  render(<DeckSeekSection {...injected} />);
+  const levels = screen.getAllByRole('radio').filter(node => node.hasAttribute('data-texture-option'));
+  assert.deepEqual(levels.map(node => node.getAttribute('data-texture-option')), ['off', 'soft', 'crt']);
+  const checked = levels.filter(node => node.getAttribute('aria-checked') === 'true');
+  assert.equal(checked.length, 1);
+  assert.equal(checked[0]!.getAttribute('data-texture-option'), 'crt');
+});
+
+test('choosing a texture reports it and touches nothing else', () => {
+  const { injected, calls, detailCalls, textureCalls } = face('terminal');
+  render(<DeckSeekSection {...injected} />);
+  fireEvent.click(screen.getByRole('radio', { name: /^CRT/ }));
+  assert.deepEqual(textureCalls, ['crt']);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(detailCalls, []);
+});
+
+test('the texture row says it only applies to the terminal skin', () => {
+  const { injected } = face('soft');
+  render(<DeckSeekSection {...injected} />);
+  const row = document.querySelector('[data-texture]')!;
+  assert.match(row.previousElementSibling?.textContent ?? '', /只在终端皮肤下可见/);
 });

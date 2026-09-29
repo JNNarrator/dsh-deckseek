@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_SKIN, DEFAULT_WORK_DETAIL, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, WORK_DETAIL_FIELD } from '../src/skin.js';
+import { DEFAULT_SCREEN_TEXTURE, DEFAULT_SKIN, DEFAULT_WORK_DETAIL, DECKSEEK_SETTINGS_NAMESPACE, SKIN_FIELD, TEXTURE_FIELD, WORK_DETAIL_FIELD } from '../src/skin.js';
 import { DeckSeekConfigSchema, DeckSeekSettingsSchema } from '../src/skin-settings.js';
 import { Config, name } from '../src/dsh-deckseek.js';
 
@@ -40,11 +40,17 @@ test('the exported Config is live, so the host serves the namespace', () => {
   // `writable: false` forever: every tile renders `disabled` and the section
   // shows its readonly notice, while any write is refused with
   // `Plugin entry "dsh-deckseek" has no volatile fields`.
-  assert.deepEqual(liveFields(Config), [SKIN_FIELD, WORK_DETAIL_FIELD]);
+  assert.deepEqual(liveFields(Config), [SKIN_FIELD, TEXTURE_FIELD, WORK_DETAIL_FIELD]);
 });
 
 test('the live Config is what the entry exports', () => {
   assert.equal(Config, DeckSeekConfigSchema);
+});
+
+test('a screen texture passes through, and an unknown one falls back to off', () => {
+  assert.equal(DeckSeekSettingsSchema({ skin: 'terminal', texture: 'crt' }).texture, 'crt');
+  assert.equal(DeckSeekSettingsSchema({}).texture, DEFAULT_SCREEN_TEXTURE);
+  assert.equal(DEFAULT_SCREEN_TEXTURE, 'off');
 });
 
 test('the durable envelope stays plain', () => {
@@ -63,10 +69,10 @@ test('the live Config keeps the shipped parse behaviour', () => {
     const out = DeckSeekConfigSchema(input) as Record<string, unknown>;
     return Object.fromEntries(Object.entries(out).map(([key, value]) => [key, (value as { get: () => unknown }).get()]));
   };
-  assert.deepEqual(plain({}), { [SKIN_FIELD]: DEFAULT_SKIN, [WORK_DETAIL_FIELD]: DEFAULT_WORK_DETAIL });
-  assert.deepEqual(plain({ [SKIN_FIELD]: 'terminal' }), { [SKIN_FIELD]: 'terminal', [WORK_DETAIL_FIELD]: DEFAULT_WORK_DETAIL });
+  assert.deepEqual(plain({}), { [SKIN_FIELD]: DEFAULT_SKIN, [TEXTURE_FIELD]: DEFAULT_SCREEN_TEXTURE, [WORK_DETAIL_FIELD]: DEFAULT_WORK_DETAIL });
+  assert.deepEqual(plain({ [SKIN_FIELD]: 'terminal' }), { [SKIN_FIELD]: 'terminal', [TEXTURE_FIELD]: DEFAULT_SCREEN_TEXTURE, [WORK_DETAIL_FIELD]: DEFAULT_WORK_DETAIL });
   // A legacy host spelling round-trips unchanged rather than being rewritten.
-  assert.deepEqual(plain({ [WORK_DETAIL_FIELD]: 'normal' }), { [SKIN_FIELD]: DEFAULT_SKIN, [WORK_DETAIL_FIELD]: 'normal' });
+  assert.deepEqual(plain({ [WORK_DETAIL_FIELD]: 'normal' }), { [SKIN_FIELD]: DEFAULT_SKIN, [TEXTURE_FIELD]: DEFAULT_SCREEN_TEXTURE, [WORK_DETAIL_FIELD]: 'normal' });
   // `.loose()` keeps a value this build does not name from failing validation.
-  assert.deepEqual(plain({ [WORK_DETAIL_FIELD]: 'future-x' }), { [SKIN_FIELD]: DEFAULT_SKIN, [WORK_DETAIL_FIELD]: DEFAULT_WORK_DETAIL });
+  assert.deepEqual(plain({ [WORK_DETAIL_FIELD]: 'future-x' }), { [SKIN_FIELD]: DEFAULT_SKIN, [TEXTURE_FIELD]: DEFAULT_SCREEN_TEXTURE, [WORK_DETAIL_FIELD]: DEFAULT_WORK_DETAIL });
 });

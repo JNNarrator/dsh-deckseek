@@ -8,7 +8,7 @@
  * default authoring language.
  */
 
-import type { SkinId, WorkDetailId } from '../skin.js';
+import type { ScreenTextureId, SkinId, WorkDetailId } from '../skin.js';
 
 export type UiLang = 'zh' | 'en'
 
@@ -38,6 +38,7 @@ export const zh = {
   'reader.pendingHint': '请在下方原生操作区处理。此提示不会收进执行过程。',
   'reader.positionRestored': '已回到上次阅读位置。',
   'reader.jumpLatest': '回到最新',
+  'reader.jumpLatestCount': '回到最新，有 {count} 条新内容',
   'reader.showEarlierTurns': '展开更早的 {count} 轮',
   'reader.export': '导出',
   'reader.exportTitle': '将本轮会话导出为 Markdown 文件',
@@ -59,6 +60,45 @@ export const zh = {
   'meter.turnsMore': '{count}+ 轮',
   'meter.steps': '最新一轮 {count} 步',
   'meter.stepsOne': '最新一轮 {count} 步',
+  // Command palette and shortcut sheet. The reading view owns these keys, so
+  // every label is prose the dictionaries carry rather than a literal.
+  'palette.title': '命令',
+  'palette.placeholder': '输入命令…',
+  'palette.empty': '没有匹配的命令',
+  'palette.group.nav': '导航',
+  'palette.group.view': '视图',
+  'palette.group.skin': '皮肤',
+  'palette.group.detail': '过程细节',
+  'cmd.texture': '屏幕纹理：{name}',
+  'cmd.search': '在阅读页中查找',
+  'cmd.jumpLatest': '回到最新',
+  'cmd.jumpTop': '回到顶部',
+  'cmd.expandAll': '展开全部执行过程',
+  'cmd.collapseAll': '折叠全部执行过程',
+  'cmd.export': '导出为 Markdown',
+  'cmd.motionOn': '开启动效',
+  'cmd.motionOff': '关闭动效',
+  'cmd.skin': '皮肤：{name}',
+  'cmd.detail': '过程细节：{name}',
+  'help.title': '快捷键',
+  'help.close': '关闭（Esc）',
+  'help.group.reading': '阅读',
+  'help.group.panels': '面板',
+  'help.key.palette': '命令面板',
+  'help.key.help': '本页快捷键',
+  'help.key.search': '页内查找',
+  'help.key.next': '下一个匹配',
+  'help.key.prev': '上一个匹配',
+  'help.key.scrollDown': '向下滚一块',
+  'help.key.scrollUp': '向上滚一块',
+  'help.key.top': '回到顶部',
+  'help.key.bottom': '回到最新',
+  'help.key.dismiss': '关闭面板',
+  'help.note.palette': '↑↓ 选择 · Enter 执行',
+  'help.note.hosts': '输入框、发送消息与危险操作确认由宿主提供，本页不管这些键。',
+  'status.aria': '阅读状态栏',
+  'status.hint.palette': '^K 命令',
+  'status.hint.help': '? 帮助',
   // Collapsed-process summary (terminal skin), counted off the turn's own flow.
   'frame.tools': '{count} 次工具调用',
   'frame.files': '{count} 个文件',
@@ -402,6 +442,14 @@ export const zh = {
   'settings.skin.soft.hint': '卡片承载，留白多、字号大，适合久读。',
   'settings.skin.terminal': '终端',
   'settings.skin.terminal.hint': '行列对齐，等宽高密度，适合盯执行过程。',
+  'settings.texture': '屏幕纹理',
+  'settings.texture.hint': '叠在终端皮肤窗口上的静态纹理（扫描线 / 暗角 / 辉光），只在终端皮肤下可见。',
+  'settings.texture.off': '关闭',
+  'settings.texture.off.hint': '干净的窗口。默认：没人要纹理的时候，它就不该出现。',
+  'settings.texture.soft': '轻',
+  'settings.texture.soft.hint': '扫描线 + 暗角，半强度。长期阅读也能接受。',
+  'settings.texture.crt': 'CRT',
+  'settings.texture.crt.hint': '扫描线 + 暗角 + 窗口内辉光。全部是静态绘制，不含闪烁。',
   'settings.workDetail': '过程细节',
   'settings.workDetail.hint': '决定一轮的过程默认折起多少。与宿主对话视图同名同义。',
   'settings.workDetail.compact': '精简',
@@ -441,6 +489,7 @@ export const en: Record<UiKey, string> = {
   'reader.pendingHint': 'Handle it in the native actions below. This notice is not part of the execution record.',
   'reader.positionRestored': 'Back to your previous reading position.',
   'reader.jumpLatest': 'Back to latest',
+  'reader.jumpLatestCount': 'Back to latest, {count} new records',
   'reader.showEarlierTurns': 'Show {count} earlier turns',
   'reader.export': 'Export',
   'reader.exportTitle': 'Download this conversation as a Markdown file',
@@ -456,6 +505,43 @@ export const en: Record<UiKey, string> = {
   'meter.turnsMore': '{count}+ turns',
   'meter.steps': 'last turn {count} steps',
   'meter.stepsOne': 'last turn {count} step',
+  'palette.title': 'Commands',
+  'palette.placeholder': 'Type a command…',
+  'palette.empty': 'No matching command',
+  'palette.group.nav': 'Go to',
+  'palette.group.view': 'View',
+  'palette.group.skin': 'Skin',
+  'palette.group.detail': 'Process detail',
+  'cmd.texture': 'Screen texture: {name}',
+  'cmd.search': 'Find in the reading view',
+  'cmd.jumpLatest': 'Jump to the latest',
+  'cmd.jumpTop': 'Jump to the top',
+  'cmd.expandAll': 'Expand every process',
+  'cmd.collapseAll': 'Fold every process',
+  'cmd.export': 'Export as Markdown',
+  'cmd.motionOn': 'Turn motion on',
+  'cmd.motionOff': 'Turn motion off',
+  'cmd.skin': 'Skin: {name}',
+  'cmd.detail': 'Process detail: {name}',
+  'help.title': 'Keyboard',
+  'help.close': 'Close (Esc)',
+  'help.group.reading': 'Reading',
+  'help.group.panels': 'Panels',
+  'help.key.palette': 'Command palette',
+  'help.key.help': 'This sheet',
+  'help.key.search': 'Find in view',
+  'help.key.next': 'Next match',
+  'help.key.prev': 'Previous match',
+  'help.key.scrollDown': 'Scroll down a block',
+  'help.key.scrollUp': 'Scroll up a block',
+  'help.key.top': 'Jump to top',
+  'help.key.bottom': 'Jump to latest',
+  'help.key.dismiss': 'Close the panel',
+  'help.note.palette': '↑↓ to choose · Enter to run',
+  'help.note.hosts': 'The composer, sending a message and risky-action confirmation belong to the host; this sheet does not cover their keys.',
+  'status.aria': 'Reading status bar',
+  'status.hint.palette': '^K commands',
+  'status.hint.help': '? help',
   'frame.tools': '{count} tool calls',
   'frame.files': '{count} files',
   'frame.toolsOne': '{count} tool call',
@@ -769,6 +855,14 @@ export const en: Record<UiKey, string> = {
   'settings.skin.soft.hint': 'Cards, generous whitespace and larger type for long reading.',
   'settings.skin.terminal': 'Terminal',
   'settings.skin.terminal.hint': 'Aligned rows, monospace and dense, for watching execution.',
+  'settings.texture': 'Screen texture',
+  'settings.texture.hint': 'A static texture over the terminal skin\u2019s window (scanlines / vignette / glow), visible in the terminal skin only.',
+  'settings.texture.off': 'Off',
+  'settings.texture.off.hint': 'A clean window. The default: a texture nobody asked for should not be there.',
+  'settings.texture.soft': 'Soft',
+  'settings.texture.soft.hint': 'Scanlines and a vignette at half strength, still comfortable for long reading.',
+  'settings.texture.crt': 'CRT',
+  'settings.texture.crt.hint': 'Scanlines, vignette and a glow inside the window. All painted, nothing flickers.',
   'settings.workDetail': 'Process detail',
   'settings.workDetail.hint': 'How much of a turn\u2019s process starts folded. Same names and meaning as the host transcript view.',
   'settings.workDetail.compact': 'Compact',
@@ -1005,6 +1099,16 @@ export function skinHint(id: SkinId): string {
   if (id === 'paper') return ui('settings.skin.paper.hint');
   if (id === 'terminal') return ui('settings.skin.terminal.hint');
   return ui('settings.skin.soft.hint');
+}
+
+/** Settings-page name for one screen-texture level. */
+export function textureName(id: ScreenTextureId): string {
+  return ui(`settings.texture.${id}`);
+}
+
+/** One-line description for one screen-texture level. */
+export function textureHint(id: ScreenTextureId): string {
+  return ui(`settings.texture.${id}.hint`);
 }
 
 /** Settings-page name for one work-details level. */

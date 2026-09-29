@@ -7,14 +7,23 @@ test('a transport burst becomes multiple bounded, monotonically growing frames',
   const text = '让新到的文字柔和显现，已经读过的内容保持稳定。'.repeat(6);
   buffer.update(text, 0);
   const frames: string[] = [];
-  for (let time = 16; time <= 256; time += 16) {
+  let settledAt = -1;
+  for (let time = 16; time <= 400; time += 16) {
     const previous = buffer.visible;
     if (buffer.advance(time)) frames.push(buffer.visible);
     assert.ok(buffer.visible.startsWith(previous));
     assert.ok(text.startsWith(buffer.visible));
+    if (settledAt < 0 && !buffer.pending) settledAt = time;
   }
-  assert.ok(frames.length > 8);
-  assert.ok(frames[0]!.length < text.length / 4);
+  // Paced, not dumped: the reveal is an animation, so a burst has to arrive
+  // over several frames rather than in one.
+  assert.ok(frames.length >= 4, `expected a paced reveal, got ${frames.length} frames`);
+  assert.ok(frames[0]!.length < text.length / 4, 'the first frame must not be most of the burst');
+  // ...but pacing is a latency budget, not a mood. The queue-age ceiling is what
+  // makes the bound hard, and it is the number a reader actually feels: a burst
+  // that has arrived is fully visible within `maxQueuedMs`, whatever the rate.
+  assert.ok(settledAt > 0, 'the burst never settled');
+  assert.ok(settledAt <= STREAM_TIMING.maxQueuedMs + 16, `burst settled at ${settledAt}ms, budget ${STREAM_TIMING.maxQueuedMs}ms`);
   assert.equal(buffer.visible, text);
   assert.equal(buffer.pending, false);
 });

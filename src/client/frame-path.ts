@@ -1,8 +1,9 @@
 /**
  * The terminal skin's window title carries the workspace, not the whole path.
  *
- * A terminal title bar shows where you are, and the reader's column is 748px at
- * most: a five-segment path would crowd out the controls sharing that row. The
+ * A terminal title bar shows where you are, and the reader's column shares that
+ * row with the frame's own controls: a five-segment path would crowd them out.
+ * The
  * last two segments are what a person actually reads, with a leading ellipsis
  * marking the cut so a shortened path is never mistaken for the whole one. Paths
  * of one or two segments are already short and are kept verbatim, which also

@@ -4,6 +4,7 @@ import type { Volatile } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
 import {
   DEFAULT_SKIN, SKIN_FIELD, SKIN_IDS, type SkinId,
+  DEFAULT_SCREEN_TEXTURE, SCREEN_TEXTURE_IDS, TEXTURE_FIELD, type ScreenTextureId,
   DEFAULT_WORK_DETAIL, WORK_DETAIL_FIELD, WORK_DETAIL_SETTING_VALUES, type WorkDetailSettingValue,
 } from './skin.js';
 
@@ -11,6 +12,8 @@ import {
 export interface DeckSeekSettings {
   /** Selected reading skin. */
   skin: SkinId;
+  /** Screen texture drawn over the terminal skin's window; off by default. */
+  texture: ScreenTextureId;
   /**
    * How much of a Turn's process the reader shows at rest. Stored as the raw
    * setting value so a legacy host spelling round-trips unchanged;
@@ -22,6 +25,7 @@ export interface DeckSeekSettings {
 /** Durable DeckSeek schema. */
 export const DeckSeekSettingsSchema: z<DeckSeekSettings> = z.object({
   [SKIN_FIELD]: z.union([...SKIN_IDS]).default(DEFAULT_SKIN),
+  [TEXTURE_FIELD]: z.union([...SCREEN_TEXTURE_IDS]).default(DEFAULT_SCREEN_TEXTURE),
   // `.loose()` accepts a saved value this build does not name yet, so an older
   // plugin reading a newer document validates instead of dropping the section.
   [WORK_DETAIL_FIELD]: z.union([...WORK_DETAIL_SETTING_VALUES]).default(DEFAULT_WORK_DETAIL).loose(),
@@ -42,6 +46,8 @@ export const DeckSeekSettingsSchema: z<DeckSeekSettings> = z.object({
 export interface DeckSeekConfig {
   /** Selected reading skin. */
   skin: Volatile<SkinId>;
+  /** Screen texture, reactive to the Host settings document. */
+  texture: Volatile<ScreenTextureId>;
   /** Raw work-detail setting value; `parseWorkDetail` turns it into a level. */
   workDetail: Volatile<WorkDetailSettingValue>;
 }
@@ -56,5 +62,6 @@ export interface DeckSeekConfig {
  */
 export const DeckSeekConfigSchema = z.object({
   [SKIN_FIELD]: z.union([...SKIN_IDS]).default(DEFAULT_SKIN).volatile(),
+  [TEXTURE_FIELD]: z.union([...SCREEN_TEXTURE_IDS]).default(DEFAULT_SCREEN_TEXTURE).volatile(),
   [WORK_DETAIL_FIELD]: z.union([...WORK_DETAIL_SETTING_VALUES]).default(DEFAULT_WORK_DETAIL).loose().volatile(),
 });
