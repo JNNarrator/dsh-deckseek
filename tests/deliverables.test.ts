@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { basename, createProducedFileMentions, dirname, getTurnDeliverables, showDeliverablesRow } from '../src/client/deliverables.js';
+import { basename, createProducedFileMentions, dirname, getTurnDeliverables, showDeliverablesRow, visibleDeliverables } from '../src/client/deliverables.js';
 import type { ReaderFlowEntry } from '../src/client/tool-activity.js';
 
 function settled(name: string, args: Record<string, unknown>, isError = false): ToolCallBlock {
@@ -115,4 +115,17 @@ test('the opener is called with the resolved path, and the label carries it', ()
   assert.deepEqual(opened, ['/w/proj/src/a.ts']);
   assert.equal(mention.title, '/w/proj/src/a.ts');
   assert.match(mention.label, /\/w\/proj\/src\/a\.ts/, 'the accessible label names the file it opens');
+});
+
+test('the chip cap shows at most that many and counts the rest', () => {
+  const two = ['/w/a.ts', '/w/b.ts'];
+  assert.deepEqual(visibleDeliverables(two), { shown: two, hidden: 0 });
+  assert.deepEqual(visibleDeliverables([]), { shown: [], hidden: 0 });
+  const eight = Array.from({ length: 8 }, (_, index) => `/w/f${index}.ts`);
+  assert.deepEqual(visibleDeliverables(eight), { shown: eight, hidden: 0 }, 'exactly at the cap, nothing is hidden');
+  const twelve = Array.from({ length: 12 }, (_, index) => `/w/f${index}.ts`);
+  const capped = visibleDeliverables(twelve);
+  assert.equal(capped.shown.length, 8);
+  assert.equal(capped.hidden, 4, 'the count is what the cap hides, not how many there are');
+  assert.equal(visibleDeliverables(twelve, 3).hidden, 9, 'the cap is a parameter of the rule, not a constant inside it');
 });

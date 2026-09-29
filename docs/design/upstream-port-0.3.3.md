@@ -238,7 +238,9 @@ export function settleByDeadline(animation: Animation, settle: () => void, durat
   懒取并降级（上游硬声明；本仓库 `forkAt` 已确立「缺服务退化成空操作」的纪律）；
   ② 解析规则要求**唯一**匹配，歧义不解析。
 - 测试 320 → 334（纯函数 12 + 真 Reader 挂载 2）；六条变异逐条验证，全部由对应守卫抓到。
-- **仍未做**：W3c（产出行 chip + 三套皮肤样式）、W3d-显示（`spawn` 宿主路由，需单独确认）。
+- **W3c 已完成**（`DeliverablesRow.tsx` + 三套皮肤 + 6 项守卫 + 5 条变异）。与上游 chip 的差额：
+  双击打开、在文件夹中显示、复制路径——后两项随 W3d 的 reveal 一起补，路径已在 chip 的 `title` 上。
+- **仍未做**：W3d-显示（`spawn` 宿主路由，决定已定：cwd 受限 + 仅 POST；先查服务端能否自己得知会话 cwd）。
   注意 `dirname` 对根目录下的文件返回 `.`（继承上游行为，已写进测试注释）。
 
 ---

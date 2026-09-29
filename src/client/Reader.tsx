@@ -42,7 +42,8 @@ import { SCREEN_TEXTURE_IDS, SKIN_IDS, WORK_DETAIL_IDS, workDetailPolicy, type W
 import type { BlockRenderProps, ReaderInjected, ReaderProps, TurnRowContext } from './types.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
-import { createProducedFileMentions, getTurnDeliverables } from './deliverables.js';
+import { createProducedFileMentions, getTurnDeliverables, showDeliverablesRow } from './deliverables.js';
+import { Deliverables } from './DeliverablesRow.js';
 import { ProducedFilesContext } from './produced-files.js';
 
 function isNode<K extends ChatNodeKind>(node: ChatConversationViewNode, kind: K): node is ChatNode<K> {
@@ -413,6 +414,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
       </Fragment>)}
       </div>
     </div>
+    {showDeliverablesRow(boundary.status, deliverables) && openFile && <Deliverables paths={deliverables} openFile={openFile} />}
     {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} />}
     {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section></ProducedFilesContext.Provider>;

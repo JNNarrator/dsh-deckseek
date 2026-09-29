@@ -25,6 +25,16 @@ export declare function dirname(path: string): string;
  * while it is still being written.
  */
 export declare function showDeliverablesRow(status: 'open' | 'closed' | 'unknown', paths: readonly string[]): boolean;
+/** Chips shown before the rest collapse into a count. */
+export declare const MAX_DELIVERABLE_CHIPS = 8;
+/**
+ * What the row shows, and how many it does not. The count is the whole point of
+ * the cap: a turn that wrote thirty files should say so, not scroll sideways.
+ */
+export declare function visibleDeliverables(paths: readonly string[], max?: number): {
+    shown: readonly string[];
+    hidden: number;
+};
 /** Every unique file path this turn produced, in the order it produced them. */
 export declare function getTurnDeliverables(turn: TurnLocation | undefined, flow?: readonly ReaderFlowEntry[]): readonly string[];
 /**

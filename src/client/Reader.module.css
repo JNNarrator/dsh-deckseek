@@ -253,6 +253,31 @@
 [data-deckseek-skin='paper'] .compactionSummaryBox { padding: 0 0 0 12px; border: 0; border-left: 2px solid var(--dsw-alias-border-l2); border-radius: 0; background: transparent; }
 /* Terminal: square chrome, and the memo keeps the skin's own hairline. */
 [data-deckseek-skin='terminal'] .compactionPill { border-radius: 0; background: transparent; }
+
+/* The files one closed turn produced. The label takes a column of its own so the
+   chips start where the reading text does, not where the label ends — the same
+   two-column shape the token-usage line above uses, for the same reason. */
+.deliverablesRoot { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 10px; align-items: start; margin-top: calc(14px + var(--dx-font-delta)); font-size: 0.8125rem; line-height: 1.375rem; }
+.deliverablesLabel { padding-top: 2px; color: var(--dx-ink-dim); font-size: 0.75rem; font-weight: 500; }
+.deliverablesLane { min-width: 0; }
+.deliverablesChips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.deliverableChip { display: inline-flex; align-items: center; max-width: 100%; box-sizing: border-box; padding: 2px 9px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--dsw-alias-bg-module-platform); color: var(--dx-ink-dim); font: inherit; font-size: 0.75rem; line-height: 1.125rem; cursor: pointer; }
+.deliverableChip:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l3); background: var(--dsw-alias-interactive-bg-hover); }
+/* The file name is the chip: a long one ellipsises rather than wrapping, because
+   a row of half-wrapped names stops reading as a row of files. */
+.deliverableName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deliverablesMore { color: var(--dx-ink-dim); font-size: 0.75rem; white-space: nowrap; }
+/* Paper groups by whitespace and draws no containers: an underlined name is the
+   whole affordance, and the row keeps the label's weight down to the prose's. */
+[data-deckseek-skin='paper'] .deliverablesLabel { font-weight: 400; }
+[data-deckseek-skin='paper'] .deliverableChip { padding: 0 2px; border: 0; background: transparent; text-decoration: underline; text-decoration-color: var(--dsw-alias-border-l2); text-underline-offset: 3px; }
+[data-deckseek-skin='paper'] .deliverableChip:hover { background: transparent; text-decoration-color: var(--dsw-alias-state-business-primary); }
+/* Terminal draws a log, not a set of cards: square brackets off, one hairline
+   rule, and the meta type scale the rest of the skin's footers use. */
+[data-deckseek-skin='terminal'] .deliverablesRoot { margin-top: 8px; gap: 8px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 0.6875rem; line-height: 1.0625rem; }
+[data-deckseek-skin='terminal'] .deliverableChip { padding: 0 6px; border-radius: 0; border-color: var(--dx-ansi-rule); background: transparent; color: var(--dx-ansi-dim); }
+[data-deckseek-skin='terminal'] .deliverableChip:hover { border-color: var(--dx-ansi-warn); background: transparent; color: var(--dx-ansi-fg); }
+[data-deckseek-skin='terminal'] .deliverablesMore { color: var(--dx-ansi-dim); }
 [data-deckseek-skin='terminal'] .compactionSummaryBox { border-radius: 0; background: transparent; border-bottom: var(--dx-rule); }
 .processFrame { min-width: 0; }
 .toolActivity { min-width: 0; color: var(--dsw-alias-label-secondary); background: var(--dx-surface-record); border: 1px solid var(--dx-border-hairline); border-radius: var(--dx-radius-card); box-shadow: inset var(--dx-rail-width) 0 0 var(--dx-rail-neutral); padding: calc(8px + var(--dx-font-delta)) 12px; }

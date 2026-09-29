@@ -41,6 +41,19 @@ export function showDeliverablesRow(status: 'open' | 'closed' | 'unknown', paths
   return status === 'closed' && paths.length > 0;
 }
 
+/** Chips shown before the rest collapse into a count. */
+export const MAX_DELIVERABLE_CHIPS = 8;
+
+/**
+ * What the row shows, and how many it does not. The count is the whole point of
+ * the cap: a turn that wrote thirty files should say so, not scroll sideways.
+ */
+export function visibleDeliverables(paths: readonly string[], max = MAX_DELIVERABLE_CHIPS): { shown: readonly string[]; hidden: number } {
+  return paths.length <= max
+    ? { shown: paths, hidden: 0 }
+    : { shown: paths.slice(0, max), hidden: paths.length - max };
+}
+
 /** The tool names this repository classes as writing, plus the editor whose
  *  command decides (a `view` call through it writes nothing). */
 const WRITE_TOOLS = /^(write|edit|apply_patch|patch)$/;
