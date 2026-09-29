@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { REASON_HOLD, REASON_STEP, reasoningTarget } from './reasoning-follow.js';
+import { settleByDeadline } from './animation-deadline.js';
 import { ui } from './locale.js';
 import css from './Reader.module.css';
 
 const EASING = 'cubic-bezier(.22,1,.36,1)';
+
+/** Resizing one reasoning card between its resting and expanded heights. */
+export const RESIZE_MS = 300;
 
 /** One real transcript: reference transform while following, native scroll while reading. */
 export function ReasoningCard({ children, step, active, history = false, preview = true, motion, selected, onRead }: {
@@ -284,14 +288,21 @@ export function ReasoningCard({ children, step, active, history = false, preview
     }
     // max-height otherwise clamps the very first collapse frame to the new cap.
     port.style.maxHeight = 'none';
-    const animation = port.animate([{ height: `${from}px` }, { height: `${target}px` }], { duration: 300, easing: EASING, fill: 'both' });
+    const animation = port.animate([{ height: `${from}px` }, { height: `${target}px` }], { duration: RESIZE_MS, easing: EASING, fill: 'both' });
     resize.current = animation;
-    animation.onfinish = () => {
-      if (resize.current !== animation) return;
-      resize.current = null; animation.cancel();
+    // Two things have to happen even if this animation never reports finishing:
+    // the fill that pins the card at its previous height has to be dropped, and
+    // the `max-height` cleared above has to come back. Both live in `restore`,
+    // which the deadline reaches on a wall clock. See animation-deadline.ts.
+    const restore = () => {
       port.style.maxHeight = ''; port.style.height = '';
       lastHeight.current = port.clientHeight;
     };
+    return settleByDeadline(animation, () => {
+      if (resize.current !== animation) return;
+      resize.current = null; animation.cancel();
+      restore();
+    }, RESIZE_MS);
   }, [expanded, motion, selected]);
   useEffect(() => () => resize.current?.cancel(), []);
 

@@ -1,6 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ComponentType, ReactNode, RefObject } from 'react';
 import css from './Reader.module.css';
+import { settleByDeadline } from './animation-deadline.js';
 import { SPINNER_INTERVAL_MS, SPINNER_STILL_FRAME, spinnerFrame } from './spinner.js';
 import { StreamMotionContext } from './streaming.js';
 import { jumpLock } from './jump-lock.js';
@@ -196,6 +197,12 @@ export function Disclosure({ open, onChange, label, activity, summary, status, c
   </div>;
 }
 
+/** Opening or closing one disclosure body. */
+export const DISCLOSURE_SIZE_MS = 260;
+
+/** Folding one retired narration out of the live stream. */
+export const RETIRE_SIZE_MS = 220;
+
 /** Supplemental details stay in source order beside their own narration. */
 export function ProcessFragment({ open, motion, onRead, returnFocusTo, nodeKey, children, framed = false }: {
   open: boolean; motion: boolean; onRead: () => void; nodeKey: string;
@@ -221,14 +228,20 @@ export function ProcessFragment({ open, motion, onRead, returnFocusTo, nodeKey, 
       setPresent(open);
       return;
     }
-    const animation = element.animate([{ height: `${from}px` }, { height: `${target}px` }], { duration: 260, easing: EASING, fill: 'both' });
+    const animation = element.animate([{ height: `${from}px` }, { height: `${target}px` }], { duration: DISCLOSURE_SIZE_MS, easing: EASING, fill: 'both' });
     running.current = animation;
-    animation.onfinish = () => {
+    // `fill: 'both'` holds whichever keyframe this animation stopped on, and the
+    // body only becomes readable when the fill is dropped — here, by the cancel
+    // below. An animation that never advances (re-run, unmount, a subtree the
+    // compositor skips) never reaches `onfinish`, which would leave the row in the
+    // DOM at zero height: clicked it, and nothing happened. The deadline commits
+    // the same end state on a wall clock instead.
+    return settleByDeadline(animation, () => {
       if (running.current !== animation) return;
       running.current = null;
       animation.cancel();
       setPresent(open);
-    };
+    }, DISCLOSURE_SIZE_MS);
   }, [open, motion, returnFocusTo]);
   useEffect(() => () => { running.current?.cancel(); }, []);
   if (!open && !present) return null;
@@ -258,9 +271,17 @@ export function RetiringContent({ visible, children }: { visible: boolean; child
     const from = element.getBoundingClientRect().height;
     animation.current?.cancel(); animation.current = null;
     if (!enabled || from < 1) { setPresent(false); return; }
-    const next = element.animate([{ height: `${from}px`, opacity: 1 }, { height: '0px', opacity: 0 }], { duration: 220, easing: EASING, fill: 'both' });
+    const next = element.animate([{ height: `${from}px`, opacity: 1 }, { height: '0px', opacity: 0 }], { duration: RETIRE_SIZE_MS, easing: EASING, fill: 'both' });
     animation.current = next;
-    next.onfinish = () => { if (animation.current === next) { animation.current = null; next.cancel(); setPresent(false); } };
+    // A collapse that never reports finishing would leave the retired narration
+    // pinned at its old height — and, because `present` never flips, in the tree.
+    // The deadline completes the retirement regardless.
+    return settleByDeadline(next, () => {
+      if (animation.current !== next) return;
+      animation.current = null;
+      next.cancel();
+      setPresent(false);
+    }, RETIRE_SIZE_MS);
   }, [visible, enabled, focusHeld]);
   useEffect(() => () => animation.current?.cancel(), []);
   if (!visible && !present) return null;

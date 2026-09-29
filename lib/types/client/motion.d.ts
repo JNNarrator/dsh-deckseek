@@ -59,6 +59,10 @@ export declare function Disclosure({ open, onChange, label, activity, summary, s
     controls: string;
     buttonRef: RefObject<HTMLButtonElement>;
 }): import("react").JSX.Element;
+/** Opening or closing one disclosure body. */
+export declare const DISCLOSURE_SIZE_MS = 260;
+/** Folding one retired narration out of the live stream. */
+export declare const RETIRE_SIZE_MS = 220;
 /** Supplemental details stay in source order beside their own narration. */
 export declare function ProcessFragment({ open, motion, onRead, returnFocusTo, nodeKey, children, framed }: {
     open: boolean;

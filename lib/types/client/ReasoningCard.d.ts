@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+/** Resizing one reasoning card between its resting and expanded heights. */
+export declare const RESIZE_MS = 300;
 /** One real transcript: reference transform while following, native scroll while reading. */
 export declare function ReasoningCard({ children, step, active, history, preview, motion, selected, onRead }: {
     children: ReactNode;

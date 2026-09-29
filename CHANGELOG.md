@@ -1,5 +1,38 @@
 # Changelog
 
+## 未发布
+
+从上游 `dsh-better-display` 回搬的第一项（W1），完整计划与其余三项见
+[docs/design/upstream-port-0.3.3.md](docs/design/upstream-port-0.3.3.md)。
+
+- **披露动画有了墙钟兜底**（上游 `8e07d34`）：三处界面只在 Web Animation 触发 `onfinish`
+  时才收尾，而 `fill: 'both'` 会把动画停在的那个关键帧一直钉住——**永不推进的动画**（被重跑
+  取消、组件卸载、合成器跳过的子树）永远不触发它，元素于是被钉在开启关键帧（高度 0、
+  透明度 0）上：那一行在 DOM 里，点它像没反应。
+  - `src/client/motion.tsx` 的 `ProcessFragment`：不收尾就丢不掉那层 fill，正文一直是 0 高；
+  - `src/client/motion.tsx` 的 `RetiringContent`：不收尾则 `present` 不翻转，已经退场的旁白
+    **留在屏上**；
+  - `src/client/ReasoningCard.tsx` 的高度重排：不收尾则它为了放宽首帧而清掉的 `max-height`
+    不还原，内联样式一直被动画覆盖。
+  - 三处改走新模块 `src/client/animation-deadline.ts` 的 `settleByDeadline()`：幂等 `settle`
+    在动画完成、或 `时长 + WATCHDOG_SLACK_MS`（240，与折叠编舞的同一道闸）之后**恰好执行
+    一次**；返回的清理函数交给 effect 的 cleanup，被取代的动画不会迟到提交。三处的时长
+    （260 / 220 / 300）各自具名导出，兜底与动画共用一个数。
+- 测试 306 → **315 项**：纯函数 5（注入假时钟：两个方向都提交、恰好一次、清理后不再提交、
+  deadline = 时长 + slack）＋ **挂载 4**（用**永不 resolve 的动画替身**驱动真实组件：展开丢
+  fill、收起离场、退场旁白离屏、思考卡内联样式还原）。七条变异逐条验证：去掉 deadline →
+  8 项全红；cleanup 变空操作 / 去掉幂等闩 / commit 不再清自己的定时器 / 三处落点各自退回
+  `onfinish` → 每次都被**对应的那一项**抓到，且都在 3–4 秒内快速失败。
+- 复核中又撞到两个测试环境的坑，已写进测试注释：
+  - **`assert.equal(节点, null)` 一旦失败会把整个文件卡死**（node 的 differ 深度格式化 DOM
+    元素，顺着循环的 fiber 引用遍历）。本仓库在 0.11.0 就记过这一条，这次新写的守卫又踩了
+    一次：第一次变异跑到 101 秒才被杀掉，测试 2、3 根本没执行。**卡死等于没有守卫**，所以
+    本文件用 `rendered()` 辅助函数把 DOM 断言一律压成布尔值，修完 3 秒返回。
+  - **`clientHeight` 是 `HTMLElement.prototype` 上的访问器**，会盖住定义在 `Element.prototype`
+    上的替身（`scrollHeight` 相反，`Element.prototype` 就够）。happy-dom 不做布局，两个都得
+    替身，而且必须定义在**真正生效的那一层**——第一版定义错了层，`clientHeight` 一直读成 0，
+    那条守卫于是因为「根本没进动画分支」而失败，不是因为断言本身。
+
 ## 0.12.0 - 2026-09-28
 
 本版把终端皮肤从「终端风的阅读页」推进成「能操作的 TUI」，并把它设为默认皮肤、在设置页排到第一位。
