@@ -202,6 +202,30 @@ export function settleByDeadline(animation: Animation, settle: () => void, durat
 
 **✅ 决定（2026-09-29，用户确认）：加路由，但路径必须落在该会话的 cwd 之内，且只接受 POST。**
 
+**✅ 已查清（2026-09-29，对 0.2.0-rc.1 的宿主包实测）：服务端确实能自己得知会话的 cwd。**
+
+- **路由契约**（`dsh-client-connection/lib/index.js`、`dsh-api-gateway/lib/index.js` 里宿主的用法）：
+  `ctx.inject(['webServer'], webCtx => webCtx.effect(() => webCtx.webServer.register(route), 'label'))`，
+  `route = { kind: 'exact' | 'prefix', path, handler: (req, res) => void | Promise<void> }`。
+  与上游 `2ac5471` 的形状一致，所以照抄没有障碍。
+- **会话的 cwd 在服务端是可达的**，不必相信调用方：
+  `workspaceRegistry` 由 `dsh-workspace` 提供（`dsh-workspace/lib/index.js:374` 的 `super(ctx, 'workspaceRegistry')`），
+  其 `list()` 返回 `{ id, path, title, sessionIds, createdAt, updatedAt }`，另有 `archivedSessionIds` /
+  `pinnedSessionIds`。于是**服务端**可以按 sessionId 反查出该会话的根：在 `list()` 里找
+  `sessionIds` 含该 id 的那条，取它的 `path`。宿主自己的 `dsh-api-session-controller` 也在观察头上带
+  `header.cwd`，但走注册表这条路更直接、也更少耦合。
+- **因此定稿方案**（下一轮实施）：
+  1. 客户端 POST `{ sessionId, path }` 到 `/dsh-deckseek/reveal`；服务端 `ctx.get('workspaceRegistry')`
+     **懒取**（缺服务 → 直接拒绝，向后端降级，不要写进 `inject` 让它拒载插件）。
+  2. 由 sessionId 查出根 → `fs.realpath` 根与目标（目标必须**存在**）→ 用**纯函数**判定
+     「解析后仍在根之内」（`realpath` 之后再比对，纯词法比对会被符号链接骗过）。
+  3. 判定不过一律 **fail closed**（403），只接受 `POST`（否则 405），错误体是 JSON。
+  4. 平台分派照上游：`open -R` / `explorer.exe /select,` / `xdg-open`——但 `xdg-open` 只在明确
+     支持的平台上启用，`spawn` 一律数组传参、不拼 shell。
+  5. 纯判定规则与「路由 handler」都要可测：把判定抽成模块、把 handler 写成能注入
+     `{ registry, realpath, stat, spawn }` 的工厂，测试用假替身直接驱动（405 / 400 / 403 / 未知
+     会话 / happy path），并按本仓库纪律做变异验证。
+
 这条定稿时要把下面这件事查清楚，**不要先写代码**：服务端要独立于调用方地知道「这个会话的 cwd 是哪个」，
 否则「落在 cwd 之内」只是一句客户端自愿遵守的话。可行路线：客户端 POST `{ sessionId, path }`，
 服务端用宿主**服务端**的会话服务查出该 sessionId 的 cwd，再 `realpath` 之后比对前缀；查不到就不做校验、
