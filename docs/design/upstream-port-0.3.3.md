@@ -312,6 +312,33 @@ const READER_NODES = new Set(['user','steering','assistant-step','tool-call','tu
 - **挂载测试**：构造一个不在 `READER_NODES` 里的节点类型，断言它**经由官方组件**渲染（而不是 `UnknownRecord`）；再断言 `READER_NODES` 里的类型**仍走本仓库自己的渲染器**（守「不双渲染」）。
 - 负例：官方组件抛错时应被边界隔离，不拖垮整页阅读。
 
+**✅ 已查清（2026-09-29，对 0.2.0-rc.1 的宿主包实测）——四个前置事实，实施前先看这一节。**
+
+1. **五个族都在，且 kind/scope 与上游的 `EXPECTED` 完全一致**（取自宿主自己的槽位目录
+   `dsh-cordis-client-runner/lib/client.js`，那是权威来源）：
+
+   | 族 | 槽位 | kind | scope |
+   | --- | --- | --- | --- |
+   | actions | `conversation.chat.assistant-actions` | `list` | `session` |
+   | tools | `tool.call.toolview` | `keyed` | `session` |
+   | tail | `conversation.chat.turnTail` | `list` | `session` |
+   | nodes | `conversation.chat.node` | `keyed` | `session` |
+   | images | `conversation.message.images` | `single` | `session` |
+
+   所以 `EXPECTED` 表照抄即可，`Official slot contract changed` 这条会在宿主真变了的时候才响。
+   五个族也确实都在被宿主的官方插件使用（`ui-tool` / `ui-schedule` / `ui-deliverables` /
+   `ui-goal` / `ui-message-feedback` / `ui-attachment`），镜像有东西可镜像。
+2. **四个新增依赖都已安装**：`dsh-client-ui-tool`（`tool.call.toolview` 与 `conversation.chat.node`
+   的类型来源）、`dsh-session-turn-outline`、`dsh-api-remotes`、`dsh-client-connection`。
+3. **`READER_NODES` 必须用本仓库自己的集合，不能照抄上游那六个。** 本仓库 `Reader.tsx` 的座位
+   链路实际处理 **15 类**：`user`、`steering`、`assistant-step`、`tool-call`、`turn-tail`、
+   `turn-process`、`context`、`command`、`manual-compaction`、`compaction`、`system-prompt`、
+   `model-retry`、`turn-trigger`、`turn-error`、`turn-max-tokens`。**漏一个就是双渲染。**
+   建议让 `Reader.tsx` 导出这份集合，桥接与渲染器读同一个常量（上游是把六个字面量写在桥接里）。
+4. **注册形状与本仓库既有写法一致**：`ctx.slots.inject(<源槽>, () => ctx.slots.register({...}))`，
+   桥接层用公开注册表操作（`spec`/`entriesOfSlot`/`subscribe`/`inject`/`register`），与既有
+   `conversation.view` 注册同一套 API。
+
 **风险**：**最高**。三点必须提前想清楚：① 宿主槽契约在 0.2.0-rc.1 上是否仍与 `EXPECTED` 一致（不一致就要先改 `EXPECTED`，且这是宿主侧事实，不是本仓库能决定的）；② `READER_NODES` 与本仓库原生链路**同源**，否则双渲染或漏渲染；③ 视觉不一致是**预期代价**，要在文档里认下来，而不是事后当 bug 修。
 
 ---
