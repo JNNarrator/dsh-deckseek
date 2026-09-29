@@ -52,7 +52,7 @@ const ALL = blocks(css);
 /** A plate is sticky and opaque: it hides whatever is passing behind it. */
 const STICKY_OPAQUE = ALL.filter(block =>
   /position:\s*sticky/.test(block.body) && /background:\s*var\(--dsw-alias-bg-base\)/.test(block.body));
-const PLATE_CLASSES = ['topBar', 'statusBar'] as const;
+const PLATE_CLASSES = ['statusBar'] as const;
 
 /** Every terminal-scoped rule that styles a given plate, wherever the plate's
  *  own `position`/`background` happen to be declared. */
@@ -68,7 +68,7 @@ test('the pinned opaque plates are exactly the ones this suite covers', () => {
   // an explicit edit to this list rather than as a silent hole in the guard.
   const classes = [...new Set(STICKY_OPAQUE.flatMap(block =>
     [...block.selector.matchAll(/\.([A-Za-z][\w-]*)/g)].map(match => match[1]!)))].sort();
-  assert.deepEqual(classes, ['statusBar', 'topBar']);
+  assert.deepEqual(classes, ['statusBar']);
 });
 
 for (const plateClass of PLATE_CLASSES) {
@@ -82,12 +82,57 @@ for (const plateClass of PLATE_CLASSES) {
   });
 }
 
-test('the top bar does not cover its strip with a margin its own padding cancels', () => {
+/**
+ * The top of the column is an anchor, not a row, and this is the arithmetic that
+ * makes it free.
+ *
+ * It used to be the reading toolbar: a bar carrying the title, the workspace and
+ * three controls, costing its own height plus one column gap at the top of a
+ * view whose whole point is text. Those controls now ride in the bottom strip —
+ * a row that already existed — and what is left is a zero-height anchor holding
+ * the frame's corners and, when it is open, the search row.
+ *
+ * Two things can silently re-open that strip, and both are asserted here: a
+ * height that is not zero, and a negative margin that no longer equals the gap
+ * the column opens beside it. The second is the subtle one — the pair is a
+ * subtraction, so a second copy of either number keeps `height: 0` true while the
+ * anchor quietly costs the difference. Hence the token.
+ */
+test('the top anchor costs no reading height', () => {
+  const anchor = ALL.find(block => /(^|\s)\.topBar\s*$/.test(block.selector.trim()));
+  assert.ok(anchor !== undefined, '.topBar must be declared');
+  assert.match(anchor.body, /height:\s*0\b/, 'the anchor must have no height of its own');
+  assert.match(anchor.body, /margin-bottom:\s*calc\(-1 \* var\(--dx-gap-column\)\)/,
+    'the anchor must cancel the gap it is charged, through the shared token');
+  assert.match(anchor.body, /position:\s*sticky/, 'the corners hang off it and stay pinned with it');
+  assert.doesNotMatch(anchor.body, /background:/, 'nothing is painted at the top of the column any more');
+
+  // One token, read by both sides of the subtraction.
+  assert.match(css, /\.column\s*\{[^}]*gap:\s*var\(--dx-gap-column\)/, 'the column gap must come from the token');
+  assert.match(css, /--dx-gap-column:\s*calc\(22px \+ var\(--dx-font-delta\)\)/, 'the soft rhythm, declared once');
+
+  // The terminal skin keeps its own density, so it re-points the token rather
+  // than the gap: the anchor's margin then follows the same number the column
+  // uses, which is the whole point of the token.
+  const terminalColumn = /\[data-deckseek-skin='terminal'\]\s*\.column\s*\{([^}]*)\}/.exec(css);
+  assert.ok(terminalColumn !== null, 'the terminal column must be declared');
+  assert.match(terminalColumn[1]!, /--dx-gap-column:\s*var\(--dx-gap-block\)/,
+    'the terminal gap and the anchor cancellation have to be the same number');
+});
+
+test('the top anchor is an anchor and a panel host, never a row', () => {
+  // The terminal rule is the one that used to carry a painted plate: a strip
+  // above a bar, covered because the bar slid over it. With no bar and no height
+  // there is nothing above the anchor but the scroller's own edge, so any
+  // block-axis box or paint here is the old strip coming back.
   const body = bodyOf(terminalRules('topBar'));
-  assert.doesNotMatch(body, /margin:\s*-/,
-    'a negative top margin is only correct while the padding equals it; they cancel in the flow, so an unrelated padding edit would silently resize the bar');
-  assert.match(body, /box-shadow:\s*0 -\d+px 0 /,
-    'the strip above the bar has to be painted instead');
+  assert.doesNotMatch(body, /(margin|padding)-block/, 'no vertical box may be declared on the anchor');
+  assert.doesNotMatch(body, /\bbox-shadow\s*:/, 'the plate above the bar is gone with the bar');
+  assert.doesNotMatch(body, /\bbackground\s*:/, 'the anchor must stay transparent');
+  // The horizontal bleed stays: it is what puts the corner glyphs on the frame's
+  // corners instead of 12px inside them.
+  assert.match(body, /margin-inline:\s*calc\(-1 \* var\(--dx-frame-pad-x\)\)/);
+  assert.match(body, /padding-inline:\s*var\(--dx-frame-pad-x\)/);
 });
 
 test('the bottom bar paints past its own box on both sides', () => {

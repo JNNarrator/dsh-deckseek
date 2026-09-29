@@ -3,10 +3,11 @@
 // Two properties are only checkable here rather than on the pure functions:
 // that a keystroke on the window actually reaches the panels (the listener and
 // the layer have to agree), and that the panels the layer opens are in the DOM
-// at all. The skin-specific halves — that the terminal skin draws the status
-// line and hides the toolbar pair — are CSS `display` rules, and this suite
-// says so instead of pretending to assert them: what it holds is that both
-// exist in the tree for every skin, which is the invariant the CSS relies on.
+// at all. The skin-specific halves — which skin draws the frame corners, which
+// one hides the mode word — are CSS `display` rules, and this suite says so
+// instead of pretending to assert them: what it holds is that the chrome and the
+// controls exist in the tree for every skin, which is the invariant the CSS
+// relies on.
 
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -100,6 +101,25 @@ test('the status line reports the session state and the counts it holds', () => 
   assert.match(bar.textContent ?? '', /IDLE/);
   // The turn count comes off the rail, which anchors one turn in this fixture.
   assert.match(within(bar as HTMLElement).getByText(/轮/).textContent ?? '', /轮/);
+});
+
+/**
+ * The strip is the only chrome the view has, so every control the top row used
+ * to carry has to be reachable *on it* — for every skin, since the row that held
+ * them is gone rather than hidden. Five buttons: the three view controls plus the
+ * two panel keys; the palette is a convenience for them, not the only door.
+ */
+test('the strip carries the controls the top row used to hold', () => {
+  const bar = mount().container.querySelector('[data-reader-status-bar]')! as HTMLElement;
+  const labels = [...bar.querySelectorAll('button')].map(button => button.textContent ?? '');
+  assert.deepEqual(labels, ['查找', '动效开', '导出', '^K 命令', '? 帮助']);
+  // The group is labelled, and it is not announced as a toolbar: these are five
+  // independent buttons, not a set with arrow-key movement between them.
+  const group = bar.querySelector('[role="group"]');
+  assert.equal(group?.getAttribute('aria-label'), '阅读工具');
+  assert.equal(bar.querySelector('[role="toolbar"]'), null, 'the top row, and its toolbar role, are gone');
+  // The workspace is context and rides here too, with the full path on hover.
+  assert.ok(bar.querySelector('[data-reader-frame-path]')?.getAttribute('title'), 'the workspace must carry its full path for the hover title');
 });
 
 test('a waiting session reads as WAIT, not as idle', () => {

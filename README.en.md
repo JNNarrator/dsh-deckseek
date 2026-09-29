@@ -14,7 +14,7 @@ It adds an independent **DeckSeek reading tab** to DSH: the execution record fol
 
 ![DeckSeek reading view](docs/screenshots/reading-view.png)
 
-**The DeckSeek reading view** (Soft skin): the execution record folds away and the final answer renders in full — headings, tables, code, formulas and quotes in one column; the toolbar stays pinned at the top (readout plus search / motion / export); the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
+**The DeckSeek reading view** (Soft skin): the execution record folds away and the final answer renders in full — headings, tables, code, formulas and quotes in one column; the top of the column costs no height at all (the log starts at its first line) and one status strip stays pinned to the bottom (readout, workspace, search / motion / export, `^K`, `?`), so the chrome lives in one row; the message rail hugs the right edge; spacing above the task bar and composer stays compact — no hollow gaps under long task lists.
 
 ![The Terminal skin](docs/screenshots/terminal-skin.png)
 
@@ -60,14 +60,14 @@ The terminal skin adds box-character corners, an optional screen texture (scanli
 
 **Export & copy**
 
-- **Session export**: one click in the reading toolbar downloads the session as Markdown (your questions plus the model's answers in display order, process folded), with a timestamped filename.
+- **Session export**: one click in the reading view's bottom strip downloads the session as Markdown (your questions plus the model's answers in display order, process folded), with a timestamped filename.
 - One-click copy on code blocks; hovering a table in an answer reveals "Copy as CSV" (RFC 4180, quotes and newlines handled).
 
 **Interaction & state**
 
 - **Status and follow**: the reasoning card follows the latest line and rests at the bottom when it ends; while thinking it shows a localized "thinking… {time}" label, and tools show per-family states; scrolling away from the bottom floats a centred "↓ Back to latest" pill with an unread count above the composer; sending or steering a message returns the view to the bottom.
 - **Width follows the pane**: the reading column fills the conversation pane it is given (a 1100px ceiling exists only for readability) instead of inheriting the native chat column, which is sized for bubbles beside a composer.
-- **Motion can be turned off**: the toolbar toggle or the system's `prefers-reduced-motion` stops every animation from one place.
+- **Motion can be turned off**: the bottom strip's toggle or the system's `prefers-reduced-motion` stops every animation from one place.
 - **Bilingual UI**: every reading-view string follows the DSH app language (Chinese / English) with no restart.
 - **Adaptive theme and type size**: dark / light syncs live with no flash; type follows browser zoom and the host's content font-size setting (skin line heights, leading slots, and block gaps follow it too).
 

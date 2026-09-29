@@ -7,12 +7,29 @@
  *
  *  This is deliberately NOT a port of the host's `use-process-scroll`, which is
  *  built on the host's shared follow controller (`use-scroll-follow`) and carries
- *  behaviours this plugin has no seat for — smooth auto-follow of a growing body,
- *  `scrollend` settling, and interruption from events that bubble out of editable
- *  controls. A group body here does not auto-follow: the transcript's own follow
+ *  behaviours this plugin has no seat for — `scrollend` settling, and
+ *  interruption from events that bubble out of editable controls. What is copied
+ *  is the part a reader can actually see: the cap, the two edge fades, and the
+ *  follow — but the follow here is NOT the transcript's follow one level down.
+ *
+ *  It used to be neither, on the argument that "the transcript's own follow
  *  controller already owns that intent, and two controllers disagreeing about
- *  where the reader wants to be is worse than one. What is copied is the part a
- *  reader can actually see: the cap and the two edge fades.
+ *  where the reader wants to be is worse than one". That argument is wrong for a
+ *  capped body, and the reader is the one who pays: content lands *inside* the
+ *  cap, the transcript's follower never fires (a body at its cap does not grow
+ *  the transcript), and a running turn's newest rows sit out of sight below a
+ *  window frozen on its first screenful. Measured in the running app, watching a
+ *  turn with the fold open: the rows stop and the reader has to chase them by
+ *  hand, which is exactly the "it still sits on the messages above" report.
+ *
+ *  The two controllers are not rivals because they act on different axes: this
+ *  one moves the cap's own `scrollTop`, the transcript's moves the scrollport
+ *  that contains the body. Neither write changes the other's metrics. The rule
+ *  each follows is also the same one, so they agree by construction: follow the
+ *  newest until the reader scrolls away by hand, and hand the position back as
+ *  soon as the reader returns to the floor. Where they differ is the gate —
+ *  this one follows only while the turn is still running, because a settled
+ *  body is one the reader opens in order to read from the top.
  *
  *  The cap is applied by CSS, not measured here. That matters: `max-height` is
  *  the thing that makes `scrollHeight` exceed `clientHeight`, so a test or a
@@ -26,6 +43,24 @@ export interface ScrollEdges {
     readonly canScrollUp: boolean;
     readonly canScrollDown: boolean;
 }
+/**
+ * How long after one of our own writes the body's next scroll event still
+ * counts as ours.
+ *
+ * The transcript's follower learned this the hard way: scroll events are
+ * delivered asynchronously (once per frame, coalesced), so by the time a write's
+ * own event arrives the writer has usually written again — a chase moves more
+ * than a pixel per frame by construction. Comparing the event's position against
+ * the last written position therefore misreads our own writes as the reader's
+ * hand, and a misread during a fast burst detaches the follow that is doing the
+ * writing. A timestamp says what the value compare was trying to say: an event
+ * from the last frame belongs to us.
+ *
+ * Exported so the tests can hold the margin's one real constraint: it must be
+ * shorter than the pause a reader's own scroll can produce, and longer than a
+ * frame.
+ */
+export declare const PROGRAMMATIC_MS = 200;
 interface Metrics {
     readonly top: number;
     readonly floor: number;
@@ -60,7 +95,7 @@ export declare function edgesOf(metrics: Metrics): ScrollEdges;
  * keeps `scrollTop` for an element it does not re-create, and this cap does not
  * flicker mid-stream — it changes only when the reader folds or changes level.
  */
-export declare function useProcessScroll(bodyRef: RefObject<HTMLDivElement | null>, contentRef: RefObject<HTMLDivElement | null>, open: boolean): {
+export declare function useProcessScroll(bodyRef: RefObject<HTMLDivElement | null>, contentRef: RefObject<HTMLDivElement | null>, open: boolean, follow?: boolean): {
     edges: ScrollEdges;
     events: Pick<DOMAttributes<HTMLDivElement>, 'onScroll'>;
 };

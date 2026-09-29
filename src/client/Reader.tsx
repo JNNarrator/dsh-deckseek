@@ -333,7 +333,11 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   const capped = structure === 'folded';
   const flowBody = useRef<HTMLDivElement>(null);
   const flowContent = useRef<HTMLDivElement>(null);
-  const scroll = useProcessScroll(flowBody, flowContent, expanded);
+  // A running turn's body keeps its own newest rows in view: the transcript's
+  // follower cannot do it, because a body at its cap does not grow the
+  // transcript. A settled turn is the opposite case — the reader opens it to
+  // read from the top — so the follow is gated on the turn still being open.
+  const scroll = useProcessScroll(flowBody, flowContent, expanded, boundary.status === 'open');
   // What the fold is hiding, in calls rather than in prose: the reference TUIs
   // put a count on a collapsed block so a reader can tell a one-call turn from a
   // twenty-call one without opening either. Counted only while folded — an open
@@ -669,27 +673,14 @@ export function Reader(props: ReaderProps) {
           document that turns it off costs a `display: none` rather than a
           remount. Static by construction — nothing here animates. */}
       <span className={css.screenTexture} aria-hidden="true" />
-      {/* The window bar and the search panel stick as one unit. A reader who
-          scrolls into a long answer still needs the readout and the controls,
-          and the panel opens under the bar it was invoked from. */}
+      {/* The top of the column carries no row. Two things still hang here, and
+          neither takes any height from the log: the anchor the terminal frame's
+          top corners are drawn from, and the search row when it is open. The
+          row the toolbar used to be is gone — its readout and its controls live
+          in the strip pinned at the bottom, which is a row that already
+          existed. */}
       <div className={css.topBar}>
-      <div className={css.toolbar} role="toolbar" aria-label={ui('reader.toolbarAria')} data-ud-check="reader-toolbar">
-        <span className={css.toolbarTitle} title={ui('reader.toolbarHint')}>{ui('reader.toolbarTitle')}</span>
-        {/* The terminal skin's title bar. Decoration, so it never reaches the
-            accessibility tree in any skin; the full path stays on hover. */}
-        <span className={css.framePath} aria-hidden="true" title={cwd ?? undefined}>{ui('reader.tab')}
-          {framePath && <span className={css.frameCwd}>{framePath}</span>}
-        </span>
-        <button type="button" className={css.textButton} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
-        <button type="button" className={css.textButton} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
-        <button type="button" className={css.textButton} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
-        {/* The palette and the sheet, for the skins that have no status line
-            to carry them. The terminal skin moves both entries down there and
-            hides this pair, so either way exactly one pair is on screen. */}
-        <button type="button" className={css.toolbarKey} onClick={() => openOnly('palette')} title={ui('help.key.palette')}>{ui('status.hint.palette')}</button>
-        <button type="button" className={css.toolbarKey} onClick={() => openOnly('help')} title={ui('help.key.help')}>{ui('status.hint.help')}</button>
-      </div>
-      {searchOpen && <SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} />}
+      {searchOpen && <div className={css.searchHost}><SearchPanel root={root} index={searchIndex} onClose={() => setSearchOpen(false)} /></div>}
       </div>
       {positionNotice && <div className={css.notice} role="status" data-reader-position-restored>{ui('reader.positionRestored')}</div>}
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
@@ -735,7 +726,16 @@ export function Reader(props: ReaderProps) {
           {scroll.unread > 0 && <span className={css.jumpCount} aria-hidden="true" data-reader-jump-count>{scroll.unread}</span>}
         </button>
       </div>}
-      <StatusBar mode={mode} meter={frameMeter} onPalette={() => openOnly('palette')} onHelp={() => openOnly('help')} />
+      <StatusBar mode={mode} meter={frameMeter} path={framePath || null} pathTitle={cwd ?? undefined}>
+        {/* The row the toolbar used to be. Every control it carried is here:
+            the view keeps exactly one strip of chrome, and that strip is the
+            one pinned where the newest work already is. */}
+        <button type="button" className={css.statusBarKey} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
+        <button type="button" className={css.statusBarKey} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
+        <button type="button" className={css.statusBarKey} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
+        <button type="button" className={css.statusBarKey} onClick={() => openOnly('palette')} title={ui('help.key.palette')}>{ui('status.hint.palette')}</button>
+        <button type="button" className={css.statusBarKey} onClick={() => openOnly('help')} title={ui('help.key.help')}>{ui('status.hint.help')}</button>
+      </StatusBar>
     </div>
     <TurnRail root={root} items={railItems} />
     {/* The panels sit outside the column: they are chrome about the reading

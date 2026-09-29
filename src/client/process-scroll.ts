@@ -7,12 +7,29 @@
  *
  *  This is deliberately NOT a port of the host's `use-process-scroll`, which is
  *  built on the host's shared follow controller (`use-scroll-follow`) and carries
- *  behaviours this plugin has no seat for — smooth auto-follow of a growing body,
- *  `scrollend` settling, and interruption from events that bubble out of editable
- *  controls. A group body here does not auto-follow: the transcript's own follow
+ *  behaviours this plugin has no seat for — `scrollend` settling, and
+ *  interruption from events that bubble out of editable controls. What is copied
+ *  is the part a reader can actually see: the cap, the two edge fades, and the
+ *  follow — but the follow here is NOT the transcript's follow one level down.
+ *
+ *  It used to be neither, on the argument that "the transcript's own follow
  *  controller already owns that intent, and two controllers disagreeing about
- *  where the reader wants to be is worse than one. What is copied is the part a
- *  reader can actually see: the cap and the two edge fades.
+ *  where the reader wants to be is worse than one". That argument is wrong for a
+ *  capped body, and the reader is the one who pays: content lands *inside* the
+ *  cap, the transcript's follower never fires (a body at its cap does not grow
+ *  the transcript), and a running turn's newest rows sit out of sight below a
+ *  window frozen on its first screenful. Measured in the running app, watching a
+ *  turn with the fold open: the rows stop and the reader has to chase them by
+ *  hand, which is exactly the "it still sits on the messages above" report.
+ *
+ *  The two controllers are not rivals because they act on different axes: this
+ *  one moves the cap's own `scrollTop`, the transcript's moves the scrollport
+ *  that contains the body. Neither write changes the other's metrics. The rule
+ *  each follows is also the same one, so they agree by construction: follow the
+ *  newest until the reader scrolls away by hand, and hand the position back as
+ *  soon as the reader returns to the floor. Where they differ is the gate —
+ *  this one follows only while the turn is still running, because a settled
+ *  body is one the reader opens in order to read from the top.
  *
  *  The cap is applied by CSS, not measured here. That matters: `max-height` is
  *  the thing that makes `scrollHeight` exceed `clientHeight`, so a test or a
@@ -21,7 +38,7 @@
  *  levels get the cap is the caller's decision (`Reader` caps only the level that
  *  actually folds), so this hook does not take a cap flag — a body that is not
  *  capped has no overflow and reports no edges on its own. */
-import { useCallback, useEffect, useLayoutEffect, useState, type DOMAttributes, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DOMAttributes, type RefObject } from 'react';
 
 export interface ScrollEdges {
   readonly canScrollUp: boolean;
@@ -34,6 +51,25 @@ const AT_REST: ScrollEdges = { canScrollUp: false, canScrollDown: false };
  *  still having content below it. Fractional line heights make the floor
  *  non-integral, and a bare `>` flickers the bottom fade on and off. */
 const EDGE_SLACK = 1;
+
+/**
+ * How long after one of our own writes the body's next scroll event still
+ * counts as ours.
+ *
+ * The transcript's follower learned this the hard way: scroll events are
+ * delivered asynchronously (once per frame, coalesced), so by the time a write's
+ * own event arrives the writer has usually written again — a chase moves more
+ * than a pixel per frame by construction. Comparing the event's position against
+ * the last written position therefore misreads our own writes as the reader's
+ * hand, and a misread during a fast burst detaches the follow that is doing the
+ * writing. A timestamp says what the value compare was trying to say: an event
+ * from the last frame belongs to us.
+ *
+ * Exported so the tests can hold the margin's one real constraint: it must be
+ * shorter than the pause a reader's own scroll can produce, and longer than a
+ * frame.
+ */
+export const PROGRAMMATIC_MS = 200;
 
 interface Metrics {
   readonly top: number;
@@ -83,8 +119,17 @@ export function useProcessScroll(
   bodyRef: RefObject<HTMLDivElement | null>,
   contentRef: RefObject<HTMLDivElement | null>,
   open: boolean,
+  follow = false,
 ): { edges: ScrollEdges; events: Pick<DOMAttributes<HTMLDivElement>, 'onScroll'> } {
   const [edges, setEdges] = useState<ScrollEdges>(AT_REST);
+  // Who owns this body's scroll position. `false` until the reader takes it: a
+  // running turn then keeps its newest row in view on its own.
+  const takenOver = useRef(false);
+  // When we last wrote the position. A scroll event that arrives inside this
+  // window is our own write coming back, never the reader's hand; comparing
+  // values instead cannot work, because scroll events are delivered a frame
+  // later and a chase writes more than once per frame.
+  const wroteAt = useRef(0);
 
   const sync = useCallback(() => {
     const body = bodyRef.current;
@@ -101,6 +146,14 @@ export function useProcessScroll(
     setEdges(previous => sameEdges(previous, next) ? previous : next);
   }, [bodyRef, open]);
 
+  /** Pin the body to its floor. Only ever called while the reader owns nothing. */
+  const pin = useCallback(() => {
+    const body = bodyRef.current;
+    if (body === null) return;
+    body.scrollTop = body.scrollHeight;
+    wroteAt.current = performance.now();
+  }, [bodyRef]);
+
   // Before paint, so a body that is opening does not paint one frame of stale
   // fades; and on `open`, so a closed body drops its fades immediately.
   useLayoutEffect(() => {
@@ -113,6 +166,19 @@ export function useProcessScroll(
     sync();
   });
 
+  // A turn that ends stops following, and the next one starts over with a clean
+  // slate: whether the reader had taken over is a fact about the turn they were
+  // watching, not about the group.
+  useEffect(() => {
+    if (!follow) takenOver.current = false;
+  }, [follow]);
+
+  // Open, running and unclaimed: put the newest row in view, before the frame
+  // that would otherwise paint the previous screenful of it.
+  useLayoutEffect(() => {
+    if (open && follow && !takenOver.current) { pin(); sync(); }
+  }, [open, follow, pin, sync]);
+
   // Growth is reported through the content, not the body: once the body is at
   // its cap its own box stops changing, so a body-only observer would never fire
   // for the very case the fades exist to serve.
@@ -121,11 +187,32 @@ export function useProcessScroll(
     const content = contentRef.current;
     if (body === null || !open) return;
     if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => { sync(); });
+    const observer = new ResizeObserver(() => {
+      if (follow && !takenOver.current) pin();
+      sync();
+    });
     observer.observe(body);
     if (content !== null) observer.observe(content);
     return () => { observer.disconnect(); };
-  }, [bodyRef, contentRef, open, sync]);
+  }, [bodyRef, contentRef, open, follow, pin, sync]);
 
-  return { edges, events: { onScroll: sync } };
+  /**
+   * The body's own scroll events: our writes and the reader's hand arrive on the
+   * same channel.
+   *
+   * A write we made is recognised by its timestamp rather than by its value —
+   * see `wroteAt` — and only changes the fades. Anything else is the reader, so
+   * it decides ownership by the same rule the transcript's follower uses one
+   * level up: still content below means they are reading history, and the floor
+   * means they are back with the newest row.
+   */
+  const onScroll = useCallback(() => {
+    const body = bodyRef.current;
+    if (body !== null && open && follow && performance.now() - wroteAt.current >= PROGRAMMATIC_MS) {
+      takenOver.current = edgesOf(metricsOf(body)).canScrollDown;
+    }
+    sync();
+  }, [bodyRef, follow, open, sync]);
+
+  return { edges, events: { onScroll } };
 }

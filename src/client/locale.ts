@@ -16,8 +16,8 @@ export const zh = {
   // Reading tab / chrome
   'reader.tab': 'DeckSeek',
   'reader.sessionClosed': '阅读页对应的会话已关闭。',
-  'reader.toolbarTitle': '阅读 · 原始记录完整保留',
-  'reader.toolbarHint': '基于真实消息类型和轮次边界整理。当前协议没有独立的正文阶段标记，无法确认的内容会继续保留。',
+  // The strip at the foot of the reading area, which is now the view's only
+  // chrome: the label names the group of controls it carries.
   'reader.toolbarAria': '阅读工具',
   'reader.motionFollowOff': '动效 · 跟随系统关闭',
   'reader.motionOn': '动效开',
@@ -471,8 +471,6 @@ export type UiKey = keyof typeof zh
 export const en: Record<UiKey, string> = {
   'reader.tab': 'DeckSeek',
   'reader.sessionClosed': 'The reading page\'s session is closed.',
-  'reader.toolbarTitle': 'Reading · original record fully preserved',
-  'reader.toolbarHint': 'Reconstructed from real message types and turn boundaries. The current protocol has no separate body-phase marker; unverifiable content stays as-is.',
   'reader.toolbarAria': 'Reading tools',
   'reader.motionFollowOff': 'Motion · follows system (off)',
   'reader.motionOn': 'Motion on',

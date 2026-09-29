@@ -12,8 +12,6 @@ export type UiLang = 'zh' | 'en';
 export declare const zh: {
     readonly 'reader.tab': "DeckSeek";
     readonly 'reader.sessionClosed': "阅读页对应的会话已关闭。";
-    readonly 'reader.toolbarTitle': "阅读 · 原始记录完整保留";
-    readonly 'reader.toolbarHint': "基于真实消息类型和轮次边界整理。当前协议没有独立的正文阶段标记，无法确认的内容会继续保留。";
     readonly 'reader.toolbarAria': "阅读工具";
     readonly 'reader.motionFollowOff': "动效 · 跟随系统关闭";
     readonly 'reader.motionOn': "动效开";

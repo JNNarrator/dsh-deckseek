@@ -34,15 +34,72 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { act, useRef, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { useProcessScroll, edgesOf, metricsOf } from '../src/client/process-scroll.js';
+import { PROGRAMMATIC_MS, useProcessScroll, edgesOf, metricsOf } from '../src/client/process-scroll.js';
 
 /** Give an element the three numbers the browser would compute for a scroll box. */
-function measure(element: HTMLElement, { scrollTop, scrollHeight, clientHeight }: {
+function measure(element: HTMLElement, { scrollTop, scrollHeight, clientHeight, onWrite }: {
   scrollTop: number; scrollHeight: number; clientHeight: number;
+  /** Called with every position written to the element, so a test can see the
+   *  writes a follow makes rather than only where it ended up. */
+  onWrite?: (top: number) => void;
 }): void {
   Object.defineProperty(element, 'scrollHeight', { value: scrollHeight, configurable: true });
   Object.defineProperty(element, 'clientHeight', { value: clientHeight, configurable: true });
-  element.scrollTop = scrollTop;
+  // `scrollTop` is an own property here rather than happy-dom's accessor: the
+  // environment has no layout, so its clamping would measure the stub rather
+  // than the plugin — and the writes are half of what these tests are about.
+  let top = scrollTop;
+  Object.defineProperty(element, 'scrollTop', {
+    configurable: true,
+    get: () => top,
+    set: (value: number) => { top = value; onWrite?.(value); },
+  });
+}
+
+/**
+ * The growth signal, under the test's control.
+ *
+ * The follow is driven by a `ResizeObserver` — content arriving inside a body
+ * that is already at its cap — and happy-dom reports no resizes at all, so
+ * without this a test could only ever exercise the initial pin. The fake keeps
+ * the shape the hook uses (`observe` / `disconnect`) and lets the test say when
+ * the body grew.
+ */
+class FakeResizeObserver {
+  static live: FakeResizeObserver[] = [];
+  constructor(private readonly callback: () => void) { FakeResizeObserver.live.push(this); }
+  observe(): void { /* the test decides when a resize happens */ }
+  disconnect(): void { FakeResizeObserver.live = FakeResizeObserver.live.filter(entry => entry !== this); }
+  /** Report one resize, as the browser would after layout. */
+  grow(): void { act(() => { this.callback(); }); }
+}
+
+function withFakeResize(run: () => void): void {
+  const scope = globalThis as unknown as { ResizeObserver: unknown };
+  const original = scope.ResizeObserver;
+  scope.ResizeObserver = FakeResizeObserver;
+  FakeResizeObserver.live = [];
+  try { run(); } finally { scope.ResizeObserver = original; FakeResizeObserver.live = []; }
+}
+
+/**
+ * A clock the test owns.
+ *
+ * Both followers decide whether a scroll event is their own write or the
+ * reader's hand by comparing a timestamp, so a test about that decision has to
+ * move the clock itself rather than sleep through it.
+ */
+function fakeClock(): { at: (ms: number) => void; restore: () => void } {
+  const original = Object.getOwnPropertyDescriptor(performance, 'now');
+  let now = 0;
+  Object.defineProperty(performance, 'now', { value: () => now, configurable: true });
+  return {
+    at: value => { now = value; },
+    restore: () => {
+      if (original) Object.defineProperty(performance, 'now', original);
+      else delete (performance as unknown as { now?: unknown }).now;
+    },
+  };
 }
 
 test('the floor is the overflow, never negative', () => {
@@ -79,13 +136,15 @@ test('a fractional floor does not flicker the bottom fade', () => {
 interface HarnessProps {
   onEdges: (edges: { canScrollUp: boolean; canScrollDown: boolean }) => void;
   open: boolean;
+  /** The turn is still running, so the body follows its newest row. */
+  follow?: boolean;
   body: (element: HTMLDivElement | null) => void;
 }
 
-function Harness({ onEdges, open, body }: HarnessProps) {
+function Harness({ onEdges, open, follow = false, body }: HarnessProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const scroll = useProcessScroll(bodyRef, contentRef, open);
+  const scroll = useProcessScroll(bodyRef, contentRef, open, follow);
   onEdges(scroll.edges);
   return <div ref={element => { bodyRef.current = element; body(element); }} onScroll={scroll.events.onScroll}>
     <div ref={contentRef} />
@@ -145,4 +204,109 @@ test('reopening the fold republishes the edges it suppressed', () => {
   assert.deepEqual(seen, { canScrollUp: true, canScrollDown: true }, 'reopening restores them');
   act(() => { root.unmount(); });
   container.remove();
+});
+
+/**
+ * The follow inside a capped body.
+ *
+ * This exists because the transcript's follower cannot cover this case: a body
+ * at its cap does not grow the transcript, so new rows land out of sight while
+ * the outer follower has nothing to chase. The reader's report — the view sitting
+ * on the messages above while a turn runs — is what these four tests hold apart:
+ * pin while running and unclaimed, grow with the body, give way to the reader,
+ * hand it back at the floor, and never touch a settled turn.
+ */
+test('a running body is pinned to its floor and stays there as it grows', () => {
+  const clock = fakeClock();
+  try {
+    const writes: number[] = [];
+    let element: HTMLDivElement | null = null;
+    withFakeResize(() => {
+      mount(<Harness open follow onEdges={() => {}} body={value => { element = value; }} />);
+      measure(element!, { scrollTop: 0, scrollHeight: 1000, clientHeight: 400, onWrite: top => writes.push(top) });
+      // Growth is the case the follow exists for: the body is already at its cap,
+      // so only the content inside it changed.
+      clock.at(100);
+      FakeResizeObserver.live.at(-1)!.grow();
+      assert.deepEqual(writes, [1000], 'the growth pins the body to its newest row');
+      clock.at(200);
+      FakeResizeObserver.live.at(-1)!.grow();
+      assert.equal(element!.scrollTop, 1000, 'and again on the next burst');
+    });
+  } finally { clock.restore(); }
+});
+
+test('the body is pinned when the turn starts, before anything paints', () => {
+  const clock = fakeClock();
+  try {
+    const writes: number[] = [];
+    let element: HTMLDivElement | null = null;
+    const { root, container } = mount(<Harness open follow onEdges={() => {}} body={value => { element = value; }} />);
+    // A body that already holds rows when it appears — the reader expanded a turn
+    // that is running — must open at its newest row, not at its first one.
+    measure(element!, { scrollTop: 0, scrollHeight: 900, clientHeight: 400, onWrite: top => writes.push(top) });
+    act(() => { root.render(<Harness open follow={false} onEdges={() => {}} body={value => { element = value; }} />); });
+    act(() => { root.render(<Harness open follow onEdges={() => {}} body={value => { element = value; }} />); });
+    assert.equal(writes.at(-1), 900, 'the running turn opens at its floor');
+    act(() => { root.unmount(); });
+    container.remove();
+  } finally { clock.restore(); }
+});
+
+test('the reader who scrolls the body themselves keeps it', () => {
+  const clock = fakeClock();
+  try {
+    let element: HTMLDivElement | null = null;
+    withFakeResize(() => {
+      const { root, container } = mount(<Harness open follow onEdges={() => {}} body={value => { element = value; }} />);
+      measure(element!, { scrollTop: 0, scrollHeight: 1000, clientHeight: 400 });
+      clock.at(100);
+      FakeResizeObserver.live.at(-1)!.grow();
+      assert.equal(element!.scrollTop, 1000, 'following to begin with');
+
+      // The reader pages back through the calls. Their scroll arrives later than
+      // our last write, which is how the hook tells the two apart.
+      clock.at(900);
+      element!.scrollTop = 200;
+      act(() => { element!.dispatchEvent(new Event('scroll')); });
+      clock.at(1000);
+      FakeResizeObserver.live.at(-1)!.grow();
+      assert.equal(element!.scrollTop, 200, 'a hand on the body outranks the follow');
+
+      // Back at the floor, they hand it back: the same rule the transcript's
+      // follower applies one level up.
+      clock.at(2000);
+      element!.scrollTop = 600;
+      act(() => { element!.dispatchEvent(new Event('scroll')); });
+      clock.at(2100);
+      FakeResizeObserver.live.at(-1)!.grow();
+      assert.equal(element!.scrollTop, 1000, 'returning to the floor resumes the follow');
+
+      act(() => { root.unmount(); });
+      container.remove();
+    });
+  } finally { clock.restore(); }
+});
+
+test('a settled turn is left exactly where the reader put it', () => {
+  const clock = fakeClock();
+  try {
+    let element: HTMLDivElement | null = null;
+    withFakeResize(() => {
+      mount(<Harness open onEdges={() => {}} body={value => { element = value; }} />);
+      measure(element!, { scrollTop: 0, scrollHeight: 1000, clientHeight: 400 });
+      clock.at(100);
+      FakeResizeObserver.live.at(-1)!.grow();
+      assert.equal(element!.scrollTop, 0, 'a finished turn is one the reader opens to read from the top');
+    });
+  } finally { clock.restore(); }
+});
+
+test('the write guard is longer than a frame and shorter than a reader', () => {
+  // Two constraints, and both failures are visible: shorter than a frame and a
+  // chase misreads its own write as the reader's hand (the detach this fix is
+  // about); long enough to swallow a drag and the reader cannot take the body
+  // back at all.
+  assert.ok(PROGRAMMATIC_MS >= 34, `the guard must outlast a frame, got ${PROGRAMMATIC_MS}ms`);
+  assert.ok(PROGRAMMATIC_MS <= 500, `the guard must not swallow a reader's drag, got ${PROGRAMMATIC_MS}ms`);
 });

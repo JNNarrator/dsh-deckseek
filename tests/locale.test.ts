@@ -14,8 +14,8 @@ test('zh and en dictionaries cover the same keys', () => {
 test('uiIn substitutes {placeholders}', () => {
   assert.equal(uiIn('zh', 'status.timeSeconds', { seconds: 32 }), '用时 32 秒');
   assert.equal(uiIn('en', 'status.timeSeconds', { seconds: 32 }), 'Took 32s');
-  assert.equal(uiIn('zh', 'reader.toolbarTitle'), '阅读 · 原始记录完整保留');
-  assert.equal(uiIn('en', 'reader.toolbarTitle'), 'Reading · original record fully preserved');
+  assert.equal(uiIn('zh', 'reader.searchPlaceholder'), '在阅读页中查找…');
+  assert.equal(uiIn('en', 'reader.searchPlaceholder'), 'Search in the reading view…');
 });
 
 test('turnProcessLabelIn mirrors the native summaries in both languages', () => {

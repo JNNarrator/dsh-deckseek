@@ -265,22 +265,60 @@ test('the terminal skin leaves the column unpositioned', () => {
 });
 
 /**
- * The status line and the box-character frame are terminal furniture: a page
- * is not an instrument, so the other two skins keep their existing bottom edge
- * and corners. Both are rendered for every skin and hidden here, which is the
- * plugin's standing rule for skin-specific chrome — this holds the CSS half of
- * it, since a `display: none` that went missing would show up as furniture on
- * the wrong skin rather than as an error.
+ * The bottom strip is the view's ONLY pinned row, and every skin draws it.
+ *
+ * It used to be terminal furniture with the card skins keeping a toolbar row at
+ * the top instead. That split is gone with the top row: one strip carries the
+ * readout, the workspace and the controls for all three skins (the terminal
+ * adds its mono face and the frame's bottom corners on top). The card skins drop
+ * exactly one span — the mode word, which is the terminal's vocabulary — and the
+ * frame is still the terminal's alone.
+ *
+ * All of it is rendered for every skin, so what a sheet can be held to is the
+ * CSS half: a `display: none` that went missing shows up as furniture on the
+ * wrong skin rather than as an error.
  */
-test('the status line and the box frame are terminal-only', () => {
+test('the bottom strip is drawn by every skin, the frame by one', () => {
   const bare = stripComments(reader.css);
-  assert.match(bare, /\.statusBar\s*\{\s*display:\s*none;?\s*\}/, 'the status line must start hidden');
-  assert.match(bare, /\[data-deckseek-skin='terminal'\]\s*\.statusBar\s*\{[^}]*display:\s*flex/, 'the terminal skin must draw the status line');
+  // The base rule is the one that pins it; the other `.statusBar` rules in the
+  // sheet are the narrow-column tweaks inside container queries.
+  const rules = [...bare.matchAll(/(^|\})\s*\.statusBar\s*\{([^}]*)\}/g)].map(match => match[2]!);
+  const base = rules.find(body => /position:\s*sticky/.test(body));
+  assert.ok(base !== undefined, 'the strip must be declared as the column\'s pinned row');
+  assert.match(base!, /display:\s*flex/, 'the strip is a row in every skin');
+  assert.match(base!, /bottom:\s*0/, 'pinned to the bottom, where the newest work is');
+  for (const body of rules) assert.doesNotMatch(body, /display:\s*none/, 'no skin may hide the strip');
+  // One span differs, and it is the terminal's own vocabulary rather than any
+  // of the controls.
+  assert.match(bare, /\.root:not\(\[data-deckseek-skin='terminal'\]\)\s*\.statusBarMode\s*\{\s*display:\s*none;?\s*\}/,
+    'the card skins drop the mode word and nothing else');
   assert.match(bare, /\[data-deckseek-skin='terminal'\]\s*\.topBar::before\s*\{[^}]*content:\s*'┌'/, 'the terminal skin must draw the frame');
-  // The command palette and the shortcut sheet are not terminal-only, so the
-  // pair that opens them in the toolbar has to be hidden *only* in terminal —
-  // where the status line carries the same two entries instead.
-  assert.match(bare, /\[data-deckseek-skin='terminal'\]\s*\.toolbarKey\s*\{\s*display:\s*none;?\s*\}/);
+});
+
+/**
+ * The reading area shows the transcript's scrollbar and no other.
+ *
+ * The column sits inside the host's scrollport, so a bar on a scroller *inside*
+ * it is a second bar a few pixels from the first, both belonging to the same
+ * column of text — the "scrollbars everywhere" report. The capped process body
+ * and the reasoning card are the two structural scrollers that can produce one;
+ * both keep scrolling (wheel, trackpad, keys, and each one's own follow) and hide
+ * the bar, which is also what the row rail already does at rest.
+ *
+ * The `::-webkit-scrollbar` rule is not decoration: the host styles every bar in
+ * the app through those pseudo-elements, so a scroller that only sets
+ * `scrollbar-width` would still be given the host's 5px bar by an engine that
+ * ignores the property.
+ */
+test('no structural scroller inside the reading column draws a bar', () => {
+  const bare = stripComments(reader.css);
+  for (const cls of ['cappedBody', 'reasonViewport']) {
+    const rule = new RegExp(`(^|\\})\\s*\\.${cls}\\s*\\{([^}]*)\\}`).exec(bare);
+    assert.ok(rule !== null, `.${cls} must be declared`);
+    assert.match(rule[2]!, /overflow(-y)?:\s*(auto|scroll)/, `.${cls} is a scroller`);
+    assert.match(rule[2]!, /scrollbar-width:\s*none/, `.${cls} must not draw a bar`);
+    assert.match(bare, new RegExp(`\\.${cls}::-webkit-scrollbar\\s*\\{[^}]*width:\\s*0`), `.${cls} must zero the legacy bar too`);
+  }
 });
 
 /**
