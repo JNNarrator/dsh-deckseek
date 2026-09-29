@@ -766,8 +766,15 @@
    through. Bleed the bar out to the frame's inner edges and pad the difference
    back, so the toolbar keeps its place while the bar covers the full width. */
 [data-deckseek-skin='terminal'] .topBar {
-  margin: -10px calc(-1 * var(--dx-frame-pad-x)) 0;
-  padding: 10px var(--dx-frame-pad-x) 0;
+  /* The horizontal bleed stays a bleed: it is the bar's own width, and the
+     toolbar keeps its place because the padding restores it. The vertical strip
+     is PAINTED rather than laid out. A `-10px` top margin only covers it while
+     the padding is exactly 10px — the two cancel each other in the flow, so a
+     later padding edit silently resizes the bar's flow box and nothing fails.
+     A shadow paints outside the box and takes part in no layout at all. */
+  margin: 0 calc(-1 * var(--dx-frame-pad-x));
+  padding: 0 var(--dx-frame-pad-x);
+  box-shadow: 0 -10px 0 var(--dsw-alias-bg-base);
 }
 /* The reading hint is real copy, not decoration: keep it for assistive tech and
    drop only its pixels. A title bar carries the workspace, not a sentence. */
@@ -1181,6 +1188,14 @@
   flex: none; align-self: stretch;
   margin-top: 4px; padding: 3px var(--dx-frame-pad-x);
   border-top: var(--dx-rule); background: var(--dsw-alias-bg-base);
+  /* This bar spans the column's content box, but the user band bleeds out to the
+     frame's inner edges (its own -`--dx-frame-pad-x` margin below). Measured in
+     Chrome at 1440x900 over 78 scroll positions: in the 12px strip beside this
+     bar the band was the topmost element at 18 of them — the band sliding past
+     in the gutters while the row it belongs to was already behind the bar. Paint
+     the plate out to the frame instead of widening the row, so the status keys
+     keep the place they have in every other skin. */
+  box-shadow: calc(-1 * var(--dx-frame-pad-x)) 0 0 var(--dsw-alias-bg-base), var(--dx-frame-pad-x) 0 0 var(--dsw-alias-bg-base);
   color: var(--dx-ansi-muted); font-size: 0.6875rem; line-height: 1.25rem;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
