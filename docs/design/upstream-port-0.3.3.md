@@ -200,6 +200,15 @@ export function settleByDeadline(animation: Animation, settle: () => void, durat
   - `src/dsh-deckseek.ts`：目前 `inject: []`、严格「presentation only」。新增 `webServer` 注入 + 路由（**路径按插件命名空间取 `/dsh-deckseek/reveal`**，不要沿用上游的 `/better-display/reveal`），`ctx.effect(...)` 注册、返回 disposer。
   - 客户端 `revealFile(path)` 未提供时**退回** `openFile(dirname(path))`（上游就是这个降级形状）。
 
+**✅ 决定（2026-09-29，用户确认）：加路由，但路径必须落在该会话的 cwd 之内，且只接受 POST。**
+
+这条定稿时要把下面这件事查清楚，**不要先写代码**：服务端要独立于调用方地知道「这个会话的 cwd 是哪个」，
+否则「落在 cwd 之内」只是一句客户端自愿遵守的话。可行路线：客户端 POST `{ sessionId, path }`，
+服务端用宿主**服务端**的会话服务查出该 sessionId 的 cwd，再 `realpath` 之后比对前缀；查不到就不做校验、
+直接拒绝（fail closed）。若 0.2.0-rc.1 的服务端没有可用的会话服务，则退化为「**只允许已真实存在**且
+`realpath` 后仍在配置根之内的路径」，并把这条限制写进 README——**不要**默默放宽成「接受任意路径」。
+`xdg-open` 只在明确支持的平台上启用。
+
 **⚠️ W3d 是一条需要单独点头的能力扩张。** 本仓库服务端条目注释写的是「Presentation only: no provider, tool, session-log or permission mutations」，而 `spawn` 一个 OS 进程属于宿主侧副作用。定稿前必须明确：
 
 1. **路径校验**：上游那版接受调用方给的任意路径。本仓库应至少要求路径解析后**落在该会话的 cwd / 工作区根之内**，并且方法限 `POST`、返回 JSON、错误码分明。`spawn` 用数组传参（不走 shell）没有命令注入，但「任意路径 reveal」仍应拒绝。
