@@ -14,6 +14,7 @@ import { diffBlockLabels, jsonTreeLabels, readBlockLabels, searchBlockLabels, te
 import { currentLocale, ui } from './locale.js';
 import { FailureCard } from './FailureCard.js';
 import css from './Reader.module.css';
+import { focusWithoutScroll } from './focus.js';
 
 const ICONS = { write: EditGlyph, read: BrowseGlyph, terminal: TerminalGlyph, search: SearchGlyph, web: SearchGlyph, other: ToolGlyph } satisfies Record<ToolCategory, unknown>;
 const number = new Intl.NumberFormat(currentLocale() === 'zh' ? 'zh-CN' : 'en-US');
@@ -176,7 +177,7 @@ export const ToolActivity = memo(function ToolActivityView({ entry, motion, turn
     return value && 'kind' in value ? JSON.stringify({ content: value.content, isError: value.isError, meta: value.meta }, null, 2) : '';
   }, [preview.entry.block]);
   const tabs = [['result', phase === 'preparing' ? ui('tool.tabPreview') : ui('tool.tabResult')], ['input', ui('tool.tabInput')], ['raw', ui('tool.tabRaw')]] as const;
-  const activate = (index: number) => { const item = tabs[(index + tabs.length) % tabs.length]!; setTab(item[0]); tabRefs.current[(index + tabs.length) % tabs.length]?.focus(); };
+  const activate = (index: number) => { const item = tabs[(index + tabs.length) % tabs.length]!; setTab(item[0]); focusWithoutScroll(tabRefs.current[(index + tabs.length) % tabs.length]); };
   if (depth > 6) return <p className={css.meta}>{ui('tool.nestedHint')}</p>;
   return <div ref={element => { control.current = element?.querySelector<HTMLElement>('[data-disclosure-row]') ?? null; }} className={css.toolActivity} data-reader-tool-call={entry.callId} data-tool-phase={phase} data-tool-args-length={model.raw.length} data-tool-category={model.category} data-expanded={open} data-ud-check="reader-tool-activity">
     <DisclosureRow icon={<span className={css.toolLead}><Icon size={14} /><span className={css.toolGlyphState} data-phase={phase} aria-hidden="true" /></span>} title={rowTitle} open={open} expandable expandOnRowClick keepContentWhenOpen

@@ -5,6 +5,7 @@ import { settleByDeadline } from './animation-deadline.js';
 import { SPINNER_INTERVAL_MS, SPINNER_STILL_FRAME, spinnerFrame } from './spinner.js';
 import { StreamMotionContext } from './streaming.js';
 import { jumpLock } from './jump-lock.js';
+import { focusWithoutScroll } from './focus.js';
 import { PROGRAMMATIC_MS } from './process-scroll.js';
 import { ui } from './locale.js';
 
@@ -222,7 +223,7 @@ export function ProcessFragment({ open, motion, onRead, returnFocusTo, nodeKey, 
     const changed = previous.current !== open;
     previous.current = open;
     if (open) setPresent(true);
-    if (!open && element.contains(document.activeElement)) returnFocusTo.current?.focus();
+    if (!open && element.contains(document.activeElement)) focusWithoutScroll(returnFocusTo.current);
     element.style.height = open ? 'auto' : '0px';
     const target = open ? element.scrollHeight : 0;
     if (!motion || !changed || Math.abs(from - target) < 1) {

@@ -1,6 +1,7 @@
 import { Fragment, useEffect } from 'react';
 import { ui, type UiKey } from './locale.js';
 import css from './Reader.module.css';
+import { focusWithoutScroll } from './focus.js';
 
 /**
  * The reading view's shortcut sheet, opened with `?`.
@@ -27,7 +28,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   // Focus the close control so the sheet is reachable by keyboard: it is a
   // dialog, and a dialog that opens with focus still on the page behind it
   // cannot be left with the keyboard.
-  useEffect(() => { document.querySelector<HTMLButtonElement>('[data-reader-help] [data-autofocus]')?.focus(); }, []);
+  useEffect(() => { focusWithoutScroll(document.querySelector<HTMLButtonElement>('[data-reader-help] [data-autofocus]')); }, []);
   return <div className={css.paletteScrim} onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className={css.palette} data-reader-help role="dialog" aria-modal="true" aria-label={ui('help.title')}>
       <p className={css.helpTitle}>{ui('help.title')}</p>

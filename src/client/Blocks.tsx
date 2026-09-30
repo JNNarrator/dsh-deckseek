@@ -12,6 +12,7 @@ import { useStreamingText } from './streaming.js';
 import { MotionMarkdown, MotionPlainText } from './word-motion.js';
 import { useLiveAnnounce } from './announce.js';
 import { useCopyReceipt } from './copy-receipt.js';
+import { focusWithoutScroll } from './focus.js';
 import css from './Reader.module.css';
 
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
@@ -33,6 +34,7 @@ export const ImageBlock = memo(function ImageBlock({ attachment, loadImage }: {
   const [decoded, setDecoded] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
+  const closer = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let active = true;
     let owned: string | null = null;
@@ -52,7 +54,7 @@ export const ImageBlock = memo(function ImageBlock({ attachment, loadImage }: {
   const height = Number.isFinite(attachment.height) && attachment.height > 0 ? attachment.height : 3;
   return <figure className={css.imageFigure} data-reader-image data-image-state={error ? 'error' : decoded ? 'ready' : 'loading'}>
     <div className={css.imageFrame} style={{ aspectRatio: `${width} / ${height}` }}>
-      {!error && url && <button ref={opener} type="button" className={css.imageOpen} aria-label={attachment.name ? ui('image.zoomWithName', { name: attachment.name }) : ui('image.zoom')} onClick={() => dialog.current?.showModal()}>
+      {!error && url && <button ref={opener} type="button" className={css.imageOpen} aria-label={attachment.name ? ui('image.zoomWithName', { name: attachment.name }) : ui('image.zoom')} onClick={() => { dialog.current?.showModal(); focusWithoutScroll(closer.current); }}>
         <img src={url} alt={attachment.name ?? ui('image.alt')} width={width} height={height} onLoad={() => setDecoded(true)} onError={() => setError(true)} data-ready={decoded} />
       </button>}
       {(!decoded || error) && <div className={css.imagePlaceholder}>
@@ -61,8 +63,31 @@ export const ImageBlock = memo(function ImageBlock({ attachment, loadImage }: {
       </div>}
     </div>
     {attachment.name && <figcaption>{attachment.name}</figcaption>}
-    <dialog ref={dialog} className={css.imageDialog} aria-label={ui('image.preview')} onClose={() => opener.current?.focus()} onClick={event => { if (event.target === dialog.current) dialog.current?.close(); }}>
-      <button type="button" autoFocus className={css.dialogClose} aria-label={ui('image.closePreview')} onClick={() => dialog.current?.close()}>×</button>
+    {/* The preview dialog is rendered closed for every image, and a closed
+        `<dialog>` must not be laid out or focusable.
+     *
+     * Two incidents came from getting that wrong, and both are why this markup
+     * is worth reading before editing:
+     *
+     *  - `.imageDialog` declares `display: flex`, and an author `display` beats
+     *    the UA's `dialog:not([open]) { display: none }`. So every closed dialog
+     *    was a real box in the log — thirteen images, thirteen boxes each as tall
+     *    as its picture, thousands of pixels of nothing in the reading column.
+     *    The stylesheet now hides the closed state explicitly; that rule is what
+     *    keeps this markup safe.
+     *  - the close button used to carry `autoFocus`, which React applies on
+     *    mount. Focusing an element inside a scrollable tree asks the browser to
+     *    reveal it, and revealing it scrolled every scrollable ancestor — the
+     *    transcript's port *and the host's own `overflow: hidden` conversation
+     *    root*, whose scroll offset is what puts the whole pane out of the window.
+     *    Measured in the running app on an image-heavy session: the host root sat
+     *    at scrollTop 3815 and the reading view was 6373px above the viewport —
+     *    a black pane, re-broken on every re-mount (React re-focuses on each one).
+     *    So focus is now ours, on open, with `preventScroll`; the same applies to
+     *    every other focus this view performs (`data-reader-focus` guards it).
+     */}
+    <dialog ref={dialog} className={css.imageDialog} aria-label={ui('image.preview')} onClose={() => focusWithoutScroll(opener.current)} onClick={event => { if (event.target === dialog.current) dialog.current?.close(); }}>
+      <button ref={closer} type="button" className={css.dialogClose} aria-label={ui('image.closePreview')} onClick={() => dialog.current?.close()}>×</button>
       {url && <img src={url} alt={attachment.name ?? ui('image.alt')} />}
     </dialog>
   </figure>;

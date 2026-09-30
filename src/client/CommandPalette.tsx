@@ -3,6 +3,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { filterCommands, groupCommands, type ReaderCommand } from './commands.js';
 import { ui } from './locale.js';
 import css from './Reader.module.css';
+import { focusWithoutScroll } from './focus.js';
 
 /**
  * The reading view's command palette.
@@ -23,7 +24,7 @@ export function CommandPalette({ commands, onClose }: {
   const list = useMemo(() => filterCommands(commands, query), [commands, query]);
   const groups = useMemo(() => groupCommands(list), [list]);
   // Focus goes to the field, not the list: a palette is typed into first.
-  useEffect(() => { input.current?.focus(); }, []);
+  useEffect(() => { focusWithoutScroll(input.current); }, []);
   // A new query re-ranks the list, so the highlight returns to the best match
   // rather than staying on whatever index the previous list happened to hold.
   useEffect(() => { setActive(0); }, [query]);

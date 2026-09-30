@@ -272,7 +272,10 @@ export function setReactInputValue(textarea: HTMLTextAreaElement, value: string)
       textarea.value = value;
     }
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.focus();
+    // Inside the app frame's own document, so the host's scroll root is out of
+    // reach — `preventScroll` is here for the rule, not for a bug this line ever
+    // had: nothing in this plugin focuses without it (see `focus.ts`).
+    textarea.focus({ preventScroll: true });
   } catch {
     textarea.value = value;
   }

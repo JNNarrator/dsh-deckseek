@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { searchMatches, type SearchEntry } from './search-index.js';
+import { focusWithoutScroll } from './focus.js';
 import { ui } from './locale.js';
 import css from './Reader.module.css';
 
@@ -31,6 +32,10 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matches = useMemo(() => searchMatches(index, query), [index, query]);
 
+  // The field takes focus when the panel opens, without dragging the log: see
+  // `focus.ts` — a bare `autoFocus` here scrolled the host's clipped conversation
+  // root and slid the whole pane out of the window.
+  useEffect(() => { focusWithoutScroll(input.current); }, []);
   const locate = useCallback((key: string, needle: string): HTMLElement | null => {
     const container = root.current;
     if (!container) return null;
@@ -142,7 +147,7 @@ export const SearchPanel = memo(function SearchPanel({ root, index, onClose }: {
   return (
     <div ref={row} className={css.searchRow} data-reader-search role="search">
       <input
-        ref={input} className={css.searchInput} value={query} autoFocus
+        ref={input} className={css.searchInput} value={query}
         onChange={event => { setQuery(event.target.value); setCursor(0); }}
         placeholder={ui('reader.searchPlaceholder')}
         onKeyDown={event => {
