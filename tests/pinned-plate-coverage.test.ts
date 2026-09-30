@@ -1,14 +1,23 @@
-// Pinned plates must cover the frame's inner edges, and where a strip between a
-// plate and the frame has to be covered, it must be PAINTED rather than laid out.
+// Pinned plates must cover the frame's inner edges, and the bottom one must also
+// reach the frame's bottom edge, because the window's last line is a row and not
+// a box floating inside it.
 //
 // Why this file exists: the terminal skin draws its frame by padding the column,
 // so a row that bleeds out to the frame's inner edges — the user band does, by
 // its own `calc(-1 * var(--dx-frame-pad-x))` margin — slides past anything pinned
 // inside the content box. The top bar covered that with a `-10px` top margin
 // paired with a 10px top padding: correct only while those two numbers are equal,
-// and nothing fails when they stop being. The bottom bar had no coverage at all.
-// Both now paint with a shadow, which takes part in no layout, so an unrelated
-// geometry edit cannot break the coverage.
+// and nothing fails when they stop being. The bottom bar had no coverage at all,
+// and then covered the gutters by painting them with a shadow while still
+// stopping at the content box — which left the frame's bottom corners drawn onto
+// a row that was 10px above them and 12px inside them.
+//
+// The remedy is the covering itself: both bars now take the frame's own inset
+// back with a bleed, so the plate IS the coverage, the corner glyphs hang off a
+// box that reaches the frame's corners, and the bottom row spends the frame's
+// bottom inset to sit on the frame's bottom edge. The two axes are read through
+// one token each, which is what keeps a later geometry edit from re-opening a
+// band of the difference.
 //
 // These assertions read the SOURCE sheet and locate rules by their own selector
 // and declarations, never by slicing between markers: a guard that silently
@@ -75,10 +84,10 @@ for (const plateClass of PLATE_CLASSES) {
   test(`.${plateClass} reaches the frame's inner edges`, () => {
     const body = bodyOf(terminalRules(plateClass));
     const spansFrame = /margin[^;]*calc\(-1 \* var\(--dx-frame-pad-x\)\)/.test(body);
-    const paintsFrame = /box-shadow:[^;]*calc\(-1 \* var\(--dx-frame-pad-x\)\)/.test(body)
-      && /box-shadow:[^;]*var\(--dx-frame-pad-x\) 0 0/.test(body);
-    assert.equal(spansFrame || paintsFrame, true,
-      'the plate must span the frame itself or paint out to it, or a bleeding row shows in the gutter beside it');
+    assert.equal(spansFrame, true,
+      'the plate must span the frame itself — a box that stops at the content box leaves the gutter beside it open to whatever slides past, and draws its corner glyphs 12px inside the frame');
+    assert.match(body, /padding-inline:\s*var\(--dx-frame-pad-x\)/,
+      'the bleed must be given back as padding, or the row\'s own content moves with it');
   });
 }
 
@@ -135,10 +144,21 @@ test('the top anchor is an anchor and a panel host, never a row', () => {
   assert.match(body, /padding-inline:\s*var\(--dx-frame-pad-x\)/);
 });
 
-test('the bottom bar paints past its own box on both sides', () => {
-  // Its plate is the column's content box, so painting is the only thing that can
-  // reach the gutters a bleeding row slides through.
+test('the bottom row sits on the frame\'s bottom edge', () => {
+  // The row is the window's last line: it spends the frame's bottom inset to get
+  // there. Two numbers, one token — a second copy of either side silently
+  // re-opens a band of the difference between the readout and the frame, and the
+  // visual failure is quiet (the row just floats again, with the frame's side
+  // borders running on below it and the corner glyphs above the corners).
   const body = bodyOf(terminalRules('statusBar'));
-  assert.match(body, /box-shadow:\s*calc\(-1 \* var\(--dx-frame-pad-x\)\) 0 0 /);
-  assert.match(body, /,\s*var\(--dx-frame-pad-x\) 0 0 /);
+  assert.match(body, /margin-block:\s*2px\s+calc\(-1 \* var\(--dx-frame-pad-y\)\)/,
+    'the row must cancel the column\'s bottom inset, through the shared token');
+  assert.match(css, /--dx-frame-pad-y:\s*10px/, 'the frame\'s bottom inset must be declared once');
+  const terminalColumn = /\[data-deckseek-skin='terminal'\]\s*\.column\s*\{([^}]*)\}/.exec(css);
+  assert.ok(terminalColumn !== null, 'the terminal column must be declared');
+  assert.match(terminalColumn[1]!, /padding:\s*var\(--dx-frame-pad-y\)\s+var\(--dx-frame-pad-x\)/,
+    'the column must pad by the same token the row cancels');
+  // No shadow: coverage by paint would mean the box stops short of the frame,
+  // which is the defect this rule exists to fix.
+  assert.doesNotMatch(body, /\bbox-shadow\s*:/, 'the plate must span the frame, not paint past its own box');
 });

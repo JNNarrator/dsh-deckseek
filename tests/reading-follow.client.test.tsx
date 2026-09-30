@@ -3,7 +3,7 @@
 //
 // This is the reader-visible half of "keep the newest work at the bottom", and
 // its failures are all of one shape — the view quietly stays where it was while
-// content arrives below it. Three of them are pinned here:
+// content arrives below it. Four of them are pinned here:
 //
 //  1. a jump is not the reader leaving. The smooth scroll a jump starts fires
 //     scroll events that belong to neither the follower's own write nor a hand;
@@ -16,6 +16,12 @@
 //     session, which is exactly "it still sits on the messages above".
 //  3. a hand still outranks the follow: a wheel upward detaches and the pill
 //     appears, and scrolling back to the bottom hands it back.
+//  4. arriving content is not a decision either. The reader asked for one rule —
+//     "if I do nothing it stays at the newest bottom, and the pill appears only
+//     when I go up" — and the rule the hook had was the wrong question: it asked
+//     how far from the foot the viewport was. A burst leaves the follower's own
+//     write far from the foot by construction, so the view detached itself in the
+//     middle of the answer. Direction answers it instead.
 //
 // The environment has no layout and no real resizes, so the scrollport's numbers
 // are supplied by the test and the growth signal is a fake observer the test
@@ -210,6 +216,77 @@ test('a hand on the wheel still outranks the follow', async () => {
       handle.port.at(1200);
       act(() => { handle.port.element.dispatchEvent(new Event('scroll')); });
       assert.equal(handle.state().detached, false);
+      act(() => { handle.root.unmount(); });
+      handle.container.remove();
+    });
+  } finally { clock.restore(); }
+});
+
+/**
+ * Content arriving below is not the reader leaving.
+ *
+ * The follower's last write sits where the content used to end: one burst later
+ * it is thousands of pixels short of the foot, and its own scroll event — read a
+ * frame later, past the programmatic margin — looks exactly like a hand that
+ * scrolled away. Judged by the size of the gap it is a departure; judged by
+ * direction it is nothing at all, because nothing lifted the top edge. This is
+ * the failure the reader reported as the view sitting on messages it had already
+ * read while the answer streamed in underneath it.
+ */
+test('a burst of content arriving below never detaches the follow', async () => {
+  const clock = fakeClock();
+  try {
+    await withFakeResize(async () => {
+      const handle = mount();
+      await frame();
+      // The range grows under a viewport that has not moved, which is what a
+      // streaming answer does every frame or two.
+      clock.at(1000);
+      handle.port.growTo(4000);
+      act(() => { handle.port.element.dispatchEvent(new Event('scroll')); });
+      assert.equal(handle.state().detached, false, 'growth below must not detach the view');
+
+      // A hand moving the viewport *down* — scroll anchoring does this without
+      // anyone touching anything — is the same case from the other side.
+      handle.port.at(1800);
+      act(() => { handle.port.element.dispatchEvent(new Event('scroll')); });
+      assert.equal(handle.state().detached, false, 'only an upward move is a decision');
+      act(() => { handle.root.unmount(); });
+      handle.container.remove();
+    });
+  } finally { clock.restore(); }
+});
+
+/**
+ * ...and an upward move is still a decision, wheel or not.
+ *
+ * The wheel is one way to scroll up; dragging the scrollbar and a trackpad fling
+ * are others, and none of them has to come with a `wheel` event. The rule has to
+ * hold for the scrollport itself, which is where every one of them ends up.
+ */
+test('a hand that moves the viewport up detaches, and coming back down re-attaches', async () => {
+  const clock = fakeClock();
+  try {
+    await withFakeResize(async () => {
+      const handle = mount();
+      await frame();
+      // The browser delivers the follower's own write back as a scroll event on
+      // the next frame. The hook files it under "mine" by its timestamp, and the
+      // position it carries is the one an upward move is measured from — so the
+      // test has to deliver it too, or the first hand it reports would be
+      // measured against a position nothing was ever at.
+      act(() => { handle.port.element.dispatchEvent(new Event('scroll')); });
+      assert.equal(handle.state().detached, false);
+
+      clock.at(1000);
+      handle.port.at(600);
+      act(() => { handle.port.element.dispatchEvent(new Event('scroll')); });
+      assert.equal(handle.state().detached, true, 'the reader moved up, so the pill appears');
+
+      clock.at(2000);
+      handle.port.at(1200);
+      act(() => { handle.port.element.dispatchEvent(new Event('scroll')); });
+      assert.equal(handle.state().detached, false, 'back at the foot is back to following');
       act(() => { handle.root.unmount(); });
       handle.container.remove();
     });

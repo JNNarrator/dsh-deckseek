@@ -403,30 +403,34 @@ function isRendered(node: unknown): boolean {
   return node !== null && node !== undefined;
 }
 
-/** One working line, and it is the dock's.
+/** One working line, and it is the strip's.
  *
  *  The header used to carry its own live title for the same moment — the tool
- *  frame, reading "正在运行命令 · <tool>" — so a running turn said work was
- *  happening twice: once above the process rows and once below them, in two
- *  different vocabularies. The header's copy is gone, and what the work actually
- *  is rides with the dock's verb and clock instead, so nothing is lost by
- *  reading one line. */
-test('a running turn has exactly one working line, and it is the dock', () => {
+ *  frame, reading "正在运行命令 · <tool>" — and the line then sat in a dock of its
+ *  own above the bottom strip, so a running turn said work was happening in
+ *  three places at once, in three vocabularies. Both extra rows are gone: the
+ *  line rides in the strip pinned to the bottom, on the same row as the session
+ *  state, and nothing is lost by reading one line. */
+test('a running turn has exactly one working line, and it is in the bottom strip', () => {
   const view = mountReader(liveTurn(), 'reader-live-line', 'standard');
   const lines = [...view.container.querySelectorAll('[data-reader-status]')];
   assert.equal(lines.length, 1, 'one working line, not two');
-  assert.equal(isRendered(lines[0]!.closest('[data-reader-status-dock]')), true, 'the working line belongs to the dock');
-  const dock = view.container.querySelector('[data-reader-status-dock]')!;
-  assert.equal(isRendered(dock.querySelector('[data-reader-status-verb]')), true, 'the working verb rides the dock');
-  assert.match(dock.querySelector('[data-reader-status-clock]')?.textContent ?? '', /\d+ 秒/, 'the elapsed clock rides the dock');
-  assert.match(dock.querySelector('[data-reader-status-detail]')?.textContent ?? '', /Bash/, 'and so does what is running');
+  assert.equal(isRendered(lines[0]!.closest('[data-reader-status-live]')), true, 'the working line rides the live slot');
+  assert.equal(isRendered(lines[0]!.closest('[data-reader-status-bar]')), true, 'and that slot is the bottom strip, not a row of its own');
+  const live = view.container.querySelector('[data-reader-status-live]')!;
+  assert.equal(isRendered(live.querySelector('[data-reader-status-verb]')), true, 'the working verb rides the live line');
+  assert.match(live.querySelector('[data-reader-status-clock]')?.textContent ?? '', /\d+ 秒/, 'the elapsed clock rides the live line');
+  assert.match(live.querySelector('[data-reader-status-detail]')?.textContent ?? '', /Bash/, 'and so does what is running');
+  // The turn itself no longer draws it: a strip inside the turn would be the
+  // second row this change exists to remove.
+  assert.equal(isRendered(view.container.querySelector('[data-reader-turn] [data-reader-status-live]')), false, 'the line must not go back inside the turn');
   assert.equal(view.container.textContent?.includes('正在运行命令'), false, 'the retired header phrase must not come back');
 });
 
 /** What is running is the half the header used to carry alone, and the half a
- *  reader loses first: at the compact level the dock keeps the verb (work is
+ *  reader loses first: at the compact level the line keeps the verb (work is
  *  happening) and drops the tool name (which tool), exactly as the header did. */
-test('the dock carries what is running, and compact drops only that', () => {
+test('the live line carries what is running, and compact drops only that', () => {
   const full = mountReader(liveTurn(), 'reader-dock-detail-full', 'standard');
   assert.match(full.container.querySelector('[data-reader-status-detail]')?.textContent ?? '', /Bash/);
 
@@ -447,9 +451,9 @@ test('a settled call leaves the working line without a detail', () => {
     data: { root: settled('c1', 'bash', { command: 'pnpm deploy' }) },
   });
   const view = mountReader(fixture, 'reader-live-settled', 'standard');
-  const dock = view.container.querySelector('[data-reader-status-dock]');
-  assert.equal(isRendered(dock), true, 'the turn is still running, so the line stays');
-  assert.equal(isRendered(dock!.querySelector('[data-reader-status-detail]')), false, 'nothing is in flight to name');
+  const live = view.container.querySelector('[data-reader-status-live]');
+  assert.equal(isRendered(live), true, 'the turn is still running, so the line stays');
+  assert.equal(isRendered(live!.querySelector('[data-reader-status-detail]')), false, 'nothing is in flight to name');
   assert.equal(view.container.textContent?.includes('正在运行命令'), false);
 });
 

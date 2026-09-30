@@ -43,7 +43,17 @@ export declare function StatusText({ text, ariaText, motion, shimmer, verb, cloc
      */
     swapKey?: string;
 }): import("react").JSX.Element;
-export declare function Disclosure({ open, onChange, label, activity, summary, status, controls, buttonRef }: {
+/**
+ * The fold's whole header, and nothing else: one line, one button.
+ *
+ * It used to carry a second row under the button — `思考与过程 · N 个步骤` —
+ * which cost a full line above every process and restated a count the reader
+ * already had: the strip pinned to the bottom prints how many steps the newest
+ * turn has spent, and the fold's own summary prints this turn's, inline, for
+ * free. A fold header is the one row a reader has to pass to reach the work, so
+ * it is kept to the height of its own text.
+ */
+export declare function Disclosure({ open, onChange, label, activity, summary, controls, buttonRef }: {
     open: boolean;
     onChange: (value: boolean) => void;
     label: ReactNode;
@@ -55,7 +65,6 @@ export declare function Disclosure({ open, onChange, label, activity, summary, s
         }>;
     };
     summary?: string;
-    status?: string;
     controls: string;
     buttonRef: RefObject<HTMLButtonElement>;
 }): import("react").JSX.Element;

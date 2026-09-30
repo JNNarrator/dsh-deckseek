@@ -20,6 +20,10 @@ const RECORD = '[data-reader-anchor]';
  *  "1284" tells them nothing the rest of the control does not already. */
 const UNREAD_CAP = 99;
 
+/** How far off the foot still counts as being at the foot. Inside it the view
+ *  follows; outside it, only the reader's own hand may stop the following. */
+const FOLLOW_GAP = 72;
+
 /**
  * Count the records in one batch of DOM mutations.
  *
@@ -169,12 +173,22 @@ export function StatusText({ text, ariaText, motion, shimmer = false, verb, cloc
   </span>;
 }
 
-export function Disclosure({ open, onChange, label, activity, summary, status, controls, buttonRef }: {
+/**
+ * The fold's whole header, and nothing else: one line, one button.
+ *
+ * It used to carry a second row under the button — `思考与过程 · N 个步骤` —
+ * which cost a full line above every process and restated a count the reader
+ * already had: the strip pinned to the bottom prints how many steps the newest
+ * turn has spent, and the fold's own summary prints this turn's, inline, for
+ * free. A fold header is the one row a reader has to pass to reach the work, so
+ * it is kept to the height of its own text.
+ */
+export function Disclosure({ open, onChange, label, activity, summary, controls, buttonRef }: {
   open: boolean; onChange: (value: boolean) => void; label: ReactNode;
   /** The ranked action phrase and its family glyph: what a fold hides, in words. */
   activity?: { phrase: string; glyph: ComponentType<{ className?: string }> };
   summary?: string;
-  status?: string; controls: string; buttonRef: RefObject<HTMLButtonElement>;
+  controls: string; buttonRef: RefObject<HTMLButtonElement>;
 }) {
   const ActivityGlyph = activity?.glyph;
   return <div className={css.disclosure} data-reader-disclosure data-expanded={open}>
@@ -191,11 +205,6 @@ export function Disclosure({ open, onChange, label, activity, summary, status, c
       {summary !== undefined && <span className={css.frameCounts} data-reader-fold-summary>{summary}</span>}
       <svg className={css.chevron} data-open={open} viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="m6 4 4 4-4 4" /></svg>
     </button>
-    <div className={css.processMeta} data-reader-process-meta data-open={open} aria-hidden={!open}>
-      <div className={css.processMetaInner}><div className={css.processMetaLine}>
-        <span>{ui('turn.process')}</span>{status && <span className={css.meta}>{status}</span>}
-      </div></div>
-    </div>
   </div>;
 }
 
@@ -336,12 +345,29 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
       const candidate = Array.from(content.querySelectorAll<HTMLElement>('[data-reader-anchor]')).find(element => element.getBoundingClientRect().bottom > top + 8);
       anchor.current = candidate ? { element: candidate, top: candidate.getBoundingClientRect().top } : null;
     };
+    // Where the scrollport stood when this listener last looked. A hand and the
+    // content's own growth are told apart by direction: content arriving below
+    // never lifts the top edge, and only a reader ever does.
+    let lastTop = scroll.scrollTop;
     const onScroll = () => {
       // A jump owns the scrollport while its smooth scroll runs: those frames are
       // neither our write nor the reader's hand, and reading them as "the reader
       // scrolled away" is what detached the view a moment after the reader asked
       // it to come back down.
       if (jumpLock.active) return;
+      const top = scroll.scrollTop;
+      const previous = lastTop;
+      lastTop = top;
+      // The foot is where following lives, however the reader reached it: the one
+      // who scrolls down onto the newest line has asked for it as plainly as the
+      // one who never left.
+      if (scroll.scrollHeight - top - scroll.clientHeight < FOLLOW_GAP) {
+        following.current = true;
+        setDetached(false);
+        clearUnread();
+        capture();
+        return;
+      }
       // Our own writes come back as scroll events a frame later, and a chase
       // writes more than once per frame by construction — so a value compare
       // ("is this where I last put it?") misreads those writes as the reader's
@@ -351,11 +377,17 @@ export function useReadingScroll(root: RefObject<HTMLElement>, motion: boolean):
       // above" is. A timestamp cannot be fooled that way: an event from the last
       // frame is ours, an event from a hand is not.
       if (performance.now() - wroteAt.current < PROGRAMMATIC_MS) return;
-      following.current = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 72;
-      setDetached(!following.current);
-      if (!following.current) { cancelAnimationFrame(followFrame); followFrame = 0; }
-      else clearUnread();
-      capture();
+      // Away from the foot, only one thing decides: did the reader move the
+      // viewport UP? A gap that merely grew is not an answer to that question —
+      // it is the answer arriving — and treating growth as the reader's hand is
+      // what parked the view on rows it had already read while the newest work
+      // continued out of sight below it.
+      if (top < previous - .5) {
+        following.current = false;
+        setDetached(true);
+        cancelAnimationFrame(followFrame); followFrame = 0;
+        capture();
+      }
     };
     const onWheel = (event: WheelEvent) => {
       cancelAnimationFrame(followFrame); followFrame = 0;

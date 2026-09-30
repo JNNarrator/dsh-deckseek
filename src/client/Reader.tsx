@@ -255,13 +255,14 @@ function GroupStatus({ group, sessionId, useChat, useSessionStatus, motion, vari
   }
   if (variant === 'dock') {
     if (kind !== 'delving') return null;
-    // The one working line of the reading view. It used to have a twin in the
-    // turn header — the live tool frame ("正在运行命令 · <command>") — and the
-    // two named the same moment in two places: one said work is happening, the
-    // other said what it is. The work is now carried here instead, so the
-    // reader gets one status row and the header keeps only what it is for (the
-    // thinking label, and the call to action when the turn is waiting).
-    return <div className={css.statusDock} data-reader-status-dock>
+    // The one working line of the reading view, and it rides in the strip pinned
+    // to the bottom rather than in a row of its own above it: the phase, the
+    // clock, and the tool actually in flight, on the same line as the session
+    // state. It used to have a twin in the turn header (the live tool frame,
+    // "正在运行命令 · <command>") and a third voice in the dock above the strip;
+    // all three named the same moment, and the reader had to line the sentences
+    // up by hand. One line says it once.
+    return <div className={css.statusLive} data-reader-status-live>
       <StatusText text={text} ariaText={ariaText} motion={motion} shimmer verb={pickStatusVerb(group.key)}
         clock={elapsedClock(turnStart, now)} swapKey={kind} detail={liveDetail} />
     </div>;
@@ -353,19 +354,12 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
     return phrase === null || category === null ? undefined : { phrase, glyph: ACTIVITY_GLYPHS[category] };
   }, [expanded, structure, flow]);
   const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
-  // What the running turn is on, for the working line. Only the level that asks
-  // for live detail pays for walking the flow, and only while the turn is open:
-  // a settled group has nothing live to name. This used to ride in the turn
-  // header; the header's copy is gone (it named the same moment as the working
-  // line below it), so the detail rides with the working line instead.
-  const liveDetail = useMemo(() => {
-    if (!policy.liveProcessDetail || boundary.status !== 'open') return undefined;
-    const entry = liveToolEntry(flow);
-    if (!entry || entry.block === undefined) return undefined;
-    const title = toolRowModel(toolIdentity(entry).name, entry.block, cwd).title;
-    return title.trim() === '' ? undefined : title;
-  }, [policy.liveProcessDetail, boundary.status, flow, cwd]);
-  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="header" policy={policy} liveDetail={liveDetail} />;
+  // The header carries the phase sentence and nothing else. What the running
+  // turn is *on* — the command, path or query in flight — belongs to the one
+  // working line, which rides in the strip pinned to the bottom; the header used
+  // to name it too, and a turn that said the same thing in two places made the
+  // reader line the sentences up by hand.
+  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="header" policy={policy} />;
   const terminal = terminalLabel(boundary.reason);
   // A failure card and the terminal line both point at the full record, so the
   // card carries that note only while no terminal line says it below.
@@ -417,7 +411,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
   return <ProducedFilesContext.Provider value={mentions}><section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton} summary={summary ?? undefined}
-      label={headerStatus} activity={activity} status={turn?.steps.length ? ui('status.steps', { count: turn.steps.length }) : undefined} />}
+      label={headerStatus} activity={activity} />}
     {!hasProcess && boundary.status === 'open' && <div className={css.disclosure} data-reader-status-only>
       {headerStatus}
     </div>}
@@ -446,7 +440,10 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
     </div>
     {tail}
     {showDeliverablesRow(boundary.status, deliverables) && openFile && <Deliverables paths={deliverables} openFile={openFile} revealFile={props.revealFile} />}
-    {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} liveDetail={liveDetail} />}
+    {/* The live working line is not drawn here. It belongs to the session, not
+        to this turn's column: it rides in the strip pinned to the bottom, and
+        `Reader` hands it the open group. A row inside the turn would be a second
+        line saying what the strip already says. */}
     {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section></ProducedFilesContext.Provider>;
 });
@@ -496,6 +493,34 @@ export function Reader(props: ReaderProps) {
   const rail = useMemo(() => railTurns(railItems), [railItems]);
   const latestSteps = rail.latest === null ? 0 : timeline.turns.get(rail.latest)?.steps.length ?? 0;
   const frameMeter = frameMeterLabel(rail.count, latestSteps, hasMore);
+  // The strip's live half: which turn is running, and what it is on. It is read
+  // here, from the session, because the strip is session chrome — the turn that
+  // used to draw its own working line is no longer the thing that can: the line
+  // lives in a row the turn does not own.
+  //
+  // Only one turn can be open, and only the level that asks for live detail pays
+  // for the walk of it. The walk is the same one the turn's own fold makes; it is
+  // made again here rather than handed up, because the alternative — lifting the
+  // fold's flow into this component — would recompute it for every turn on
+  // screen instead of for the one that is running.
+  const openGroup = useMemo(() => {
+    for (let index = groups.length - 1; index >= 0; index -= 1) {
+      const group = groups[index]!;
+      if (group.turn !== null && timeline.turns.get(group.turn)?.status === 'open') return group;
+    }
+    return null;
+  }, [groups, timeline]);
+  const policy = workDetailPolicy(props.useWorkDetail());
+  const liveDetail = useMemo(() => {
+    if (openGroup === null || openGroup.turn === null || !policy.liveProcessDetail) return undefined;
+    const turn = timeline.turns.get(openGroup.turn);
+    if (turn === undefined) return undefined;
+    const mainKeys = nodes.get(openGroup.keys[0]!)?.kind === 'user' ? openGroup.keys.slice(1) : openGroup.keys;
+    const entry = liveToolEntry(readerFlow({ ...openGroup, keys: mainKeys }, turn, key => nodes.get(key)));
+    if (entry?.block === undefined) return undefined;
+    const title = toolRowModel(toolIdentity(entry).name, entry.block, cwd).title;
+    return title.trim() === '' ? undefined : title;
+  }, [openGroup, policy.liveProcessDetail, timeline, nodes, cwd]);
   const scroll = useReadingScroll(root, motion);
   // A freshly sent message always returns the reader to the bottom: the
   // composer sits below the fold, so the reply would stream out of frame.
@@ -584,6 +609,10 @@ export function Reader(props: ReaderProps) {
     { id: 'collapse', group: ui('palette.group.view'), label: ui('cmd.collapseAll'), run: () => setAllProcess(false) },
     { id: 'export', group: ui('palette.group.view'), label: ui('cmd.export'), keywords: 'markdown', run: downloadExport },
     { id: 'motion', group: ui('palette.group.view'), label: ui(motionPreference ? 'cmd.motionOff' : 'cmd.motionOn'), keywords: 'animation', run: () => props.actions.setMotion(!motionPreference) },
+    // The four controls the strip used to spell out all live here, which is what
+    // lets the strip carry a single key: the sheet is no longer the only door to
+    // any of them, and it is one of the doors to this one.
+    { id: 'help', group: ui('palette.group.view'), label: ui('help.title'), keywords: 'help keys shortcuts ?', run: () => openOnly('help') },
     ...SKIN_IDS.map(id => ({ id: `skin-${id}`, group: ui('palette.group.skin'), label: ui('cmd.skin', { name: skinName(id) }), keywords: `skin ${id}`, run: () => props.setSkin(id) })),
     ...WORK_DETAIL_IDS.map(id => ({ id: `detail-${id}`, group: ui('palette.group.detail'), label: ui('cmd.detail', { name: workDetailName(id) }), keywords: `detail ${id}`, run: () => props.setWorkDetail(id) })),
     ...SCREEN_TEXTURE_IDS.map(id => ({ id: `texture-${id}`, group: ui('palette.group.view'), label: ui('cmd.texture', { name: textureName(id) }), keywords: `texture scanline crt ${id}`, run: () => props.setTexture(id) })),
@@ -753,15 +782,16 @@ export function Reader(props: ReaderProps) {
           {scroll.unread > 0 && <span className={css.jumpCount} aria-hidden="true" data-reader-jump-count>{scroll.unread}</span>}
         </button>
       </div>}
-      <StatusBar mode={mode} meter={frameMeter} path={framePath || null} pathTitle={cwd ?? undefined}>
-        {/* The row the toolbar used to be. Every control it carried is here:
-            the view keeps exactly one strip of chrome, and that strip is the
-            one pinned where the newest work already is. */}
-        <button type="button" className={css.statusBarKey} aria-pressed={searchOpen} onClick={() => setSearchOpen(value => !value)} title={searchOpen ? ui('reader.searchClose') : ui('reader.search')}>{searchOpen ? ui('reader.searchClose') : ui('reader.search')}</button>
-        <button type="button" className={css.statusBarKey} aria-pressed={motionPreference} onClick={() => props.actions.setMotion(!motionPreference)} title={ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}>{motionPreference && !motion ? ui('reader.motionFollowOff') : ui(motionPreference ? 'reader.motionOn' : 'reader.motionOff')}</button>
-        <button type="button" className={css.statusBarKey} disabled={groups.length === 0} onClick={downloadExport} title={ui('reader.exportTitle')}>{ui('reader.export')}</button>
+      <StatusBar mode={mode} meter={frameMeter} path={framePath || null} pathTitle={cwd ?? undefined}
+        live={openGroup !== null && <GroupStatus group={openGroup} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} liveDetail={liveDetail} />}>
+        {/* One key, and it is the door to every other one. The strip used to
+            draw four more — search, motion, export, the shortcut sheet — beside
+            this one, and each was a word of chrome standing in the line the
+            reader is trying to read; all four are in the palette, all four keep
+            their own shortcuts, and a keypress is cheaper than a word. What the
+            space buys is the readout beside it, which no longer has to fight the
+            controls for room. */}
         <button type="button" className={css.statusBarKey} onClick={() => openOnly('palette')} title={ui('help.key.palette')}>{ui('status.hint.palette')}</button>
-        <button type="button" className={css.statusBarKey} onClick={() => openOnly('help')} title={ui('help.key.help')}>{ui('status.hint.help')}</button>
       </StatusBar>
     </div>
     <TurnRail root={root} items={railItems} />

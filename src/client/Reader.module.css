@@ -48,6 +48,11 @@
      chrome sits above this (composer seat 7, width handles 8, panels 10+), and
      the bar and the composer never share a row. */
   --dx-layer-chrome: 7;
+  /* The strip's own gap. It was 10px while the row also had to hold four keys
+     beside the readout; those keys live in the palette now, and the room they
+     gave up is spent on air between the facts rather than on more words — the
+     reader asked for a line that is wide to scan and short to pay for. */
+  --dx-bar-gap: 14px;
   /* Focus, per skin: the card skins ring, the terminal draws a hairline. Read
      by the content-level focus rule near the end of this file, which never
      replaces the global outline for controls outside content — a ring is a
@@ -247,11 +252,6 @@
   .thinkText[data-reader-status-copy=outgoing] { display: none !important; }
   .thinkText::before { display: none !important; }
 }
-.processMeta { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 260ms cubic-bezier(.22,1,.36,1), opacity 160ms ease-out; }
-.processMeta[data-open=true] { grid-template-rows: 1fr; opacity: 1; }
-.processMetaInner { min-height: 0; overflow: hidden; }
-.processMetaLine { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; padding: 8px 0 0 16px; color: var(--dx-ink-dim); font-size: 0.6875rem; line-height: 1.125rem; font-variant-numeric: tabular-nums; }
-.processMetaLine .meta { color: inherit; }
 .chevron { flex: none; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 260ms cubic-bezier(.22,1,.36,1); }
 .chevron[data-open=true] { transform: rotate(90deg); }
 .disclosureBody { overflow: hidden; height: 0; }
@@ -345,17 +345,22 @@
 @keyframes toolStatePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 [data-motion=off] .toolState[data-phase="preparing"], [data-motion=off] .toolState[data-phase="running"] { animation: none; }
 @media (prefers-reduced-motion: reduce) { .toolState[data-phase="preparing"], .toolState[data-phase="running"] { animation: none; } }
-/* The umbrella busy status closes the turn in the reading flow, the way the
-   native chat view ends a running turn: a plain row under the last block that
-   scrolls away with it. It must not float over the conversation — an overlay
-   hides the very content the reader is waiting on.
+/* The reading view's one working line: the phase, the clock, and the tool
+   actually in flight.
  
-   It is also the reading view's only working line: the header's own copy of the
-   same moment ("正在运行命令 · …") is gone, so what is actually running rides
-   here beside the verb. This is chrome, not prose — one tight line, because the
-   reader is waiting on the answer, not on this row. */
-.statusDock { align-self: flex-start; flex: none; line-height: 1.25rem; }
-.statusDock .statusText { line-height: 1.25rem; }
+   It used to be a dock — a row inside the running turn, under its last block,
+   scrolls away with it — and before that the header carried a copy of the same
+   moment. Both are gone: the line rides in the strip pinned to the bottom, on
+   the same row as the session's other facts, so there is one place to look and
+   no third sentence to line up by hand.
+
+   Nothing here may grow that strip. It is an inline flex item on the row, at the
+   row's own type size and line box, and every part of it truncates rather than
+   wraps: the phase is what says work is happening, the detail only what, which
+   is also the order they are dropped in on a narrow column. */
+.statusLive { display: inline-flex; align-items: baseline; min-width: 0; flex: 0 1 auto; }
+.statusLive::before { content: '· '; }
+.statusLive .statusText { font-size: inherit; line-height: inherit; }
 /* What the host contributes under a finished turn (the changed-files card, the
    delivery cards, plan cards). The cards bring their own type and spacing; the
    wrapper only stacks them in the reading column. */
@@ -615,8 +620,8 @@
    the screen, so the chip radius and the code face carry it instead. */
 [data-deckseek-skin='terminal'] .jump { border-radius: var(--dx-radius-chip); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
 [data-deckseek-skin='terminal'] .jumpCount { border-radius: 2px; }
-[data-motion=off] .chevron, [data-motion=off] .imageOpen img, [data-motion=off] .processMeta { transition: none; }
-@media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img, .processMeta { transition: none; } }
+[data-motion=off] .chevron, [data-motion=off] .imageOpen img { transition: none; }
+@media (prefers-reduced-motion: reduce) { .chevron, .imageOpen img { transition: none; } }
 @media (pointer: coarse) { .disclosureButton { min-height: 44px; } .railItem { width: 28px; } .textButton, .historyButton, .iconButton { min-height: 44px; } .iconButton, .jump, .dialogClose { min-width: 44px; min-height: 44px; } }
 .textButton:active, .historyButton:active, .iconButton:active, .jump:active, .dialogClose:active { opacity: .75; }
 @media (max-width: 600px) { .root { padding-inline: max(20px, var(--dsh-composer-side-clearance, 16px)); } .column { --dx-gap-column: 18px; } .statusBar { font-size: 0.6875rem; } .user { max-width: 90%; } }
@@ -722,9 +727,12 @@
   /* A terminal draws hairlines, not halos — but the ring is still a ring, not
      the 2px UI outline it would otherwise inherit. */
   --dx-focus-ring: 0 0 0 1px var(--dsw-alias-state-business-primary);
-  /* The frame's inner padding, named because the skin needs it twice: once for
-     the column, once for the user band's bleed. */
+  /* The frame's inner padding. Both axes are tokens because more than one rule
+     has to agree with them: the column pads by them, the user band and the two
+     pinned bars bleed back out by `x`, and the bottom bar cancels `y` so that
+     the frame's last line sits on the frame's own bottom edge. */
   --dx-frame-pad-x: 12px;
+  --dx-frame-pad-y: 10px;
   /* ANSI roles. A terminal colours by *what a thing is* — a prompt, a path, a
      count, a warning — so the furniture reads as ANSI without one literal
      colour: every role is bound to the host's own state or label token, which
@@ -826,8 +834,7 @@
 [data-deckseek-skin='terminal'] .nativeToolSummary,
 [data-deckseek-skin='terminal'] .toolDelta,
 [data-deckseek-skin='terminal'] .toolState { font-size: 0.78125rem; line-height: 1.25rem; }
-[data-deckseek-skin='terminal'] .turnTail,
-[data-deckseek-skin='terminal'] .processMetaLine { font-size: 0.6875rem; line-height: 1.0625rem; }
+[data-deckseek-skin='terminal'] .turnTail { font-size: 0.6875rem; line-height: 1.0625rem; }
 /* Terminal v2 — the skin must read as a terminal, not as dark cards. Density
    comes first: `--dx-gap-block` was declared from the start but nothing ever
    consumed it, so every gap silently inherited the soft skin's 22/16/16. */
@@ -841,7 +848,7 @@
   /* The frame's edge, mixed from the same ink as the corners so the two read as
      one drawing: 32% of the caption ink is a hairline you can actually see. */
   border: 1px solid color-mix(in srgb, var(--dx-ansi-frame) 32%, transparent);
-  padding: 10px var(--dx-frame-pad-x);
+  padding: var(--dx-frame-pad-y) var(--dx-frame-pad-x);
 }
 [data-deckseek-skin='terminal'] .turn { gap: 4px; }
 [data-deckseek-skin='terminal'] .turn + .turn { margin-top: var(--dx-gap-block); }
@@ -1086,17 +1093,26 @@
  * stretch` — so the flex column cannot squash it, and `position: sticky;
  * bottom: 0` keeps it at the foot of the viewport while the column's end is below
  * the fold. Where the column ends (a short history, or the reader at the very
- * bottom), it settles by itself, which is what puts it above the composer.
+ * bottom), it settles against the column's own foot; the terminal then spends
+ * the frame's bottom inset to get there, so the row IS the window's last line.
  *
- * The readout is the first thing to go on a narrow column, then the workspace,
- * then the mode word: the controls are what the row is for.
+ * Everything the session has to say is on this one line, in the order a reader
+ * wants it: what the session is doing (the mode word), what they already hold
+ * (the turn readout), what is happening right now (the live working line), and
+ * where it is happening (the workspace) — then the one control, pushed to the
+ * far end. It used to be two lines, with the working line docked above this one
+ * and four keys beside it; folding both into one row is what buys the horizontal
+ * room the readout now has.
  *
- * Type and padding are as tight as one line of 11px/12px text allows — 2px of
- * padding over a 16px line box, so the row plus its 2px breathing space costs
- * 21px rather than 31px. The row is chrome the reader never reads top-to-bottom;
- * every pixel it gives back is a pixel of answer. */
+ * Wide, then short: the gap was 10px when the row also had to fit four keys, and
+ * `--dx-bar-gap` is that gap with the keys' room spent on air instead. Type and
+ * padding stay as tight as one line of 11px/12px text allows — 2px of padding
+ * over a 16px line box, so the row plus its 2px breathing space costs 21px
+ * rather than 31px, and the terminal tightens that to 19px. The row is chrome the
+ * reader never reads top-to-bottom; every pixel it gives back is a pixel of
+ * answer, and no item on it may add a second line. */
 .statusBar {
-  display: flex; align-items: center; gap: 10px; position: sticky; bottom: 0; z-index: var(--dx-layer-chrome);
+  display: flex; align-items: center; gap: var(--dx-bar-gap); position: sticky; bottom: 0; z-index: var(--dx-layer-chrome);
   flex: none; align-self: stretch;
   margin-top: 2px; padding: 2px var(--dx-frame-pad-x, 0px);
   border-top: var(--dx-rule); background: var(--dsw-alias-bg-base);
@@ -1106,11 +1122,9 @@
 .statusBarSpacer { flex: 1 1 auto; min-width: 8px; }
 .statusBarKey { flex: none; padding: 0 4px; border: 0; border-radius: var(--dx-radius-chip); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 0.75rem; cursor: pointer; }
 .statusBarKey:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.statusBarKey[aria-pressed='true'] { color: var(--dsw-alias-label-primary); }
-.statusBarKey:disabled { cursor: default; opacity: .5; }
 .statusBarKeys { display: flex; align-items: center; gap: 4px; flex: none; }
-/* The workspace is context, not a control: it takes what is left after the keys
-   are placed, and loses the space first. */
+/* The workspace is context, not a control: it takes what is left after the key
+   is placed, and loses the space first. */
 .statusBarPath { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-caption); }
 .statusBarMode { flex: none; font-weight: 600; letter-spacing: 0.08em; }
 .statusBarMeter { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
@@ -1126,6 +1140,11 @@
 .root:not([data-deckseek-skin='terminal']) .statusBarMode { display: none; }
 .root:not([data-deckseek-skin='terminal']) .statusBarPath::before { content: none; }
 .root:not([data-deckseek-skin='terminal']) .statusBarMeter::before { content: none; }
+.root:not([data-deckseek-skin='terminal']) .statusLive::before { content: none; }
+/* What gives way on a narrow column, in order: the workspace, then the readout,
+   then the mode word. The live line is the one thing that never leaves — it is
+   the answer to "is anything happening", and it is what the reader is waiting
+   on. Its own detail is dropped further down, by the terminal's own rule. */
 @container (max-width: 820px) { .statusBarPath { display: none; } }
 @container (max-width: 560px) { .statusBarMeter { display: none; } }
 
@@ -1201,20 +1220,35 @@
 [data-deckseek-skin='terminal'] .statusBar::after { content: '┘'; bottom: calc(-0.5em - 1px); right: calc(-0.5em - 1px); }
 
 /* Terminal: the same row, in the skin's own voice — the mono face, the smaller
-   meta size, the dim ANSI ink, and the plate painted out to the frame.
+   meta size, the dim ANSI ink, and a box that reaches the frame.
  
    Everything structural (sticky, the row's place in the column, the keys, the
    spacers) lives on the shared rule above, because the card skins draw this row
    too: it is the view's only chrome now, not a terminal ornament. */
 [data-deckseek-skin='terminal'] .statusBar {
-  /* This bar spans the column's content box, but the user band bleeds out to the
-     frame's inner edges (its own -`--dx-frame-pad-x` margin below). Measured in
-     Chrome at 1440x900 over 78 scroll positions: in the 12px strip beside this
-     bar the band was the topmost element at 18 of them — the band sliding past
-     in the gutters while the row it belongs to was already behind the bar. Paint
-     the plate out to the frame instead of widening the row, so the status keys
-     keep the place they have in every other skin. */
-  box-shadow: calc(-1 * var(--dx-frame-pad-x)) 0 0 var(--dsw-alias-bg-base), var(--dx-frame-pad-x) 0 0 var(--dsw-alias-bg-base);
+  /* The row is the window's LAST line, so it sits on the frame's bottom edge
+     instead of floating 10px above it. The column's own bottom inset is handed
+     back to the row here, which is what closes the empty band that used to run
+     between the readout and the frame's bottom border — and, since the corner
+     glyphs hang off this row's box, what puts `└` and `┘` on the frame's bottom
+     corners rather than 10px above them and 12px inside them.
+
+     The horizontal half is the same bleed the top anchor does, for two reasons:
+     the user band bleeds out to the frame's inner edges (its own
+     -`--dx-frame-pad-x` margin below), so a row that stops at the content box
+     leaves a 12px strip on each side for the band to slide past — measured in
+     Chrome at 1440x900 over 78 scroll positions, the band was the topmost
+     element in that strip at 18 of them; and the glyphs need the box to reach
+     the frame in the first place. Widening the box costs the keys nothing: the
+     inline padding puts the row's content back exactly where it was, so the
+     readout and the controls keep the place they have in every other skin. */
+  margin-block: 2px calc(-1 * var(--dx-frame-pad-y));
+  margin-inline: calc(-1 * var(--dx-frame-pad-x));
+  /* One line of 11px text in the tightest box that still reads as a row: this
+     one is chrome nobody reads top-to-bottom, and every pixel it gives back is
+     a pixel of answer. */
+  padding-block: 1px;
+  padding-inline: var(--dx-frame-pad-x);
   color: var(--dx-ansi-muted); font-size: 0.6875rem;
 }
 [data-deckseek-skin='terminal'] .statusBarMeter { flex: 0 1 auto; }

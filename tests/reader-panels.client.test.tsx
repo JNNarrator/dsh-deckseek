@@ -105,22 +105,35 @@ test('the status line reports the session state and the counts it holds', () => 
 });
 
 /**
- * The strip is the only chrome the view has, so every control the top row used
- * to carry has to be reachable *on it* — for every skin, since the row that held
- * them is gone rather than hidden. Five buttons: the three view controls plus the
- * two panel keys; the palette is a convenience for them, not the only door.
+ * The strip is the only chrome the view has, and it now carries exactly one
+ * control: the door to the palette. The four it used to spell out — search,
+ * motion, export, the shortcut sheet — were words of chrome standing in the
+ * line the reader is trying to read, and every one of them is in the palette,
+ * each with its own shortcut as well.
+ *
+ * The row is wider for it, which is the point: the room the four keys gave up
+ * went to the readout beside them, which no longer has to fight them for space.
  */
-test('the strip carries the controls the top row used to hold', () => {
-  const bar = mount().container.querySelector('[data-reader-status-bar]')! as HTMLElement;
+test('the strip carries one key, and the palette carries the rest', () => {
+  const view = mount();
+  const bar = view.container.querySelector('[data-reader-status-bar]')! as HTMLElement;
   const labels = [...bar.querySelectorAll('button')].map(button => button.textContent ?? '');
-  assert.deepEqual(labels, ['查找', '动效开', '导出', '^K 命令', '? 帮助']);
-  // The group is labelled, and it is not announced as a toolbar: these are five
-  // independent buttons, not a set with arrow-key movement between them.
+  assert.deepEqual(labels, ['^K 命令']);
+  // The group is labelled, and it is not announced as a toolbar: a toolbar
+  // promises arrow-key movement between its items, and this is one button.
   const group = bar.querySelector('[role="group"]');
   assert.equal(group?.getAttribute('aria-label'), '阅读工具');
   assert.equal(bar.querySelector('[role="toolbar"]'), null, 'the top row, and its toolbar role, are gone');
   // The workspace is context and rides here too, with the full path on hover.
   assert.ok(bar.querySelector('[data-reader-frame-path]')?.getAttribute('title'), 'the workspace must carry its full path for the hover title');
+  // What the strip gave up, the palette has to hold — otherwise the key it kept
+  // would be the door to an empty room. Motion reads as its own toggle, so the
+  // label is the one that turns it off.
+  press({ key: 'k', ctrlKey: true });
+  const palette = view.container.querySelector('[data-reader-palette]')! as HTMLElement;
+  for (const label of ['在阅读页中查找', '导出为 Markdown', '关闭动效', '快捷键']) {
+    assert.ok(within(palette).getByText(label), `${label} must be reachable from the palette`);
+  }
 });
 
 test('a waiting session reads as WAIT, not as idle', () => {

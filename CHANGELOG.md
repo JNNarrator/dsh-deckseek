@@ -59,6 +59,57 @@ polite live region 在播报同一件事；删掉头部那条之后只剩底部�
 头部只剩折叠箭头、底部 `⠇ 归纳中…  Bash  22 秒`、状态行 21px；交付卡片与改动文件卡片在阅读页内渲染
 （含打开方式分隔按钮），而**画不出卡片的老轮次**照样显示 `本轮产出 <文件名> 📁`。
 
+### 第二轮意见：红圈的内容并成底部一行、四键收进命令、跟随只看方向
+
+**用户报告**（同日 13:47 截图）：**「红圈圈的都可以集中在最下面一行显示，横向不要太紧凑，
+但高度一定尽可能低」**；另加两条：底部「查找/动效开/导出/帮助」收进「命令」、
+自动滚动改成「我不动就一直保持在最新底部，我滚上去才出现回到底部按钮」。
+
+**先说一个必须修的过程问题：用户看到的一直是旧构建。** 截图里那句 `正在运行命令 · Bash`
+在 11:11 的 `b6d5795` 就已经删了，但 profile 把本插件装成 `file:` 依赖——那是
+`~/.dsh/profiles/<p>/node_modules/dsh-deckseek` 下的**一份拷贝而非符号链接**（inode 与工作区不同），
+而每次 `npm run build:local` 都会换掉工作区 `lib/client.js` 的 inode，拷贝不会跟着变；
+那一轮 11:11 之后的全部改动，用户一次都没看到。修法：`cp -R` 备份成 `lib.bak-<时间戳>`
+（沿用 profile 里已有备份的命名）再覆盖 `lib/`，然后 `node scripts/preflight-plugin.mjs`
+——**preflight 校验的正是 profile 里那份**（`requireFromProfile.resolve('dsh-deckseek/…')`），
+所以顺序必须是先装后验，反了会拿旧包换一排绿色 ✔。
+
+**1. 底部只剩一行（第 ①②③ 条）。** 工作行（`GroupStatus variant="dock"`）原本渲在
+**回合自己的子树**里，而状态行是**会话的** chrome，两者不同树。做法是把工作行**抬到 `Reader`**：
+由它订阅出当前打开的那一轮（`openGroup`）并算一次 `liveDetail`，把整个 `GroupStatus` 当 `live`
+属性交给 `StatusBar`，插在读数与工作目录之间——代价是活跃轮次的 `readerFlow` 每帧算两遍，
+换来不必把回合的 flow 提成全局状态（那会为屏幕上每一轮都重算）。行内 `gap` 10px → **14px**
+（`--dx-bar-gap`），四键让出的宽度变成间距。实测终端状态行 **41px（21+20）→ 18px**、
+卡皮肤 **43px（23+20）→ 20px**，所有子项同一 `top`、同高 16px。`data-reader-status-dock`
+随之改名 `data-reader-status-live`。
+
+**2. 折叠表头只剩一行（第 ⑤ 条）。** `Disclosure` 的第二行 `思考与过程 · N 个步骤`
+（`processMeta`）整块删除，连同三条 CSS、`turn.process` 与 `status.steps` 两个词条（中英各一）
+和两处 `data-motion` 过渡规则。保留按钮里内嵌的动作短语与计数（零额外高度，
+闭合轮次仍然一眼看得出折叠里有多少活）。
+
+**3. 底部一键（第 ④ 条）。** 四个控件从行里撤掉，底部只留 `^K 命令`；**帮助进面板**
+（新增 `id: 'help'`，标签复用 `help.title`），其余三条本来就在面板里，且各自仍有快捷键。
+随之去掉 6 个词条（`reader.search` / `reader.export` / `reader.exportTitle` /
+`reader.motionOn` / `reader.motionOff` / `reader.motionFollowOff` / `status.hint.help`，中英各一）
+与两条只服务被删按钮的 CSS（`aria-pressed` / `:disabled`）。
+
+**4. 跟随只看方向（第 ⑥ 条）。** `useReadingScroll` 的判据从**「离底多远」（< 72px）**
+改成**「方向」**：只有**视口向上移动**才算读者离开。旧判据回答错了问题——一次爆发恰好让
+跟随者自己的写入离底很远，于是它把自己的写入当成读者的手，**在干活的当口把自己 detach 了**，
+画面停在已经读过的段落上而回答在下面继续长。新增 `--dx-bar-gap` 之外的两个常量
+（`FOLLOW_GAP`）。测试加两条：`a burst of content arriving below never detaches the follow`
+（增长与锚定下移都不 detach；**在旧规则下必失败**）、
+`a hand that moves the viewport up detaches, and coming back down re-attaches`（不依赖 `wheel` 事件）。
+
+**实测**（源码 CSS + 宿主主题令牌 + 无头 Chrome 1440×900，量的是排版后的盒子）：
+终端行 `RUN(23) · 2 轮 · 最新一轮 1 步(132) · ⠇构建中… 1 分 8 秒(125) · 工作目录(172) …… 空档 528 …… ^K 命令(50)`；
+`[data-reader-process-meta]` 计数 **0**；底部 `<button>` 计数 **1**。
+截图：`docs/screenshots/one-line-chrome.png`、`one-line-chrome-full.png`。
+
+测试 397 → **399 项**（跟随 +2；`reader-seats` 三条按新座位改名并各加一条断言，
+`reader-panels` 一条重写为「一键 + 其余在面板里」）。
+
 ### 修「进阅读页黑屏、切一下页签才出来、出来还错乱」：一张每次有图就发作的老 bug
 
 **用户报告**：DeckSeek 页第一次进去是黑屏，按页签切一下就出来，然后界面错乱。

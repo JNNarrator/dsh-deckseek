@@ -13,10 +13,6 @@ export declare const zh: {
     readonly 'reader.tab': "DeckSeek";
     readonly 'reader.sessionClosed': "阅读页对应的会话已关闭。";
     readonly 'reader.toolbarAria': "阅读工具";
-    readonly 'reader.motionFollowOff': "动效 · 跟随系统关闭";
-    readonly 'reader.motionOn': "动效开";
-    readonly 'reader.motionOff': "动效关";
-    readonly 'reader.search': "查找";
     readonly 'reader.searchClose': "关闭查找";
     readonly 'reader.searchPlaceholder': "在阅读页中查找…";
     readonly 'reader.searchNoMatches': "无匹配";
@@ -34,8 +30,6 @@ export declare const zh: {
     readonly 'reader.jumpLatest': "回到最新";
     readonly 'reader.jumpLatestCount': "回到最新，有 {count} 条新内容";
     readonly 'reader.showEarlierTurns': "展开更早的 {count} 轮";
-    readonly 'reader.export': "导出";
-    readonly 'reader.exportTitle': "将本轮会话导出为 Markdown 文件";
     readonly 'export.heading': "DeckSeek 会话导出";
     readonly 'export.user': "用户";
     readonly 'export.steering': "用户 · 补充消息";
@@ -84,7 +78,6 @@ export declare const zh: {
     readonly 'help.note.hosts': "输入框、发送消息与危险操作确认由宿主提供，本页不管这些键。";
     readonly 'status.aria': "阅读状态栏";
     readonly 'status.hint.palette': "^K 命令";
-    readonly 'status.hint.help': "? 帮助";
     readonly 'frame.tools': "{count} 次工具调用";
     readonly 'frame.files': "{count} 个文件";
     readonly 'frame.toolsOne': "{count} 次工具调用";
@@ -120,7 +113,6 @@ export declare const zh: {
     readonly 'turn.steering': "补充消息";
     readonly 'turn.references': "引用：{labels}";
     readonly 'turn.referenceSeparator': "、";
-    readonly 'turn.process': "思考与过程";
     readonly 'turn.foldAriaCollapse': "收起思考与过程";
     readonly 'turn.foldAriaExpand': "展开思考与过程";
     readonly 'status.process': "执行过程";
@@ -135,7 +127,6 @@ export declare const zh: {
     readonly 'status.outputting': "正在输出";
     readonly 'status.preparingReply': "正在准备回复";
     readonly 'status.processing': "正在处理";
-    readonly 'status.steps': "{count} 个步骤";
     readonly 'status.verb.reviewing': "梳理中";
     readonly 'status.verb.analyzing': "推演中";
     readonly 'status.verb.considering': "权衡中";
