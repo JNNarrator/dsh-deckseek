@@ -1,13 +1,17 @@
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment';
 import type { AssistantBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
+import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client';
 import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots';
 import type { ScreenTextureId, SkinId, WorkDetailId } from '../skin.js';
 import type { createReaderStore } from './store.js';
+import type { OfficialSeat } from './official-slots.js';
 export interface ReaderBlockOwner {
     block: AssistantBlock;
     streaming: boolean;
     source: 'assistant' | 'user' | 'tool';
 }
+/** The borrowed turn-tail seat, named by the bridge rather than repeated here. */
+type OfficialTailSeat = Extract<OfficialSeat, `dsh-deckseek.official.tail/${string}`>;
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface SlotMap {
         /** Trusted installed renderers may opt in; unknown model payloads never execute code. */
@@ -15,6 +19,17 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
             kind: 'chain';
             scope: 'session';
             owner: ReaderBlockOwner;
+        };
+        /**
+         * The host's own turn-tail contributions — the changed-files card, delivery
+         * cards, plan cards — mirrored into a seat this plugin owns and rendered under
+         * a finished turn. Declared so the view's `renderSlot` call is checked against
+         * the very owner props the host passes at its own site.
+         */
+        'dsh-deckseek.official.tail/conversation.chat.turnTail': {
+            kind: 'list';
+            scope: 'session';
+            owner: TurnTailOwnerProps;
         };
     }
 }
@@ -24,6 +39,17 @@ export interface ReaderInjected {
         data: Uint8Array;
         mediaType: string;
     }>;
+    /**
+     * How many entries the host contributes to the turn-tail seat this view
+     * borrowed (0 when it contributes none).
+     *
+     * The view draws its own produced-files row only where that answer is zero, so
+     * a turn has one file surface rather than two. Injected rather than read from
+     * the bridge directly, because it is reactive — the host's registrations can
+     * arrive after this view mounts — and because a caller that mounts the view
+     * without a platform says so with a plain function.
+     */
+    useTailSeats: () => number;
     /**
      * Fork this session at an event seq and open the child.
      *
@@ -69,7 +95,7 @@ export interface ReaderInjected {
     /** Persist a screen-texture choice from inside the reading view. */
     setTexture: (next: ScreenTextureId) => void;
 }
-export type ReaderProps = PropsRuntime<'conversation.view'> & PropsLocale<'chat'> & PropsRenderSlots<'dsh-deckseek.block'> & PropsStore<ReturnType<typeof createReaderStore>> & ReaderInjected;
+export type ReaderProps = PropsRuntime<'conversation.view'> & PropsLocale<'chat'> & PropsRenderSlots<'dsh-deckseek.block' | OfficialTailSeat> & PropsStore<ReturnType<typeof createReaderStore>> & ReaderInjected;
 /** Values threaded from a turn down to its rows. */
 export interface TurnRowContext {
     /** Session workspace root; a tool-row path beneath it displays relative. */
@@ -95,4 +121,5 @@ export interface DeckSeekSectionInjected {
     /** Persist one screen-texture choice. */
     setTexture: (next: ScreenTextureId) => void;
 }
+export {};
 //# sourceMappingURL=types.d.ts.map

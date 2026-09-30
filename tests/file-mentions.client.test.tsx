@@ -80,6 +80,7 @@ function mountReader(openFile: ((path: string) => void) | undefined) {
     loadImage={loadImage}
     renderSlotChain={renderSlotChain}
     forkAt={() => {}}
+    useTailSeats={() => 0}
     openFile={openFile as never}
     t={((key: string) => key) as never}
   />);

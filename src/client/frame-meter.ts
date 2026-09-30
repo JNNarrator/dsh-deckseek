@@ -11,7 +11,7 @@
  * docs/design/terminal-skin-v3.md.
  */
 
-import { activityPhase, activitySummary, liveToolEntry, type ReaderFlowEntry, type ToolCategory } from './tool-activity.js';
+import { activityPhase, activitySummary, type ReaderFlowEntry, type ToolCategory } from './tool-activity.js';
 import { currentLocale, uiIn, type UiLang } from './locale.js';
 
 export interface TurnCounts { tools: number; files: number; failed: number }
@@ -179,51 +179,4 @@ export function activityPhrase(flow: readonly ReaderFlowEntry[], lang: UiLang = 
   if (labels.length === 2) return uiIn(lang, 'frame.activity.join', { first, second });
   const title = labels.join(uiIn(lang, 'frame.activity.comma'));
   return ranks.length > MAX_PHRASE_FAMILIES ? uiIn(lang, 'frame.activity.more', { title }) : title;
-}
-
-/**
- * Which of the three live phases a group is in, and for which family.
- *
- * The harness names a live group three ways and only the last is a settled
- * phrase: `preparing` while a call's arguments have not arrived, the bare
- * present tense while it runs, and `done.*` once it returns. The plugin's
- * `frame.activity.*` keys are the settled tense, so a group that has only
- * emitted a call header — the model is still writing its arguments — needs its
- * own copy. Without it the label would name work that has not started, which is
- * the one thing a reader watching a stalled group must be able to tell apart
- * from a running one.
- */
-export type LivePhase = 'prepare' | 'running';
-
-/**
- * The phase and family of the call a live group is currently on.
- *
- * Reads the newest unfinished call, the same one the header's detail line names,
- * so the verb and the detail beside it describe one call rather than two. The
- * phase comes from `activityPhase` rather than from a second reading of the
- * entry, because the two live states are told apart by the block's own shape: a
- * call whose arguments have not arrived carries no block at all, while one that
- * has started carries a block with no `kind` — its own streamed head — where a
- * settled result carries the frozen call. A flow with nothing unfinished returns
- * `null`, and the caller falls back to its phase sentence.
- */
-export function liveFramePhase(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): { phase: LivePhase; category: ToolCategory } | null {
-  const entry = liveToolEntry(flow);
-  if (entry === undefined) return null;
-  const phase = activityPhase(entry);
-  if (phase !== 'preparing' && phase !== 'running') return null;
-  return { phase: phase === 'preparing' ? 'prepare' : 'running', category: summaryOf(entry, lang).category };
-}
-
-/**
- * The live label for a group's header, or `null` when nothing is in flight.
- *
- * `tools` is the fallback family: a call in flight whose summary cannot be read
- * as any known family is still a tool call, and saying so beats staying silent
- * while the reader waits.
- */
-export function liveFrameLabel(flow: readonly ReaderFlowEntry[], lang: UiLang = currentLocale()): string | null {
-  const live = liveFramePhase(flow, lang);
-  if (live === null) return null;
-  return uiIn(lang, `frame.${live.phase}.${live.category}`);
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { activityPhrase, activityRanks, collapsedSummary, dominantCategory, frameMeterLabel, liveFrameLabel, liveFramePhase, railTurns, turnCounts } from '../src/client/frame-meter.ts';
+import { activityPhrase, activityRanks, collapsedSummary, dominantCategory, frameMeterLabel, railTurns, turnCounts } from '../src/client/frame-meter.ts';
 import type { ReaderFlowEntry } from '../src/client/tool-activity.ts';
 import { uiIn } from '../src/client/locale.ts';
 
@@ -182,40 +182,4 @@ test('an unrecognised call still counts as work rather than vanishing from the p
   const flow: ReaderFlowEntry[] = [call('mcp__thing__do', { arg: 1 })];
   assert.deepEqual(activityRanks(flow), [{ category: 'other', count: 1 }]);
   assert.equal(activityPhrase(flow, 'en'), 'called tools');
-});
-
-// A preparing call is a draft: the flat `tool-call` shape the model streams
-// while it writes arguments, not the settled `tool-result` carrying `call`.
-function drafting(name: string, args: Record<string, unknown>): ReaderFlowEntry {
-  return { kind: 'tool', key: `reader-tool:${name}`, callId: 'c', step: 1, order: 0, draft: { kind: 'tool-call', name, argsRaw: JSON.stringify(args) } as never };
-}
-
-// A started call is a head block: no `kind`, so `activityPhase` reads it as
-// running where a `tool-result` reads as settled.
-function started(name: string, args: Record<string, unknown>): ReaderFlowEntry {
-  return { kind: 'tool', key: `reader-tool:${name}`, callId: 'c', step: 1, order: 0, block: { name, argsRaw: JSON.stringify(args) } as never };
-}
-
-test('a call whose arguments have not arrived reads as preparing, not running', () => {
-  assert.deepEqual(liveFramePhase([drafting('read', { file_path: '/w/a.ts' })]), { phase: 'prepare', category: 'read' });
-  assert.deepEqual(liveFramePhase([started('read', { file_path: '/w/a.ts' })]), { phase: 'running', category: 'read' });
-  assert.equal(liveFrameLabel([drafting('bash', { command: 'ls' })]), '准备运行命令');
-  assert.equal(liveFrameLabel([drafting('bash', { command: 'ls' })], 'en'), 'preparing to run commands');
-  assert.equal(liveFrameLabel([started('bash', { command: 'ls' })]), '正在运行命令');
-  assert.equal(liveFrameLabel([started('bash', { command: 'ls' })], 'en'), 'running commands');
-});
-
-test('the live label follows the newest unfinished call, not the whole flow', () => {
-  // An earlier settled read must not name the phase: the turn is on the write.
-  const flow: ReaderFlowEntry[] = [call('read', { file_path: '/w/a.ts' }), drafting('write', { file_path: '/w/b.ts' })];
-  assert.deepEqual(liveFramePhase(flow), { phase: 'prepare', category: 'write' });
-  assert.equal(liveFrameLabel(flow, 'en'), 'preparing to edit files');
-});
-
-test('a settled group has no live phase, and neither does an empty one', () => {
-  // `liveToolEntry` only ever finds unfinished calls, so a turn whose calls have
-  // all returned names no live family: the settled phrase is the header's job.
-  assert.equal(liveFramePhase([call('read', { file_path: '/w/a.ts' })]), null);
-  assert.equal(liveFramePhase([]), null);
-  assert.equal(liveFrameLabel([]), null);
 });

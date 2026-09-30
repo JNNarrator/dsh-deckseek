@@ -35,12 +35,13 @@ const loadImage = (() => Promise.reject(new Error('unused in this suite'))) as u
  *    reads as "not finished", so the turn never folds and the collapsed header
  *    — with its activity phrase — simply does not render. No error, no warning.
  */
-function turnLocation(turn: number, closed = true) {
+function turnLocation(turn: number, closed = true, startAt = 1_700_000_000_000) {
   return {
     kind: 'turn',
     turn: {
       turn,
-      start: undefined,
+      // The elapsed clock reads this; a fixture without it renders an empty time.
+      start: { seq: 1, time: startAt },
       status: closed ? 'closed' : 'open',
       steps: [],
       end: closed
@@ -146,6 +147,7 @@ function mountReader(
     loadImage={loadImage}
     renderSlotChain={renderSlotChain}
     forkAt={forkAt}
+    useTailSeats={() => 0}
     openFile={() => {}}
     t={((key: string) => key) as never}
   />);
@@ -395,38 +397,49 @@ function liveTurn() {
   return { order: ['u1', 't1'], nodes, turns: new Map([[1, turnLocation(1, false).turn]]) };
 }
 
-/** §11.6's live title must reach the view. `GroupStatus` only prefers the live
- *  frame for the group's header, so the assertion is that the *header* copy is
- *  the running phrase rather than the generic status sentence. */
-test('an open turn names the family it is working in right now', () => {
-  const view = mountReader(liveTurn(), 'reader-live-title', 'standard');
-  const copy = view.container.querySelector('[data-reader-status-copy="current"]');
-  assert.notEqual(copy, null, 'the header rendered no status copy');
-  assert.equal(copy?.textContent, '正在运行命令');
-  // And it must have replaced the generic sentence, not been appended to it.
-  assert.equal(view.container.textContent?.includes('正在分析请求'), false);
+/** `assert.equal(node, null)` walks the node's own fiber references when it
+ *  fails, which takes minutes; the same fact asserted as a boolean fails fast. */
+function isRendered(node: unknown): boolean {
+  return node !== null && node !== undefined;
+}
+
+/** One working line, and it is the dock's.
+ *
+ *  The header used to carry its own live title for the same moment — the tool
+ *  frame, reading "正在运行命令 · <tool>" — so a running turn said work was
+ *  happening twice: once above the process rows and once below them, in two
+ *  different vocabularies. The header's copy is gone, and what the work actually
+ *  is rides with the dock's verb and clock instead, so nothing is lost by
+ *  reading one line. */
+test('a running turn has exactly one working line, and it is the dock', () => {
+  const view = mountReader(liveTurn(), 'reader-live-line', 'standard');
+  const lines = [...view.container.querySelectorAll('[data-reader-status]')];
+  assert.equal(lines.length, 1, 'one working line, not two');
+  assert.equal(isRendered(lines[0]!.closest('[data-reader-status-dock]')), true, 'the working line belongs to the dock');
+  const dock = view.container.querySelector('[data-reader-status-dock]')!;
+  assert.equal(isRendered(dock.querySelector('[data-reader-status-verb]')), true, 'the working verb rides the dock');
+  assert.match(dock.querySelector('[data-reader-status-clock]')?.textContent ?? '', /\d+ 秒/, 'the elapsed clock rides the dock');
+  assert.match(dock.querySelector('[data-reader-status-detail]')?.textContent ?? '', /Bash/, 'and so does what is running');
+  assert.equal(view.container.textContent?.includes('正在运行命令'), false, 'the retired header phrase must not come back');
 });
 
-/** The detail line is the other half of the live title and carries a different
- *  fact: the *tool*, where the title names the *family*. The two are deliberately
- *  not the same string — "running commands" plus "Bash" tells a reader both the
- *  kind of work and which tool is doing it. It is gated on the work-detail
- *  policy, so compact must drop it while keeping the title. */
-test('the live title carries its detail line, and compact drops only the detail', () => {
-  const full = mountReader(liveTurn(), 'reader-live-detail-full', 'standard');
-  const detail = full.container.querySelector('[data-reader-status-detail]');
-  assert.notEqual(detail, null, 'the detail line is missing at the default level');
-  assert.match(detail?.textContent ?? '', /Bash/);
+/** What is running is the half the header used to carry alone, and the half a
+ *  reader loses first: at the compact level the dock keeps the verb (work is
+ *  happening) and drops the tool name (which tool), exactly as the header did. */
+test('the dock carries what is running, and compact drops only that', () => {
+  const full = mountReader(liveTurn(), 'reader-dock-detail-full', 'standard');
+  assert.match(full.container.querySelector('[data-reader-status-detail]')?.textContent ?? '', /Bash/);
 
-  const compact = mountReader(liveTurn(), 'reader-live-detail-compact', 'compact');
-  assert.equal(compact.container.querySelector('[data-reader-status-detail]') === null, true, 'compact must drop the detail');
-  assert.equal(compact.container.querySelector('[data-reader-status-copy="current"]')?.textContent, '正在运行命令');
+  const compact = mountReader(liveTurn(), 'reader-dock-detail-compact', 'compact');
+  assert.equal(isRendered(compact.container.querySelector('[data-reader-status-detail]')), false, 'compact must drop the detail');
+  assert.equal(isRendered(compact.container.querySelector('[data-reader-status-verb]')), true, 'the verb is what says work is happening');
+  assert.match(compact.container.querySelector('[data-reader-status-clock]')?.textContent ?? '', /\d+ 秒/);
 });
 
-/** A settled call is not live work. The same fixture with the call finished must
- *  fall back to the turn's ordinary status sentence, otherwise the header would
- *  claim a finished tool is still running forever. */
-test('a finished call is not reported as live work', () => {
+/** A settled call leaves no detail behind. The turn itself is still open — the
+ *  model is between calls — so the working line stays (with its verb and clock),
+ *  and what leaves is the *tool*: nothing is in flight to name. */
+test('a settled call leaves the working line without a detail', () => {
   const fixture = liveTurn();
   (fixture.nodes as Map<string, unknown>).set('t1', {
     kind: 'tool-call', key: 't1', seq: 3, time: 3, visibility: 'visible',
@@ -434,8 +447,10 @@ test('a finished call is not reported as live work', () => {
     data: { root: settled('c1', 'bash', { command: 'pnpm deploy' }) },
   });
   const view = mountReader(fixture, 'reader-live-settled', 'standard');
-  const copy = view.container.querySelector('[data-reader-status-copy="current"]');
-  assert.notEqual(copy?.textContent, '正在运行命令');
+  const dock = view.container.querySelector('[data-reader-status-dock]');
+  assert.equal(isRendered(dock), true, 'the turn is still running, so the line stays');
+  assert.equal(isRendered(dock!.querySelector('[data-reader-status-detail]')), false, 'nothing is in flight to name');
+  assert.equal(view.container.textContent?.includes('正在运行命令'), false);
 });
 
 /** The branch action is the one control on a finished turn, and it is the one

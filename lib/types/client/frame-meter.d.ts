@@ -92,41 +92,4 @@ export declare function dominantCategory(ranks: readonly ActivityRank[]): ToolCa
  * of dead code as a guard whose condition its own caller has already excluded.
  */
 export declare function activityPhrase(flow: readonly ReaderFlowEntry[], lang?: UiLang): string | null;
-/**
- * Which of the three live phases a group is in, and for which family.
- *
- * The harness names a live group three ways and only the last is a settled
- * phrase: `preparing` while a call's arguments have not arrived, the bare
- * present tense while it runs, and `done.*` once it returns. The plugin's
- * `frame.activity.*` keys are the settled tense, so a group that has only
- * emitted a call header — the model is still writing its arguments — needs its
- * own copy. Without it the label would name work that has not started, which is
- * the one thing a reader watching a stalled group must be able to tell apart
- * from a running one.
- */
-export type LivePhase = 'prepare' | 'running';
-/**
- * The phase and family of the call a live group is currently on.
- *
- * Reads the newest unfinished call, the same one the header's detail line names,
- * so the verb and the detail beside it describe one call rather than two. The
- * phase comes from `activityPhase` rather than from a second reading of the
- * entry, because the two live states are told apart by the block's own shape: a
- * call whose arguments have not arrived carries no block at all, while one that
- * has started carries a block with no `kind` — its own streamed head — where a
- * settled result carries the frozen call. A flow with nothing unfinished returns
- * `null`, and the caller falls back to its phase sentence.
- */
-export declare function liveFramePhase(flow: readonly ReaderFlowEntry[], lang?: UiLang): {
-    phase: LivePhase;
-    category: ToolCategory;
-} | null;
-/**
- * The live label for a group's header, or `null` when nothing is in flight.
- *
- * `tools` is the fallback family: a call in flight whose summary cannot be read
- * as any known family is still a tool call, and saying so beats staying silent
- * while the reader waits.
- */
-export declare function liveFrameLabel(flow: readonly ReaderFlowEntry[], lang?: UiLang): string | null;
 //# sourceMappingURL=frame-meter.d.ts.map

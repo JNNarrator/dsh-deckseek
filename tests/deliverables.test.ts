@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
-import { basename, createProducedFileMentions, dirname, getTurnDeliverables, showDeliverablesRow, visibleDeliverables } from '../src/client/deliverables.js';
+import {
+  basename, createProducedFileMentions, dirname, getTurnDeliverables, showDeliverablesRow, visibleDeliverables,
+} from '../src/client/deliverables.js';
 import type { ReaderFlowEntry } from '../src/client/tool-activity.js';
 
 function settled(name: string, args: Record<string, unknown>, isError = false): ToolCallBlock {

@@ -74,6 +74,7 @@ function mount(options: { motion?: boolean; pending?: boolean } = {}) {
     loadImage={loadImage}
     renderSlotChain={renderSlotChain}
     forkAt={() => {}}
+    useTailSeats={() => 0}
     t={((key: string) => key) as never}
   />);
   return { ...view, skins, details };

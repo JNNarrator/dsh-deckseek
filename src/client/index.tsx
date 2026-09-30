@@ -15,7 +15,7 @@ import {
 import type { DeckSeekSettings } from '../skin-settings.js';
 import { DeckSeekSection } from './DeckSeekSection.js';
 import { Reader } from './Reader.js';
-import { installOfficialSlots, officialChildren } from './official-slots.js';
+import { installOfficialSlots, officialChildren, useOfficialSeat } from './official-slots.js';
 import { createReaderStore } from './store.js';
 import { installReaderEntry } from './entry.js';
 import { ui } from './locale.js';
@@ -83,6 +83,9 @@ export function apply(ctx: Context): void {
       };
       const face: ReaderInjected = {
         loadOlder: async () => { await session().loadOlder(); },
+        // Read straight off the bridge's own ledger: the seat is one per plugin,
+        // not one per session, so this is the same number in every open view.
+        useTailSeats: () => useOfficialSeat('tail'),
         loadImage: async attachment => {
           const receipt = await session().readAttachment(attachment.attachmentId);
           if (!receipt.ok) throw new Error(receipt.error.message);

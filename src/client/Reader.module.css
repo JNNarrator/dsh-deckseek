@@ -288,6 +288,23 @@
    chips start where the reading text does, not where the label ends — the same
    two-column shape the token-usage line above uses, for the same reason. */
 .deliverablesRoot { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 10px; align-items: start; margin-top: calc(14px + var(--dx-font-delta)); font-size: 0.8125rem; line-height: 1.375rem; }
+/* One file surface per turn: the host's own cards when they are on screen, this
+   row otherwise.
+ 
+   The markers are the host's own, on the cards themselves (`data-changed-files`
+   on the changed-files card, `data-presented-files-row` on the delivery cards) —
+   so a plan or schedule card in the same tail does not silence the files, and a
+   turn whose card the host can no longer draw (its summary does not survive a
+   host restart) still lists what it wrote. The rule is keyed on the seat's own
+   wrapper, which this view renders, so it can only fire inside a turn whose tail
+   this view is showing.
+ 
+   `:has()` is load-bearing and the failure is one-sided: if a future host renames
+   a marker, the row comes back beside the card rather than the files vanishing.
+   `tests/tail-cards.test.ts` pins the wrapper attribute, both markers and this
+   rule together, because CSS cannot be exercised by a mount test. */
+.turn:has([data-reader-official-tail] [data-changed-files]) .deliverablesRoot,
+.turn:has([data-reader-official-tail] [data-presented-files-row]) .deliverablesRoot { display: none; }
 .deliverablesLabel { padding-top: 2px; color: var(--dx-ink-dim); font-size: 0.75rem; font-weight: 500; }
 .deliverablesLane { min-width: 0; }
 .deliverablesChips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
@@ -331,8 +348,18 @@
 /* The umbrella busy status closes the turn in the reading flow, the way the
    native chat view ends a running turn: a plain row under the last block that
    scrolls away with it. It must not float over the conversation — an overlay
-   hides the very content the reader is waiting on. */
-.statusDock { align-self: flex-start; flex: none; }
+   hides the very content the reader is waiting on.
+ 
+   It is also the reading view's only working line: the header's own copy of the
+   same moment ("正在运行命令 · …") is gone, so what is actually running rides
+   here beside the verb. This is chrome, not prose — one tight line, because the
+   reader is waiting on the answer, not on this row. */
+.statusDock { align-self: flex-start; flex: none; line-height: 1.25rem; }
+.statusDock .statusText { line-height: 1.25rem; }
+/* What the host contributes under a finished turn (the changed-files card, the
+   delivery cards, plan cards). The cards bring their own type and spacing; the
+   wrapper only stacks them in the reading column. */
+.officialTail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .nativeToolRow:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; border-radius: 6px; }
 .toolHeading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 2px 0 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: var(--dx-radius-panel); }
 .toolHeading:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -1062,13 +1089,18 @@
  * bottom), it settles by itself, which is what puts it above the composer.
  *
  * The readout is the first thing to go on a narrow column, then the workspace,
- * then the mode word: the controls are what the row is for. */
+ * then the mode word: the controls are what the row is for.
+ *
+ * Type and padding are as tight as one line of 11px/12px text allows — 2px of
+ * padding over a 16px line box, so the row plus its 2px breathing space costs
+ * 21px rather than 31px. The row is chrome the reader never reads top-to-bottom;
+ * every pixel it gives back is a pixel of answer. */
 .statusBar {
   display: flex; align-items: center; gap: 10px; position: sticky; bottom: 0; z-index: var(--dx-layer-chrome);
   flex: none; align-self: stretch;
-  margin-top: 4px; padding: 3px var(--dx-frame-pad-x, 0px);
+  margin-top: 2px; padding: 2px var(--dx-frame-pad-x, 0px);
   border-top: var(--dx-rule); background: var(--dsw-alias-bg-base);
-  color: var(--dx-ink-dim); font-size: 0.75rem; line-height: 1.25rem;
+  color: var(--dx-ink-dim); font-size: 0.75rem; line-height: 1rem;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .statusBarSpacer { flex: 1 1 auto; min-width: 8px; }

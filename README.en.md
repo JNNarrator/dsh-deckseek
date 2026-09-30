@@ -74,7 +74,7 @@ The terminal skin adds box-character corners, an optional screen texture (scanli
 **Compatibility**
 
 - **Generative MCP Apps (SEP-1865)**: an ````mcp-app```` code block in a reply mounts as a live interactive card inside a `sandbox="allow-scripts allow-forms"` iframe, talking over JSON-RPC `postMessage` (`ui/initialize`, `ui/resize`, `ui/submit`, …), with the card height adapting between 60 and 2400px.
-- **306 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow and its latency budget, and the search / unread-count / reading-measure / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
+- **397 unit and component tests**: covering message projection, the Markdown pipeline, SEP-1865 parsing, adaptive height budgeting, two-line streaming follow and its latency budget, and the search / unread-count / reading-measure / copy / skin-part / caret-hook / stylesheet-contract interactions (colours come from host tokens only, every token reference resolves, every drawn glyph is one cell wide) under happy-dom.
 
 ## Keyboard shortcuts
 
@@ -110,7 +110,7 @@ Listed in:
 ## Development
 
 ```sh
-npm test                                  # 297 tests (node --test + happy-dom)
+npm test                                  # 397 tests (node --test + happy-dom)
 npx tsc -p tsconfig.json --noEmit         # type check
 DSHX_HARNESS=<DSH checkout> npm run build # build lib/ (client + host halves)
 ```

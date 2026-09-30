@@ -26,7 +26,7 @@ import { buildRailItems } from './turn-rail.js';
 import { TurnRail } from './TurnRail.js';
 import { StreamMotionContext } from './streaming.js';
 import { shortCwd } from './frame-path.js';
-import { activityPhrase, activityRanks, collapsedSummary, dominantCategory, frameMeterLabel, liveFrameLabel, railTurns, turnCounts } from './frame-meter.js';
+import { activityPhrase, activityRanks, collapsedSummary, dominantCategory, frameMeterLabel, railTurns, turnCounts } from './frame-meter.js';
 import { EMPTY_MARK } from './empty-mark.js';
 import { pickStatusVerb, preambleLabel } from './status-verb.js';
 import { ACTIVITY_GLYPHS } from './icons.js';
@@ -45,6 +45,7 @@ import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
 import { createProducedFileMentions, getTurnDeliverables, showDeliverablesRow } from './deliverables.js';
 import { Deliverables } from './DeliverablesRow.js';
 import { ProducedFilesContext } from './produced-files.js';
+import { officialSeat } from './official-slots.js';
 
 function isNode<K extends ChatNodeKind>(node: ChatConversationViewNode, kind: K): node is ChatNode<K> {
   return node.kind === kind;
@@ -199,7 +200,7 @@ function elapsedClock(start: number | undefined, now: number): string {
   return elapsed < 60 ? ui('status.clockSeconds', { seconds: elapsed }) : ui('status.clockMinutes', { minutes: Math.floor(elapsed / 60), seconds: elapsed % 60 });
 }
 
-function GroupStatus({ group, sessionId, useChat, useSessionStatus, motion, variant, policy, liveDetail, liveFrame }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionStatus'> & { group: ReaderGroup; motion: boolean; variant: 'header' | 'dock'; policy: WorkDetailPolicy; liveDetail?: string; liveFrame?: string }) {
+function GroupStatus({ group, sessionId, useChat, useSessionStatus, motion, variant, policy, liveDetail }: Pick<ReaderProps, 'sessionId' | 'useChat' | 'useSessionStatus'> & { group: ReaderGroup; motion: boolean; variant: 'header' | 'dock'; policy: WorkDetailPolicy; liveDetail?: string }) {
   // 0.1.7 removed the per-Session pending-interaction hook; the unified Session
   // status snapshot carries it, keyed by identity, alongside the running state.
   const pending = useSessionStatus(snapshot => snapshot.get(sessionId)?.pendingInteraction);
@@ -254,16 +255,16 @@ function GroupStatus({ group, sessionId, useChat, useSessionStatus, motion, vari
   }
   if (variant === 'dock') {
     if (kind !== 'delving') return null;
+    // The one working line of the reading view. It used to have a twin in the
+    // turn header — the live tool frame ("正在运行命令 · <command>") — and the
+    // two named the same moment in two places: one said work is happening, the
+    // other said what it is. The work is now carried here instead, so the
+    // reader gets one status row and the header keeps only what it is for (the
+    // thinking label, and the call to action when the turn is waiting).
     return <div className={css.statusDock} data-reader-status-dock>
-      <StatusText text={text} ariaText={ariaText} motion={motion} shimmer verb={pickStatusVerb(group.key)} clock={elapsedClock(turnStart, now)} swapKey={kind} />
+      <StatusText text={text} ariaText={ariaText} motion={motion} shimmer verb={pickStatusVerb(group.key)}
+        clock={elapsedClock(turnStart, now)} swapKey={kind} detail={liveDetail} />
     </div>;
-  }
-  // The header leads with the live three-state title when a call is in flight:
-  // that names which family of work is running, which the phase sentence above
-  // cannot. A turn between calls has no live state and keeps the phase sentence
-  // — the dock variant is unaffected, since it must keep its own verb+clock.
-  if (variant === 'header' && liveFrame !== undefined && kind !== 'thinking' && kind !== 'waiting') {
-    return <StatusText text={liveFrame} ariaText={liveFrame} motion={motion} shimmer={busy} swapKey={liveFrame} detail={liveDetail} />;
   }
   if (kind === 'delving') return null;
   return <StatusText text={text} ariaText={ariaText} motion={motion} shimmer={busy} swapKey={kind} detail={liveDetail} />;
@@ -352,22 +353,19 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
     return phrase === null || category === null ? undefined : { phrase, glyph: ACTIVITY_GLYPHS[category] };
   }, [expanded, structure, flow]);
   const cwd = props.useSessions(snapshot => snapshot.byId[props.sessionId]?.cwd);
-  // What the running turn is on, for the header label. Only the level that asks
-  // for live detail pays for walking the flow, and only while something is
-  // actually in flight: a settled group has nothing live to name.
+  // What the running turn is on, for the working line. Only the level that asks
+  // for live detail pays for walking the flow, and only while the turn is open:
+  // a settled group has nothing live to name. This used to ride in the turn
+  // header; the header's copy is gone (it named the same moment as the working
+  // line below it), so the detail rides with the working line instead.
   const liveDetail = useMemo(() => {
-    if (!policy.liveProcessDetail || !expanded) return undefined;
+    if (!policy.liveProcessDetail || boundary.status !== 'open') return undefined;
     const entry = liveToolEntry(flow);
     if (!entry || entry.block === undefined) return undefined;
     const title = toolRowModel(toolIdentity(entry).name, entry.block, cwd).title;
     return title.trim() === '' ? undefined : title;
-  }, [policy.liveProcessDetail, expanded, flow, cwd]);
-  // Three-state live title, mirroring the native group header: a call whose
-  // arguments have not arrived reads "准备…", the same call once started reads
-  // "正在…", and a settled group falls back to the folded phrase. Only a running
-  // turn has a live state, so a settled one pays nothing for this.
-  const liveFrame = useMemo(() => boundary.status === 'open' ? liveFrameLabel(flow) ?? undefined : undefined, [boundary.status, flow]);
-  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="header" policy={policy} liveDetail={liveDetail} liveFrame={liveFrame} />;
+  }, [policy.liveProcessDetail, boundary.status, flow, cwd]);
+  const headerStatus = <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="header" policy={policy} liveDetail={liveDetail} />;
   const terminal = terminalLabel(boundary.reason);
   // A failure card and the terminal line both point at the full record, so the
   // card carries that note only while no terminal line says it below.
@@ -388,6 +386,34 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
     () => deliverables.length > 0 && openFile ? createProducedFileMentions(deliverables, openFile) : undefined,
     [deliverables, openFile],
   );
+  // The host's own turn-tail cards — its changed-files card with the counts,
+  // expandable list and diff review, and its delivery cards with the
+  // deployment's open controls — are drawn through the seat this view borrowed
+  // (see `official-slots.tsx`). They are the richer file surface, so where they
+  // are on screen this view's own produced-files row steps aside; CSS decides
+  // that from the host's own card markers, because the alternative — deciding it
+  // from the turn's record — hides the files of every turn whose card the host
+  // can no longer draw (a summary does not survive a host restart), and losing a
+  // file list is worse than a repeated one. The row is still mounted while it is
+  // hidden: its resolver is what makes an inline mention of a produced file
+  // clickable in the prose.
+  const tailCount = props.useTailSeats();
+  // The sequence the host's own row is addressed by, read the same way its node
+  // view reads it: the closing assistant message when there is one, else the
+  // turn's own tail sequence.
+  const tailSeq = useMemo(() => {
+    for (const key of mainKeys) {
+      const node = nodeMap.get(key);
+      if (node === undefined) continue;
+      if (isNode(node, 'turn-tail')) return node.data.closing?.finalNode?.seq ?? node.data.seq;
+    }
+    return undefined;
+  }, [mainKeys, nodeMap]);
+  const tail = tailCount > 0 && tailSeq !== undefined && turn !== undefined && openFile !== undefined
+    ? <div className={css.officialTail} data-reader-official-tail>
+      {props.renderSlot(officialSeat('tail'), { turn, seq: tailSeq, openFile })}
+    </div>
+    : null;
   return <ProducedFilesContext.Provider value={mentions}><section className={css.turn} data-reader-turn={group.turn ?? 'unresolved'} data-reader-turn-state={boundary.status} data-reader-turn-result={boundary.reason ?? undefined}>
     {startsWithUser && <BlockBoundary><MainNode {...shared} boundary={boundary} nodeKey={group.keys[0]} /></BlockBoundary>}
     {hasProcess && <Disclosure open={expanded} onChange={setExpanded} controls={flowId} buttonRef={processButton} summary={summary ?? undefined}
@@ -418,8 +444,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, pinnedKeys, selectedP
       </Fragment>)}
       </div>
     </div>
+    {tail}
     {showDeliverablesRow(boundary.status, deliverables) && openFile && <Deliverables paths={deliverables} openFile={openFile} revealFile={props.revealFile} />}
-    {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} />}
+    {boundary.status === 'open' && <GroupStatus group={group} sessionId={props.sessionId} useChat={props.useChat} useSessionStatus={props.useSessionStatus} motion={motion} variant="dock" policy={policy} liveDetail={liveDetail} />}
     {terminal && <div className={css.notice} data-reader-terminal>{terminal}</div>}
   </section></ProducedFilesContext.Provider>;
 });

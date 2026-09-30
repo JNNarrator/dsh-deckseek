@@ -119,26 +119,6 @@ export const zh = {
   // rest", where a fourth family would name more than the reader can use.
   'frame.activity.comma': '，',
   'frame.activity.more': '{title}等',
-  // The live phase of a group, in the same 6-family vocabulary as the settled
-  // phrase above. The harness splits a live group three ways — preparing for a
-  // call whose arguments have not arrived, running it, and done — and only the
-  // last matches `frame.activity.*`. Preparing is the state a reader most needs
-  // named: nothing on screen has changed yet, so without it the label claims
-  // work that has not started.
-  'frame.prepare.terminal': '准备运行命令',
-  'frame.prepare.write': '准备修改文件',
-  'frame.prepare.read': '准备读取文件',
-  'frame.prepare.search': '准备搜索代码',
-  'frame.prepare.web': '准备查询网络',
-  'frame.prepare.other': '准备调用工具',
-  'frame.prepare.tools': '准备调用工具',
-  'frame.running.terminal': '正在运行命令',
-  'frame.running.write': '正在修改文件',
-  'frame.running.read': '正在读取文件',
-  'frame.running.search': '正在搜索代码',
-  'frame.running.web': '正在查询网络',
-  'frame.running.other': '正在调用工具',
-  'frame.running.tools': '正在调用工具',
   'rail.label': '消息导航',
   'rail.jump': '跳到第 {turn} 轮',
   'rail.turn': '第 {turn} 轮',
@@ -559,20 +539,6 @@ export const en: Record<UiKey, string> = {
   // English list punctuation and the host's `{title}, etc.`.
   'frame.activity.comma': ', ',
   'frame.activity.more': '{title}, etc.',
-  'frame.prepare.terminal': 'preparing to run commands',
-  'frame.prepare.write': 'preparing to edit files',
-  'frame.prepare.read': 'preparing to read files',
-  'frame.prepare.search': 'preparing to search code',
-  'frame.prepare.web': 'preparing to search the web',
-  'frame.prepare.other': 'preparing tool calls',
-  'frame.prepare.tools': 'preparing tool calls',
-  'frame.running.terminal': 'running commands',
-  'frame.running.write': 'editing files',
-  'frame.running.read': 'reading files',
-  'frame.running.search': 'searching code',
-  'frame.running.web': 'searching the web',
-  'frame.running.other': 'calling tools',
-  'frame.running.tools': 'calling tools',
   'rail.label': 'Message navigation',
   'rail.jump': 'Jump to turn {turn}',
   'rail.turn': 'Turn {turn}',

@@ -50,6 +50,7 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 - 工具 / 命令失败以统一错误卡片呈现：失败原因、退出码与可展开的原始记录。
 - 长思考折叠为淡出卡片并两行跟随，展开即暂停滚动，可手动恢复。
 - **无损保真**：原生 Markdown、代码高亮、数学公式、表格、图片与工具事实 100% 忠实呈现。
+- **文件与交付卡片**：回合结算后，宿主自己的改动文件卡片（「已编辑 N 个文件」、增删行数、可展开列表、悬停改动浮层、侧边栏 review 入口）与 `present` 交付卡片（含宿主的「用 … 打开 / 更多打开方式」控件）原样出现在阅读列里——借宿主的座位渲染，不是第二份实现。宿主画不出卡片时（例如该轮之后宿主重启过，摘要已不在）回退为插件自己的「本轮产出」chip 行，一轮永远只有一处文件列表。
 
 **导航与查找**
 
@@ -74,7 +75,7 @@ dsh-deckseek 是 [aa2246740/dsh-better-display](https://github.com/aa2246740/dsh
 **兼容**
 
 - **生成式 MCP Apps（SEP-1865）**：模型在回答中输出 ````mcp-app```` 代码块即自动挂载为活体交互卡片，在 `sandbox="allow-scripts allow-forms"` 沙箱 iframe 中运行，通过 JSON-RPC `postMessage` 双向通信（`ui/initialize`、`ui/resize`、`ui/submit` 等），卡片高度随内容在 60–2400px 之间自适应。
-- **306 项单元与组件测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算、两行流式跟随与它的延迟预算，以及搜索定位、复制回执、未读条数、阅读列宽度契约、皮肤分片、光标钩子、样式表契约（颜色只取宿主 token、token 引用可解析、字形一格宽）等界面交互（happy-dom）。
+- **397 项单元与组件测试**：覆盖消息投影、Markdown 管道、SEP-1865 解析、自适应高度预算、两行流式跟随与它的延迟预算，以及搜索定位、复制回执、未读条数、阅读列宽度契约、皮肤分片、光标钩子、样式表契约（颜色只取宿主 token、token 引用可解析、字形一格宽）等界面交互（happy-dom）。
 
 ## 快捷键
 
@@ -110,7 +111,7 @@ dsh plugin --profile web add ./dsh-deckseek-0.11.0.tgz
 ## 开发
 
 ```sh
-npm test                                  # 252 项（node --test + happy-dom）
+npm test                                  # 397 项（node --test + happy-dom）
 npx tsc -p tsconfig.json --noEmit         # 类型检查
 DSHX_HARNESS=<DSH 检出路径> npm run build  # 构建 lib/（client + host 两半）
 ```

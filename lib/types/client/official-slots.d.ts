@@ -13,12 +13,16 @@
  * filtered, and only to exclude the kinds this view already draws (see
  * `reader-nodes.ts`) — those would otherwise be rendered twice.
  *
- * Adapted from upstream `666d7ec`, with three deliberate differences:
+ * Adapted from upstream `666d7ec`, with four deliberate differences:
  *  - the seats are named for this plugin (`dsh-deckseek.official.*`);
- *  - `conversation.chat.turnTail` is NOT mirrored: this view draws its own closing
- *    row, and borrowing the host's would put two of them in one turn;
- *  - `conversation.message.images` is NOT mirrored for the same reason — this
- *    view renders message images itself through `Blocks`.
+ *  - `conversation.chat.turnTail` IS mirrored, but this view renders it in its own
+ *    closing area instead of borrowing the host's closing row: the row this view
+ *    draws itself is its own stats line, and what the host contributes to the tail
+ *    — the changed-files card, delivery cards, plan cards — is what a reader of a
+ *    finished turn wants under it. The host's own row is not part of the slot, so
+ *    taking the seat duplicates nothing;
+ *  - `conversation.message.images` is NOT mirrored: this view renders message
+ *    images itself through `Blocks`.
  */
 import type { Context } from '@deepseek-ai/cordis';
 /** The official slots this plugin borrows a seat from, and the seat it lends. */
@@ -26,8 +30,18 @@ export declare const OFFICIAL_SLOTS: {
     readonly actions: "conversation.chat.assistant-actions";
     readonly tools: "tool.call.toolview";
     readonly nodes: "conversation.chat.node";
+    readonly tail: "conversation.chat.turnTail";
 };
 export type OfficialFamily = keyof typeof OFFICIAL_SLOTS;
+/**
+ * The seat names as literal types.
+ *
+ * The view hands these to `renderSlot`, so a typo has to be a compile error
+ * rather than a slot that silently renders nothing.
+ */
+export type OfficialSeat = {
+    [F in OfficialFamily]: `dsh-deckseek.official.${F}/${(typeof OFFICIAL_SLOTS)[F]}`;
+}[OfficialFamily];
 /**
  * What the host declares each of those to be.
  *
@@ -35,12 +49,30 @@ export type OfficialFamily = keyof typeof OFFICIAL_SLOTS;
  * a kind or scope that changed under a mirror would otherwise fail silently — the
  * mirror would register a spec the platform never resolves.
  */
-export declare const EXPECTED: Record<OfficialFamily, {
-    kind: string;
-    scope: string;
-}>;
+export declare const EXPECTED: {
+    readonly actions: {
+        readonly kind: "list";
+        readonly scope: "session";
+    };
+    readonly tools: {
+        readonly kind: "keyed";
+        readonly scope: "session";
+    };
+    readonly nodes: {
+        readonly kind: "keyed";
+        readonly scope: "session";
+    };
+    readonly tail: {
+        readonly kind: "list";
+        readonly scope: "session";
+    };
+};
+/** The families in declaration order; one list so a new family cannot be half-added. */
+export declare const OFFICIAL_FAMILIES: readonly ["actions", "tools", "nodes", "tail"];
 /** This plugin's seat for one family, named so two owners can never collide. */
-export declare function officialSeat(family: OfficialFamily): string;
+export declare function officialSeat<F extends OfficialFamily>(family: F): `dsh-deckseek.official.${F}/${(typeof OFFICIAL_SLOTS)[F]}`;
+/** Reactive entry count for one borrowed seat (0 when the host contributes none). */
+export declare function useOfficialSeat(family: OfficialFamily): number;
 export interface SlotSpecLike {
     kind: string;
     scope: string;
@@ -75,10 +107,38 @@ export interface CompositionRegistry {
  * already sitting in the seat, because each of them holds its own subscriptions.
  * A source that unloads (or hot-reloads) disposes its subtree before its
  * replacement is registered.
+ *
+ * `onCount` reports how many entries the seat holds after every reconcile, so a
+ * view can tell "the host contributes nothing here" from "the host's card for
+ * this turn is empty" — and draw its own row only in the first case.
  */
-export declare function mirrorOfficialSlot(slots: CompositionRegistry, source: string, target: string, namespace: string, accept?: (entry: StoredEntryLike) => boolean): () => void;
-/** The child-seat specs the view registration must declare, validated first. */
-export declare function officialChildren(slots: Pick<CompositionRegistry, 'spec'>): Record<string, SlotSpecLike>;
+export declare function mirrorOfficialSlot(slots: CompositionRegistry, source: string, target: string, namespace: string, accept?: (entry: StoredEntryLike) => boolean, onCount?: (count: number) => void): () => void;
+/**
+ * The child-seat table the view registration declares.
+ *
+ * Keyed by the literal seat names rather than `string`, because the platform
+ * derives the render props a view component receives from the child keys its
+ * registration names: a seat that only exists at runtime is a seat the type
+ * checker can never hand a `renderSlot` for. So the tail seat carries its spec
+ * literally — it is the one this view renders itself.
+ */
+export type OfficialChildSeats = {
+    [K in OfficialSeat]: SlotSpecLike;
+} & {
+    'dsh-deckseek.official.tail/conversation.chat.turnTail': {
+        kind: 'list';
+        scope: 'session';
+    };
+};
+/**
+ * The child-seat specs the view registration must declare, validated first.
+ *
+ * The declared spec is this plugin's own `EXPECTED` entry, and the host's spec is
+ * read only to be compared with it: kind and scope are all a child declaration
+ * carries, and a mismatch has to be an install-time failure rather than a
+ * declaration the platform silently never resolves.
+ */
+export declare function officialChildren(slots: Pick<CompositionRegistry, 'spec'>): OfficialChildSeats;
 /** Whether an official node entry has no renderer of ours already. */
 export declare function acceptsOfficialNode(entry: StoredEntryLike): boolean;
 /**

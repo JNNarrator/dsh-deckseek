@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import {
-  EXPECTED, OFFICIAL_SLOTS, acceptsOfficialNode, installOfficialSlots, mirrorOfficialSlot, officialChildren, officialSeat,
+  EXPECTED, OFFICIAL_FAMILIES, OFFICIAL_SLOTS, acceptsOfficialNode, installOfficialSlots, mirrorOfficialSlot, officialChildren, officialSeat,
   type CompositionRegistry, type SlotSpecLike, type StoredEntryLike,
 } from '../src/client/official-slots.js';
 import { READER_NODES } from '../src/client/reader-nodes.js';
@@ -64,14 +64,59 @@ function registry(specs: Record<string, SlotSpecLike | undefined> = {}) {
   return registry;
 }
 
-const hostSpecs = { [OFFICIAL_SLOTS.actions]: EXPECTED.actions, [OFFICIAL_SLOTS.tools]: EXPECTED.tools, [OFFICIAL_SLOTS.nodes]: EXPECTED.nodes };
+const hostSpecs = {
+  [OFFICIAL_SLOTS.actions]: EXPECTED.actions,
+  [OFFICIAL_SLOTS.tools]: EXPECTED.tools,
+  [OFFICIAL_SLOTS.nodes]: EXPECTED.nodes,
+  [OFFICIAL_SLOTS.tail]: EXPECTED.tail,
+};
 const entry = (key: string, component: unknown = () => null): Entry => ({ component, options: { key, name: 'x' } });
 
 test('the seats are declared with what the host says they are', () => {
   const seats = officialChildren(registry(hostSpecs));
-  assert.deepEqual(Object.keys(seats), [officialSeat('actions'), officialSeat('tools'), officialSeat('nodes')]);
+  assert.deepEqual(Object.keys(seats),
+    [officialSeat('actions'), officialSeat('tools'), officialSeat('nodes'), officialSeat('tail')]);
   assert.deepEqual(seats[officialSeat('actions')], { kind: 'list', scope: 'session' });
   assert.equal(seats[officialSeat('nodes')]!.kind, 'keyed');
+  // The tail seat is the one this view renders itself, so its spec is declared
+  // literally — that is what lets the type checker hand the view a `renderSlot`
+  // for it — and the declaration has to be exactly the host's.
+  assert.deepEqual(seats[officialSeat('tail')], { kind: 'list', scope: 'session' });
+});
+
+test('a seat whose population changes publishes the count a fallback needs', () => {
+  // The reading view draws its own produced-files row only where the host draws
+  // nothing; that decision is made from this number, so it has to follow the
+  // host's registrations in both directions.
+  const counts: number[] = [];
+  const slots = registry();
+  slots.seed(OFFICIAL_SLOTS.tail, [{ component: () => null, options: { id: 'deliverables' } }]);
+  const dispose = mirrorOfficialSlot(slots, OFFICIAL_SLOTS.tail, officialSeat('tail'), 'ns', undefined,
+    count => counts.push(count));
+  assert.deepEqual(counts, [1], 'the entry already there is reported when the mirror starts');
+  slots.seed(OFFICIAL_SLOTS.tail, []);
+  slots.notify(OFFICIAL_SLOTS.tail);
+  assert.deepEqual(counts, [1, 0], 'and an empty seat is reported as empty, not left at its last value');
+  dispose();
+});
+
+test('the tail family mirrors the cards\' own child slot, open controls included', () => {
+  const slots = registry();
+  // The shape the host's deliverables entry really registers: its file actions
+  // (the open-with controls) are a child slot of the card.
+  slots.seed(OFFICIAL_SLOTS.tail, [{
+    component: () => null, options: { id: '@deepseek-ai/dsh-client-ui-deliverables' },
+    children: { 'deliverables.file.actions': { kind: 'list', scope: 'session' } },
+  }]);
+  slots.seed('deliverables.file.actions', [{ component: () => null, options: { id: 'open-in-app' } }]);
+  const dispose = mirrorOfficialSlot(slots, OFFICIAL_SLOTS.tail, officialSeat('tail'), 'dsh-deckseek.official.tail');
+  const mirrored = slots.entriesOfSlot(officialSeat('tail'))[0]!;
+  assert.deepEqual(Object.keys(mirrored.children ?? {}), ['dsh-deckseek.official.tail/deliverables.file.actions']);
+  assert.equal(slots.entriesOfSlot('dsh-deckseek.official.tail/deliverables.file.actions').length, 1,
+    'the open-with control the card declares is mirrored into the seat the card was told to read');
+  dispose();
+  assert.deepEqual(slots.entriesOfSlot('dsh-deckseek.official.tail/deliverables.file.actions'), [],
+    'and it leaves with the card');
 });
 
 test('a slot the host declares differently is refused, not mirrored', () => {
@@ -160,11 +205,11 @@ test('installing takes every family, and letting go returns all of them', () => 
   slots.seed(OFFICIAL_SLOTS.actions, [{ component: () => null, options: { id: 'a' } }]);
   slots.seed(OFFICIAL_SLOTS.nodes, [entry('some-future-kind')]);
   const stop = installOfficialSlots({ slots } as never);
-  assert.deepEqual(slots.injected, [OFFICIAL_SLOTS.actions, OFFICIAL_SLOTS.tools, OFFICIAL_SLOTS.nodes]);
+  assert.deepEqual(slots.injected, [OFFICIAL_SLOTS.actions, OFFICIAL_SLOTS.tools, OFFICIAL_SLOTS.nodes, OFFICIAL_SLOTS.tail]);
   assert.equal(slots.entriesOfSlot(officialSeat('actions')).length, 1);
   assert.equal(slots.entriesOfSlot(officialSeat('nodes')).length, 1);
   stop();
-  for (const family of ['actions', 'tools', 'nodes'] as const) assert.deepEqual(slots.entriesOfSlot(officialSeat(family)), [], `${family} seat must be empty after disposal`);
+  for (const family of OFFICIAL_FAMILIES) assert.deepEqual(slots.entriesOfSlot(officialSeat(family)), [], `${family} seat must be empty after disposal`);
 });
 
 test('a contract change at install time leaves nothing half-installed', () => {

@@ -2,6 +2,63 @@
 
 ## 未发布
 
+### 用户五条体验意见：工作状态只留一行、常驻行收紧、宿主的文件卡片进场
+
+**用户报告**（附截图，来自 `~/Downloads` 那次会话，`RUN · 1 轮 · 最新一轮 48 步`，跑到 **14 分 12 秒**）：
+① 上面一行「正在运行命令」和下面一行「规划中 + 时间」重复，只留下面那一个；
+② 最下面那行信息操作栏上下不够紧凑，占一点地方；
+③ 原版对话里「已编辑多少文件」的文件列表可以展开，阅读页没有；
+④ 原版最下面还列了几个文件、可以选择打开方式，阅读页也没有；
+⑤ `⠇规划中…14 分 10 秒` 这一行也太高。逐条依据与实测见
+[docs/design/ui-feedback-2026-09-30.md](docs/design/ui-feedback-2026-09-30.md)。
+
+**1. 工作状态从两行变一行（第 ①⑤ 条）。** 一轮开跑时，回合头部渲染实时工具帧
+（`正在运行命令 · <工具>`，来自 `frame-meter.ts` 的 `liveFrameLabel`），回合底部渲染插件自己的
+动词 + 计时（`推演中… 25 秒`）——两句话说同一个瞬间，词汇表还不一样。头部那条**删掉**，
+**正在做什么**（工具名）并进底部那行：现在是 `⠇ 归纳中…  Bash  22 秒`。
+头部保留思考期品牌句与「等待你的操作」——那是另一种信息，且此时底部行本来就不渲染，不重复。
+顺带修掉一处无障碍缺陷：头部的 `StatusText` 自带 `role="status"`，于是运行中屏幕上**同时有两个**
+polite live region 在播报同一件事；删掉头部那条之后只剩底部一个。
+随之下线：`liveFramePhase` / `liveFrameLabel` / `LivePhase`（纯函数）与 14 个
+`frame.prepare.*` / `frame.running.*` 词条（中英各 7），以及三条只测它们的测试——不留死代码。
+
+**2. 常驻行收紧（第 ②⑤ 条）。** 底部状态行 **27px + 4px → 21px + 2px**（行高 `1.25rem` → `1rem`、
+上下内边距 `3px` → `2px`、上间距 `4px` → `2px`）；底部工作行 **28px → 20px**（`line-height: 1.25rem`）。
+两处都是 chrome 而不是正文，省下的每一像素都是回答的地方；终端四角与两侧补漆（W2）不动。
+
+**3. 宿主自己的文件卡片进场（第 ③④ 条，本轮主体）。** `conversation.chat.turnTail` 是宿主
+`turn-tail` 节点的子槽位（`list`），宿主在那里渲染「已编辑 N 个文件」的改动文件卡片（增删行数、
+可展开列表、悬停改动浮层、点行进 review）与 `present` 交付卡片（含 `用 … 打开` / `更多打开方式`）。
+阅读区替掉了 `conversation.chat.node`，所以这些卡片从不出现。做法沿用 W4 的桥接：**把这一族也镜像**
+进本插件自己的座位，在收尾行处用宿主自己的 owner props 渲染（`{ turn, seq, openFile }`，`seq` 取
+`closing?.finalNode?.seq ?? data.seq`），并**递归镜像它声明的子槽位**——交付卡片的打开方式控件来自
+`deliverables.file.actions`（`ui-open-in-app` 注册），实测卡片 HTML 里确实带
+`data-slot="dsh-deckseek.official.tail/deliverables.file.actions"`。三处随之到来的改动：
+
+- **座位名进了 `SlotMap`**：平台按注册声明的子槽位键推导组件收到的 `renderSlot`，
+  只存在于运行时的座位类型系统永远交不出渲染函数，所以 `officialSeat()` 改成字面量返回类型、
+  `officialChildren()` 返回字面量键表、`ReaderProps` 声明 `PropsRenderSlots<… | OfficialTailSeat>`。
+- **`useTailSeats()`**（桥接发布的座位条目数，经注入面给视图）：为 0 时不渲染外层包裹——
+  空的 flex 子项仍然会吃掉列的一个 gap。
+- **本插件自己的「本轮产出」chip 行让位，但由 CSS 决定，不看轮次数据**：
+  `.turn:has([data-reader-official-tail] [data-changed-files]) .deliverablesRoot { display: none }`，
+  交付卡片同理。**第一版按轮次数据判断，真机上立刻错**：宿主的改动摘要**只活在宿主进程里**
+  （README 明写「该轮之后 Host 重启过」就没有卡片），于是老轮次「宿主要画卡」却画不出来，
+  chip 行又被让掉 → **文件列表凭空消失**（实测：重启宿主后三个 tail 座位全空，
+  `[data-reader-deliverables]` 计数 0）。改成看屏幕之后，失败方向也变成单向的：宿主哪天改了标记名，
+  规则不匹配 → chip 行**回来**，而不是文件消失。chip 行仍挂载（只 `display: none`），
+  因为它的解析器同时让收尾正文里点名的文件保持可点。
+  CSS 挂载测试覆盖不到，所以 `tests/tail-cards.test.ts` 把「阅读器渲染的包裹属性 / 两个宿主卡片标记 /
+  隐藏的就是这一行」三处命名钉在源码上（4 项）。
+- 测试 392 → **397 项**：`official-slots` +2（座位条目数发布、tail 族的子槽位镜像）、
+  `deliverables-row` +2（座位以宿主自己的 owner props 被请求；空座位不占位）、
+  `tail-cards` +4（新增守卫）、`frame-meter` −3、`reader-seats` 三条重写为「工作行只有一条且在底部、
+  它带正在做什么、compact 只丢细节」。
+
+**真机复核**（副本宿主 + 无头 Chrome，全程不碰用户环境）：跑 `sleep 90` 的活回合里，
+头部只剩折叠箭头、底部 `⠇ 归纳中…  Bash  22 秒`、状态行 21px；交付卡片与改动文件卡片在阅读页内渲染
+（含打开方式分隔按钮），而**画不出卡片的老轮次**照样显示 `本轮产出 <文件名> 📁`。
+
 ### 修「进阅读页黑屏、切一下页签才出来、出来还错乱」：一张每次有图就发作的老 bug
 
 **用户报告**：DeckSeek 页第一次进去是黑屏，按页签切一下就出来，然后界面错乱。
